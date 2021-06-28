@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "psrpcore"
-version = "0.1.0"
+version = "0.0.1"
 description = "Core components for the PowerShell Remoting Protocol"
 authors = ["Jordan Borean <jborean93@gmail.com>"]
 license = "MIT"
