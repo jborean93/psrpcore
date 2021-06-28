@@ -1,0 +1,68 @@
+[tool.poetry]
+name = "psrpcore"
+version = "0.1.0"
+description = "Core components for the PowerShell Remoting Protocol"
+authors = ["Jordan Borean <jborean93@gmail.com>"]
+license = "MIT"
+keywords = ["psrp", "pwsh", "powershell", "remoting"]
+readme = "README.md"
+homepage = "https://github.com/jborean93/psrpcore"
+include = [
+    "CHANGELOG.md",
+]
+
+[tool.poetry.dependencies]
+python = "^3.6.2"
+cryptography = "*"
+
+[tool.poetry.dev-dependencies]
+black = "^21.6b0"
+pytest = "*"
+pytest-cov = "*"
+tox = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+junit_family = "xunit2"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = lint,py36,py37,py38,py39
+skip_missing_interpreters = true
+isolated_build = True
+
+[testenv]
+whitelist_externals =
+    poetry
+
+commands_pre =
+    poetry install
+
+commands =
+    poetry run python -m pytest -v --cov psrpcore --cov-report term-missing
+
+[testenv:lint]
+commands =
+    poetry run python -m black --check .
+"""
+
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
