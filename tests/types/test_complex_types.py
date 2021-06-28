@@ -23,6 +23,8 @@ from psrpcore._serializer import (
     serialize,
 )
 
+from ..conftest import assert_xml_diff
+
 # Contains control characters, non-ascii chars, and chars that are surrogate pairs in UTF-16
 COMPLEX_STRING = "treble clef\n _x0000_ _X0000_ %s café" % b"\xF0\x9D\x84\x9E".decode("utf-8")
 COMPLEX_ENCODED_STRING = "treble clef_x000A_ _x005F_x0000_ _x005F_X0000_ _xD834__xDD1E_ café"
@@ -121,8 +123,8 @@ def test_ps_stack_with_properties():
 
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
-    assert (
-        actual == '<Obj RefId="0"><TN RefId="0"><T>System.Collections.Stack</T><T>System.Object</T></TN>'
+    expected = (
+        '<Obj RefId="0"><TN RefId="0"><T>System.Collections.Stack</T><T>System.Object</T></TN>'
         "<MS>"
         '<Obj RefId="1" N="1"><TNRef RefId="0" />'
         "<STK><S>123</S><I32>123</I32></STK>"
@@ -131,6 +133,7 @@ def test_ps_stack_with_properties():
         "<STK><I32>0</I32><I32>1</I32><C>97</C><I32>2</I32></STK>"
         "</Obj>"
     )
+    assert_xml_diff(actual, expected)
 
     actual = deserialize(element)
     assert isinstance(actual, complex_types.PSStack)
@@ -220,8 +223,8 @@ def test_ps_queue_with_properties():
 
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
-    assert (
-        actual == '<Obj RefId="0"><TN RefId="0"><T>System.Collections.Queue</T><T>System.Object</T></TN>'
+    expected = (
+        '<Obj RefId="0"><TN RefId="0"><T>System.Collections.Queue</T><T>System.Object</T></TN>'
         "<MS>"
         '<Obj RefId="1" N="1"><TNRef RefId="0" /><QUE><S>entry</S></QUE></Obj>'
         "</MS>"
@@ -233,6 +236,7 @@ def test_ps_queue_with_properties():
         "</QUE>"
         "</Obj>"
     )
+    assert_xml_diff(actual, expected)
 
     actual = deserialize(element)
     assert isinstance(actual, complex_types.PSQueue)
@@ -315,8 +319,8 @@ def test_ps_list_with_properties():
 
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
-    assert (
-        actual == '<Obj RefId="0"><TN RefId="0"><T>System.Collections.ArrayList</T><T>System.Object</T></TN>'
+    expected = (
+        '<Obj RefId="0"><TN RefId="0"><T>System.Collections.ArrayList</T><T>System.Object</T></TN>'
         "<MS>"
         '<Obj RefId="1" N="1"><TNRef RefId="0" />'
         "<LST><S>123</S><I32>123</I32></LST>"
@@ -325,6 +329,7 @@ def test_ps_list_with_properties():
         "<LST><I32>0</I32><I32>1</I32><C>97</C><I32>2</I32></LST>"
         "</Obj>"
     )
+    assert_xml_diff(actual, expected)
 
     actual = deserialize(element)
     assert isinstance(actual, complex_types.PSList)
@@ -466,11 +471,12 @@ def test_ps_dict(input_value, expected):
 
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
-    assert (
-        actual == f'<Obj RefId="0"><TN RefId="0"><T>System.Collections.Hashtable</T><T>System.Object</T></TN>'
+    expected = (
+        f'<Obj RefId="0"><TN RefId="0"><T>System.Collections.Hashtable</T><T>System.Object</T></TN>'
         f"{expected}"
         f"</Obj>"
     )
+    assert_xml_diff(actual, expected)
 
     actual = deserialize(element)
     assert isinstance(actual, complex_types.PSDict)
@@ -482,8 +488,8 @@ def test_ps_dict(input_value, expected):
 def test_ps_dict_from_dict():
     element = serialize({"abc": "def", 1: 2, PSChar("a"): complex_types.PSList([1, 2])})
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
-    assert (
-        actual == '<Obj RefId="0"><TN RefId="0"><T>System.Collections.Hashtable</T><T>System.Object</T></TN>'
+    expected = (
+        '<Obj RefId="0"><TN RefId="0"><T>System.Collections.Hashtable</T><T>System.Object</T></TN>'
         "<DCT>"
         "<En>"
         '<S N="Key">abc</S>'
@@ -503,6 +509,7 @@ def test_ps_dict_from_dict():
         "</DCT>"
         "</Obj>"
     )
+    assert_xml_diff(actual, expected)
 
 
 def test_ps_dict_with_properties():
@@ -786,8 +793,8 @@ def test_error_record_plain():
 
     element = serialize(value)
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0">'
+    expected = (
+        '<Obj RefId="0">'
         '<TN RefId="0">'
         "<T>System.Management.Automation.ErrorRecord</T>"
         "<T>System.Object</T>"
@@ -821,6 +828,7 @@ def test_error_record_plain():
         "<ToString>Exception</ToString>"
         "</Obj>"
     )
+    assert_xml_diff(actual, expected)
 
     value = deserialize(element)
 
@@ -875,8 +883,8 @@ def test_error_record_with_error_details():
 
     element = serialize(value)
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0">'
+    expected = (
+        '<Obj RefId="0">'
         '<TN RefId="0">'
         "<T>System.Management.Automation.ErrorRecord</T>"
         "<T>System.Object</T>"
@@ -915,6 +923,7 @@ def test_error_record_with_error_details():
         "<ToString>Error Detail Message</ToString>"
         "</Obj>"
     )
+    assert_xml_diff(actual, expected)
 
     value = deserialize(element)
 
@@ -988,8 +997,8 @@ def test_error_record_with_invocation_info():
 
     element = serialize(value)
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0">'
+    expected = (
+        '<Obj RefId="0">'
         '<TN RefId="0">'
         "<T>System.Management.Automation.ErrorRecord</T>"
         "<T>System.Object</T>"
@@ -1072,12 +1081,13 @@ def test_error_record_with_invocation_info():
         "<ToString>Exception</ToString>"
         "</Obj>"
     )
+    assert_xml_diff(actual, expected)
 
     value.serialize_extended_info = True
     element = serialize(value)
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0">'
+    expected = (
+        '<Obj RefId="0">'
         '<TN RefId="0">'
         "<T>System.Management.Automation.ErrorRecord</T>"
         "<T>System.Object</T>"
@@ -1186,6 +1196,7 @@ def test_error_record_with_invocation_info():
         "<ToString>Exception</ToString>"
         "</Obj>"
     )
+    assert_xml_diff(actual, expected)
 
     value = deserialize(element)
 

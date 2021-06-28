@@ -1,0 +1,124 @@
+name: Test PSAccessToken
+on:
+  push:
+    branches:
+    - main
+    paths-ignore:
+    - CHANGELOG.md
+    - LICENSE
+    - README.md
+
+  pull_request:
+    branches:
+    - main
+    paths-ignore:
+    - CHANGELOG.md
+    - LICENSE
+    - README.md
+
+  release:
+    types:
+    - published
+
+  schedule:
+  - cron: 0 9 * * *
+
+jobs:
+  test:
+    name: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - windows-latest
+        python-version:
+        - 3.6
+        - 3.7
+        - 3.8
+        - 3.9
+        python-arch:
+        - x86
+        - x64
+
+        exclude:
+        - os: ubuntu-latest
+          python-arch: x86
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.python-arch }}
+
+    - name: Install
+      run: |
+        echo "Installing baseline pip packages"
+        python -m pip install --upgrade pip poetry tox
+
+        poetry install
+        poetry update
+
+    - name: Run Sanity Test
+      run: |
+        poetry run python -m black --check .
+
+    - name: Run Tests
+      run: |
+        poetry run python -m pytest -v --junitxml junit/test-results.xml --cov psrpcore --cov-report xml --cov-report term-missing
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: Unit Test Results (${{ matrix.os }} ${{ matrix.python-version }} ${{ matrix.python-arch }})
+        path: ./junit/test-results.xml
+
+    - name: Upload Coverage Results
+      if: always() && !startsWith(github.ref, 'refs/tags/v')
+      uses: actions/upload-artifact@v2
+      with:
+        name: Coverage Results (${{ matrix.os }} ${{ matrix.python-version }} ${{ matrix.python-arch }})
+        path: ./coverage.xml
+
+    - name: Upload Coverage to codecov
+      if: always() && !startsWith(github.ref, 'refs/tags/v')
+      uses: codecov/codecov-action@v1
+      with:
+        files: ./coverage.xml
+        flags: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.python-arch }}
+
+  publish:
+    name: publish
+    needs:
+    - test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+
+    - name: Installing baseline packages
+      run: |
+        echo "Installing baseline pip packages"
+        python -m pip install --upgrade pip poetry
+
+    - name: Build package
+      run: |
+        poetry build
+
+    - name: Capture Wheel and SDist
+      uses: actions/upload-artifact@v2
+      with:
+        name: Module
+        path: dist/*
+
+    - name: Publish
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        echo "TODO Publishing"
