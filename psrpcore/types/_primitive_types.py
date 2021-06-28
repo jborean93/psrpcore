@@ -886,12 +886,19 @@ class PSGuid(PSObject, uuid.UUID):
     def __init__(self, *args, **kwargs):
         super().__init__()
 
-        # Weird workaround to ensure the uuid attributes are set properly.
+        # UUID does not support __init__ with a UUID instance. Just rewrite the args to support this here.
         if len(args) == 1 and isinstance(args[0], uuid.UUID):
-            uuid_val = args[0]
+            kwargs = {"int": args[0].int}
+            args = ()
+
+        # Python 3.6 and 3.7 uses a __dict__ for a UUID whereas newer ones use __slots. We adjust the way we initialise
+        # the UUID props based on this behaviour.
+        if hasattr(uuid.UUID, "__slots__"):
+            uuid.UUID.__init__(self, *args, **kwargs)
+
         else:
             uuid_val = uuid.UUID(*args, **kwargs)
-        uuid.UUID.__getattribute__(self, "__dict__").update(uuid.UUID.__getattribute__(uuid_val, "__dict__"))
+            uuid.UUID.__getattribute__(self, "__dict__").update(uuid.UUID.__getattribute__(uuid_val, "__dict__"))
 
     def __setattr__(self, name, value):
         # UUID raises TypeError on __setattr__ and there are cases where we need to override the psobject attribute.

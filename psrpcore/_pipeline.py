@@ -411,7 +411,15 @@ class _ServerPipeline(_PipelineBase["ServerRunspacePool"]):
 
         time_generated = PSDateTime.now() if time_generated is None else time_generated
         tags = tags or []
-        user = getpass.getuser() if user is None else user
+
+        if user is None:
+            try:
+                # getuser on Windows relies on env vars that may not may not be set. Just fallback gracefully.
+                user = getpass.getuser()
+
+            except ModuleNotFoundError:
+                user = "Unknown"
+
         computer = platform.node() if computer is None else computer
         process_id = os.getpid() if process_id is None else process_id
 

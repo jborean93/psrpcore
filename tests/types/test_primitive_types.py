@@ -7,6 +7,7 @@ import decimal
 import psrpcore.types._primitive_types as primitive_types
 import pytest
 import re
+import sys
 import uuid
 import xml.etree.ElementTree as ElementTree
 
@@ -319,6 +320,10 @@ def test_ps_bool_deserialize_extended():
     ],
 )
 def test_ps_datetime(input_val, expected, expected_str, expected_repr):
+    # Python 3.6 has a slightly different repr for a timedelta value.
+    if sys.version_info[:2] == (3, 6):
+        expected_repr = expected_repr.replace("datetime.timedelta(seconds=", "datetime.timedelta(0, ")
+
     ps_datetime = primitive_types.PSDateTime(input_val)
     assert isinstance(ps_datetime, primitive_types.PSDateTime)
     assert isinstance(ps_datetime, datetime.datetime)

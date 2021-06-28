@@ -87,6 +87,10 @@ _STRING_DESERIAL_FIND = re.compile(b"\\x00_\\x00x([\\0\\w]{8})\\x00_")
 # of precision we need to extract the fractional seconds part of a datetime ourselves and compute the value.
 _DATETIME_FRACTION_PATTERN = re.compile(r"\.(\d+)(.*)")
 
+# Python 3.6 strptime with '%z' doesn't support timezone offsets with : in it. This matches the offset at the end so
+# the code can remove the : from it.
+_DATETIME_TZ_OFFSET_PATTERN = re.compile(r"(?P<offset>\+|\-)(?P<hours>\d{1,2}):(?P<minutes>\d{1,2})$")
+
 # Need to extract the Day, Hour, Minute, Second fields from a XML Duration format. Slightly modified from the below.
 # Has named capturing groups, no years or months are allowed and the seconds can only be up to 7 decimal places.
 # https://stackoverflow.com/questions/52644699/validate-a-xsduration-using-a-regular-expression-in-javascript
@@ -177,6 +181,19 @@ def _deserialize_datetime(
     else:
         # No fractional seconds, just use strptime on the original value.
         datetime_str = value
+
+    offset_match = _DATETIME_TZ_OFFSET_PATTERN.search(datetime_str)
+    if offset_match:
+        matches = offset_match.groupdict()
+        offset = matches["offset"]
+        hours = int(matches["hours"])
+        minutes = int(matches["minutes"])
+
+        datetime_str = f"{datetime_str[:-len(offset_match.group())]}{offset}{hours:02}{minutes:02}"
+
+    elif datetime_str.endswith("Z"):
+        # Python 3.6 doesn't support '%z' matching 'Z' at the end of a string.
+        datetime_str = datetime_str[:-1] + "+0000"
 
     try:
         dt = PSDateTime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S.%f%z")
