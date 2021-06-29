@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "psrpcore"
-version = "0.0.1"
+version = "0.1.0"
 description = "Core components for the PowerShell Remoting Protocol"
 authors = ["Jordan Borean <jborean93@gmail.com>"]
 license = "MIT"
@@ -20,7 +20,11 @@ black = "^21.6b0"
 pytest = "*"
 pytest-cov = "*"
 tox = "*"
-xmldiff = "^2.4"
+xmldiff = "*"
+mypy = "*"
+isort = "*"
+pre-commit = "*"
+types-cryptography = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -32,7 +36,7 @@ junit_family = "xunit2"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = lint,py36,py37,py38,py39
+envlist = sanity,py36,py37,py38,py39
 skip_missing_interpreters = true
 isolated_build = True
 
@@ -46,9 +50,11 @@ commands_pre =
 commands =
     poetry run python -m pytest -v --cov psrpcore --cov-report term-missing
 
-[testenv:lint]
+[testenv:sanity]
 commands =
-    poetry run python -m black --check .
+    poetry run python -m black . --check
+    poetry run python -m isort . --check-only
+    poetry run python -m mypy .
 """
 
 [tool.black]
@@ -67,3 +73,19 @@ exclude = '''
   | dist
 )/
 '''
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+exclude = "tests/"
+show_error_codes = true
+show_column_numbers = true
+disallow_any_unimported = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_redundant_casts = true
+warn_unused_ignores = true

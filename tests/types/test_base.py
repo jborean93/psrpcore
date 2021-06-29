@@ -2,23 +2,14 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
-import psrpcore.types._ps_base as ps_base
-import pytest
 import re
 import xml.etree.ElementTree as ElementTree
 
-from psrpcore._serializer import (
-    deserialize,
-    serialize,
-)
+import pytest
 
-from psrpcore.types import (
-    PSCustomObject,
-    PSInt,
-    PSInt64,
-    PSString,
-    PSUInt,
-)
+import psrpcore.types._base as ps_base
+from psrpcore.types import PSCustomObject, PSInt, PSString, PSUInt
+from psrpcore.types._serializer import deserialize, serialize
 
 
 def test_ps_note_property_set_value():
@@ -165,22 +156,21 @@ def test_ps_script_property_setter_without_getter():
 
 
 def test_ps_object_with_script_property():
+    @ps_base.PSType(
+        type_names=["ScriptablePSObject"],
+        extended_properties=[
+            ps_base.PSScriptProperty(
+                "ScriptMandatory", lambda s: s.world, lambda s, v: setattr(s, "world", v), mandatory=True
+            ),
+            ps_base.PSNoteProperty("NoteProperty", value="note value"),
+            ps_base.PSScriptProperty("ScriptProperty", lambda s: s.test, ps_type=PSInt),
+            ps_base.PSScriptProperty("ScriptOptional", lambda s: None, optional=True),
+            ps_base.PSScriptProperty(
+                "ScriptToNote", lambda s: s.NoteProperty, lambda s, v: setattr(s, "NoteProperty", v)
+            ),
+        ],
+    )
     class ScriptablePSObject(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["ScriptablePSObject"],
-            extended_properties=[
-                ps_base.PSScriptProperty(
-                    "ScriptMandatory", lambda s: s.world, lambda s, v: setattr(s, "world", v), mandatory=True
-                ),
-                ps_base.PSNoteProperty("NoteProperty", value="note value"),
-                ps_base.PSScriptProperty("ScriptProperty", lambda s: s.test, ps_type=PSInt),
-                ps_base.PSScriptProperty("ScriptOptional", lambda s: None, optional=True),
-                ps_base.PSScriptProperty(
-                    "ScriptToNote", lambda s: s.NoteProperty, lambda s, v: setattr(s, "NoteProperty", v)
-                ),
-            ],
-        )
-
         @property
         def test(self):
             return "1"
@@ -255,18 +245,17 @@ def test_ps_object_with_script_property():
 
 
 def test_ps_object_with_aliases():
+    @ps_base.PSType(
+        type_names=["AliasPSObject"],
+        extended_properties=[
+            ps_base.PSNoteProperty("NoteProperty", mandatory=True),
+            ps_base.PSAliasProperty("AliasToNote", "NoteProperty"),
+            ps_base.PSAliasProperty("AliasWithType", "NoteProperty", ps_type=PSInt),
+            ps_base.PSAliasProperty("AliasToAttr", "test"),
+            ps_base.PSAliasProperty("AliasOptional", "none", optional=True),
+        ],
+    )
     class AliasPSObject(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["AliasPSObject"],
-            extended_properties=[
-                ps_base.PSNoteProperty("NoteProperty", mandatory=True),
-                ps_base.PSAliasProperty("AliasToNote", "NoteProperty"),
-                ps_base.PSAliasProperty("AliasWithType", "NoteProperty", ps_type=PSInt),
-                ps_base.PSAliasProperty("AliasToAttr", "test"),
-                ps_base.PSAliasProperty("AliasOptional", "none", optional=True),
-            ],
-        )
-
         def __str__(self):
             return self.__class__.__name__
 
@@ -323,17 +312,18 @@ def test_ps_object_with_aliases():
 
 
 def test_ps_object_invalid_init_args():
+    @ps_base.PSType(
+        type_names=["MyPSObject"],
+        adapted_properties=[
+            ps_base.PSNoteProperty("Property1"),
+        ],
+        extended_properties=[
+            ps_base.PSNoteProperty("Property2"),
+            ps_base.PSNoteProperty("Property3", value="default value"),
+        ],
+    )
     class MyPSObject(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["MyPSObject"],
-            adapted_properties=[
-                ps_base.PSNoteProperty("Property1"),
-            ],
-            extended_properties=[
-                ps_base.PSNoteProperty("Property2"),
-                ps_base.PSNoteProperty("Property3", value="default value"),
-            ],
-        )
+        pass
 
     expected = re.escape("takes 4 positional arguments but 5 were given")
     with pytest.raises(TypeError, match=expected):
@@ -349,17 +339,16 @@ def test_ps_object_invalid_init_args():
 
 
 def test_ps_object_shadowed_property():
+    @ps_base.PSType(
+        type_names=["MyPSShadowedObject"],
+        adapted_properties=[
+            ps_base.PSNoteProperty("Property"),
+        ],
+        extended_properties=[
+            ps_base.PSNoteProperty("Property"),
+        ],
+    )
     class MyPSShadowedObject(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["MyPSShadowedObject"],
-            adapted_properties=[
-                ps_base.PSNoteProperty("Property"),
-            ],
-            extended_properties=[
-                ps_base.PSNoteProperty("Property"),
-            ],
-        )
-
         def __str__(self):
             return "mock"
 
@@ -392,16 +381,15 @@ def test_ps_object_shadowed_property():
 
 
 def test_ps_object_optional():
+    @ps_base.PSType(
+        type_names=["OptionalPSObject"],
+        extended_properties=[
+            ps_base.PSNoteProperty("Optional", optional=True),
+            ps_base.PSNoteProperty("NoDefault"),
+            ps_base.PSNoteProperty("OptionalSet", optional=True),
+        ],
+    )
     class OptionalPSObject(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["OptionalPSObject"],
-            extended_properties=[
-                ps_base.PSNoteProperty("Optional", optional=True),
-                ps_base.PSNoteProperty("NoDefault"),
-                ps_base.PSNoteProperty("OptionalSet", optional=True),
-            ],
-        )
-
         def __str__(self):
             return "mock"
 
@@ -431,15 +419,14 @@ def test_ps_object_optional():
 
 
 def test_ps_object_mandatory():
+    @ps_base.PSType(
+        type_names=["MandatoryPSObject"],
+        extended_properties=[
+            ps_base.PSNoteProperty("Mandatory", mandatory=True),
+            ps_base.PSNoteProperty("MandatoryTyped", mandatory=True, ps_type=PSUInt),
+        ],
+    )
     class MandatoryPSObject(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["MandatoryPSObject"],
-            extended_properties=[
-                ps_base.PSNoteProperty("Mandatory", mandatory=True),
-                ps_base.PSNoteProperty("MandatoryTyped", mandatory=True, ps_type=PSUInt),
-            ],
-        )
-
         def __str__(self):
             # Ensure our serialization has a common value.
             return "mock"
@@ -491,15 +478,14 @@ def test_ps_object_mandatory():
 
 
 def test_ps_object_with_init():
+    @ps_base.PSType(
+        type_names=["ObjectWithInit"],
+        extended_properties=[
+            ps_base.PSNoteProperty("Property"),
+            ps_base.PSNoteProperty("Mandatory", mandatory=True),
+        ],
+    )
     class ObjectWithInit(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["ObjectWithInit"],
-            extended_properties=[
-                ps_base.PSNoteProperty("Property"),
-                ps_base.PSNoteProperty("Mandatory", mandatory=True),
-            ],
-        )
-
         def __init__(self, value):
             self.value = value
 
@@ -519,15 +505,14 @@ def test_ps_object_with_multi_inheritance():
         def __init__(self):
             self.value = "other"
 
+    @ps_base.PSType(
+        type_names=["MultiObj"],
+        extended_properties=[
+            ps_base.PSNoteProperty("Mandatory", mandatory=True),
+            ps_base.PSNoteProperty("Property"),
+        ],
+    )
     class MultiObj(ps_base.PSObject, OtherObj):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["MultiObj"],
-            extended_properties=[
-                ps_base.PSNoteProperty("Mandatory", mandatory=True),
-                ps_base.PSNoteProperty("Property"),
-            ],
-        )
-
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             OtherObj.__init__(self)  # Needed to MultiObj __init__ is called.
@@ -547,17 +532,19 @@ def test_ps_object_with_multi_inheritance():
 
 
 def test_ps_object_init_with_nested_inheritance():
+    @ps_base.PSType(["EmptyParentPSObject"])
     class EmptyParentPSObject(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(["EmptyParentPSObject"])
+        pass
 
+    @ps_base.PSType(
+        type_names=["YounglingPSObject"],
+        extended_properties=[
+            ps_base.PSNoteProperty("Property"),
+            ps_base.PSNoteProperty("Mandatory", mandatory=True),
+        ],
+    )
     class YounglingPSObject(EmptyParentPSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["YounglingPSObject"],
-            extended_properties=[
-                ps_base.PSNoteProperty("Property"),
-                ps_base.PSNoteProperty("Mandatory", mandatory=True),
-            ],
-        )
+        pass
 
     assert YounglingPSObject.PSObject.type_names == ["YounglingPSObject", "EmptyParentPSObject", "System.Object"]
     assert EmptyParentPSObject.PSObject.type_names == ["EmptyParentPSObject", "System.Object"]
@@ -584,37 +571,38 @@ def test_ps_object_init_with_nested_inheritance():
 
 
 def test_ps_object_init_properties_nested():
+    @ps_base.PSType(
+        type_names=["Nested1"],
+        adapted_properties=[
+            ps_base.PSNoteProperty("Adapted1Mandatory", mandatory=True),
+            ps_base.PSNoteProperty("Adapted1"),
+        ],
+        extended_properties=[
+            ps_base.PSNoteProperty("Extended1", ps_type=PSInt),
+        ],
+    )
     class Nested1(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["Nested1"],
-            adapted_properties=[
-                ps_base.PSNoteProperty("Adapted1Mandatory", mandatory=True),
-                ps_base.PSNoteProperty("Adapted1"),
-            ],
-            extended_properties=[
-                ps_base.PSNoteProperty("Extended1", ps_type=PSInt),
-            ],
-        )
+        pass
 
+    @ps_base.PSType(
+        type_names=["Nested2"],
+        extended_properties=[
+            ps_base.PSNoteProperty("Extended2", mandatory=True),
+            ps_base.PSNoteProperty("Extended2Optional", optional=True),
+        ],
+    )
     class Nested2(Nested1):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["Nested2"],
-            extended_properties=[
-                ps_base.PSNoteProperty("Extended2", mandatory=True),
-                ps_base.PSNoteProperty("Extended2Optional", optional=True),
-            ],
-        )
-
         def __str__(self):
             return self.Adapted1Mandatory
 
+    @ps_base.PSType(
+        type_names=["Nested3"],
+        extended_properties=[
+            ps_base.PSNoteProperty("Extended3"),
+        ],
+    )
     class Nested3(Nested2):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["Nested3"],
-            extended_properties=[
-                ps_base.PSNoteProperty("Extended3"),
-            ],
-        )
+        pass
 
     assert Nested1.PSObject.type_names == ["Nested1", "System.Object"]
     assert len(Nested1.PSObject.adapted_properties) == 2
@@ -683,20 +671,20 @@ def test_ps_object_init_properties_nested():
 
 
 def test_ps_object_init_with_parent_init_inheritance():
+    @ps_base.PSType(["OtherPSObject"])
     class OtherPSObject(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(["OtherPSObject"])
-
         def __init__(self, value):
             self.value = value
 
+    @ps_base.PSType(
+        type_names=["GrandPSObject"],
+        extended_properties=[
+            ps_base.PSNoteProperty("Property"),
+            ps_base.PSNoteProperty("Mandatory", mandatory=True),
+        ],
+    )
     class GrandPSObject(OtherPSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["GrandPSObject"],
-            extended_properties=[
-                ps_base.PSNoteProperty("Property"),
-                ps_base.PSNoteProperty("Mandatory", mandatory=True),
-            ],
-        )
+        pass
 
     # Needs to be a direct descendant to get the auto __init__ function
     with pytest.raises(TypeError, match="got an unexpected keyword argument 'Property'"):
@@ -751,509 +739,6 @@ def test_ps_object_dict():
 
     with pytest.raises(AttributeError):
         obj.other
-
-
-def test_ps_integer_base_instantiation():
-    expected = re.escape(
-        "Type PSIntegerBase cannot be instantiated; it can be used only as a base class for integer " "types."
-    )
-    with pytest.raises(TypeError, match=expected):
-        ps_base.PSIntegerBase(1)
-
-
-def test_ps_enum_base_instantiation():
-    expected = re.escape(
-        "Type PSEnumBase cannot be instantiated; it can be used only as a base class for enum " "types."
-    )
-    with pytest.raises(TypeError, match=expected):
-        ps_base.PSEnumBase(1)
-
-
-def test_ps_flag_base_instantiation():
-    expected = re.escape(
-        "Type PSFlagBase cannot be instantiated; it can be used only as a base class for enum " "types."
-    )
-    with pytest.raises(TypeError, match=expected):
-        ps_base.PSFlagBase(1)
-
-
-def test_ps_enum_invalid_meta():
-    expected = re.escape(
-        "Invalid PSObject type 'PSObjectMeta' for 'test_ps_enum_invalid_meta.<locals>.BadEnum', "
-        "must be 'PSObjectMetaEnum'"
-    )
-    with pytest.raises(TypeError, match=expected):
-
-        class BadEnum(ps_base.PSEnumBase, PSInt):
-            PSObject = ps_base.PSObjectMeta([])
-
-
-@pytest.mark.parametrize("rehydrate", [True, False])
-def test_ps_enum(rehydrate):
-    type_name = "MyEnumRehydrated" if rehydrate else "MyEnum"
-
-    class EnumTest(ps_base.PSEnumBase, PSInt):
-        PSObject = ps_base.PSObjectMetaEnum(type_names=[f"System.{type_name}"], rehydrate=rehydrate)
-
-        none = 0
-        Value1 = 1
-        Value2 = 2
-        Value3 = 3
-
-    assert str(EnumTest.none) == "None"
-    assert repr(EnumTest.none) == "EnumTest.none"
-    assert str(EnumTest.Value1) == "Value1"
-    assert repr(EnumTest.Value1) == "EnumTest.Value1"
-    assert str(EnumTest.Value2) == "Value2"
-    assert str(EnumTest.Value3) == "Value3"
-
-    val = EnumTest.Value1
-    assert isinstance(val, ps_base.PSObject)
-    assert isinstance(val, ps_base.PSEnumBase)
-    assert isinstance(val, PSInt)
-    assert isinstance(val, int)
-
-    element = serialize(val)
-
-    actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == f'<Obj RefId="0">'
-        f"<I32>1</I32>"
-        f'<TN RefId="0">'
-        f"<T>System.{type_name}</T>"
-        f"<T>System.Enum</T>"
-        f"<T>System.ValueType</T>"
-        f"<T>System.Object</T>"
-        f"</TN>"
-        f"<ToString>Value1</ToString>"
-        f"</Obj>"
-    )
-
-    actual = deserialize(element)
-    assert actual == val
-    assert str(actual) == "Value1"
-    assert isinstance(actual, ps_base.PSObject)
-    assert isinstance(actual, PSInt)
-    assert isinstance(actual, int)
-
-    # Without hydration we just get the primitive value back
-    base_types = [f"System.{type_name}", "System.Enum", "System.ValueType", "System.Object"]
-    if not rehydrate:
-        base_types = [f"Deserialized.{t}" for t in base_types]
-    assert actual.PSTypeNames == base_types
-
-    if rehydrate:
-        assert isinstance(actual, ps_base.PSEnumBase)
-        assert isinstance(actual, EnumTest)
-
-    else:
-        assert not isinstance(actual, ps_base.PSEnumBase)
-        assert not isinstance(actual, EnumTest)
-
-
-@pytest.mark.parametrize("rehydrate", [True, False])
-def test_ps_enum_unsigned_type(rehydrate):
-    type_name = "EnumUIntRehydrated" if rehydrate else "EnumUInt"
-
-    class EnumTest(ps_base.PSEnumBase, PSUInt):
-        PSObject = ps_base.PSObjectMetaEnum(type_names=[f"System.{type_name}"], rehydrate=rehydrate)
-
-        none = 0
-        Value1 = 1
-        Value2 = 2
-        Value3 = 3
-
-    assert str(EnumTest.none) == "None"
-    assert str(EnumTest.Value1) == "Value1"
-    assert str(EnumTest.Value2) == "Value2"
-    assert str(EnumTest.Value3) == "Value3"
-
-    val = EnumTest.Value1
-    assert isinstance(val, ps_base.PSObject)
-    assert isinstance(val, ps_base.PSEnumBase)
-    assert isinstance(val, PSUInt)
-    assert isinstance(val, int)
-
-    element = serialize(val)
-
-    actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == f'<Obj RefId="0">'
-        f"<U32>1</U32>"
-        f'<TN RefId="0">'
-        f"<T>System.{type_name}</T>"
-        f"<T>System.Enum</T>"
-        f"<T>System.ValueType</T>"
-        f"<T>System.Object</T>"
-        f"</TN>"
-        f"<ToString>Value1</ToString>"
-        f"</Obj>"
-    )
-
-    actual = deserialize(element)
-    assert actual == val
-    assert str(actual) == "Value1"
-    assert isinstance(actual, ps_base.PSObject)
-    assert isinstance(actual, PSUInt)
-    assert isinstance(actual, int)
-
-    # Without hydration we just get the primitive value back
-    base_types = [f"System.{type_name}", "System.Enum", "System.ValueType", "System.Object"]
-    if not rehydrate:
-        base_types = [f"Deserialized.{t}" for t in base_types]
-    assert actual.PSTypeNames == base_types
-
-    if rehydrate:
-        assert isinstance(actual, ps_base.PSEnumBase)
-        assert isinstance(actual, EnumTest)
-
-    else:
-        assert not isinstance(actual, ps_base.PSEnumBase)
-        assert not isinstance(actual, EnumTest)
-
-
-@pytest.mark.parametrize("rehydrate", [True, False])
-def test_ps_enum_extended_properties(rehydrate):
-    type_name = "EnumExtendedRehydrated" if rehydrate else "EnumExtended"
-
-    class EnumTest(ps_base.PSEnumBase, PSInt64):
-        PSObject = ps_base.PSObjectMetaEnum(type_names=[f"System.{type_name}"], rehydrate=rehydrate)
-
-        none = 0
-        Value1 = 1
-        Value2 = 2
-        Value3 = 3
-
-    assert str(EnumTest.none) == "None"
-    assert str(EnumTest.Value1) == "Value1"
-    assert str(EnumTest.Value2) == "Value2"
-    assert str(EnumTest.Value3) == "Value3"
-
-    val = EnumTest.none
-    val.PSObject.extended_properties.append(ps_base.PSNoteProperty("Test café"))
-    val["Test café"] = "café"
-    assert isinstance(val, ps_base.PSObject)
-    assert isinstance(val, ps_base.PSEnumBase)
-    assert isinstance(val, PSInt64)
-    assert isinstance(val, int)
-
-    element = serialize(val)
-
-    actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == f'<Obj RefId="0">'
-        f"<I64>0</I64>"
-        f'<TN RefId="0">'
-        f"<T>System.{type_name}</T>"
-        f"<T>System.Enum</T>"
-        f"<T>System.ValueType</T>"
-        f"<T>System.Object</T>"
-        f"</TN>"
-        f"<MS>"
-        f'<S N="Test café">café</S>'
-        f"</MS>"
-        f"<ToString>None</ToString>"
-        f"</Obj>"
-    )
-
-    actual = deserialize(element)
-    assert actual == val
-    assert val["Test café"] == "café"
-    assert str(actual) == "None"
-    assert isinstance(actual, ps_base.PSObject)
-    assert isinstance(actual, PSInt64)
-    assert isinstance(actual, int)
-
-    # Without hydration we just get the primitive value back
-    base_types = [f"System.{type_name}", "System.Enum", "System.ValueType", "System.Object"]
-    if not rehydrate:
-        base_types = [f"Deserialized.{t}" for t in base_types]
-    assert actual.PSTypeNames == base_types
-
-    if rehydrate:
-        assert isinstance(actual, ps_base.PSEnumBase)
-        assert isinstance(actual, EnumTest)
-
-    else:
-        assert not isinstance(actual, ps_base.PSEnumBase)
-        assert not isinstance(actual, EnumTest)
-
-
-@pytest.mark.parametrize("rehydrate", [True, False])
-def test_ps_flags(rehydrate):
-    type_name = "FlagHydrated" if rehydrate else "Flag"
-
-    class FlagTest(ps_base.PSFlagBase, PSInt):
-        PSObject = ps_base.PSObjectMetaEnum(type_names=[f"System.{type_name}"], rehydrate=rehydrate)
-
-        none = 0
-        Flag1 = 1
-        Flag2 = 2
-        Flag3 = 4
-
-    assert str(FlagTest.none) == "None"
-    assert repr(FlagTest.none) == "FlagTest.none"
-    assert str(FlagTest.Flag1) == "Flag1"
-    assert repr(FlagTest.Flag1) == "FlagTest.Flag1"
-    assert str(FlagTest.Flag2) == "Flag2"
-    assert str(FlagTest.Flag3) == "Flag3"
-    assert str(FlagTest.Flag1 | FlagTest.Flag3) == "Flag1, Flag3"
-    assert repr(FlagTest.Flag1 | FlagTest.Flag3) == "FlagTest.Flag1 | FlagTest.Flag3"
-
-    val = FlagTest.Flag1 | FlagTest.Flag3
-
-    assert isinstance(val, ps_base.PSObject)
-    assert isinstance(val, ps_base.PSEnumBase)
-    assert isinstance(val, ps_base.PSFlagBase)
-    assert isinstance(val, PSInt)
-    assert isinstance(val, int)
-
-    element = serialize(val)
-
-    actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == f'<Obj RefId="0">'
-        f"<I32>5</I32>"
-        f'<TN RefId="0">'
-        f"<T>System.{type_name}</T>"
-        f"<T>System.Enum</T>"
-        f"<T>System.ValueType</T>"
-        f"<T>System.Object</T>"
-        f"</TN>"
-        f"<ToString>Flag1, Flag3</ToString>"
-        f"</Obj>"
-    )
-
-    actual = deserialize(element)
-    assert actual == val
-    assert str(actual) == "Flag1, Flag3"
-    assert isinstance(actual, ps_base.PSObject)
-    assert isinstance(actual, PSInt)
-    assert isinstance(actual, int)
-
-    # Without hydration we just get the primitive value back
-    base_types = [f"System.{type_name}", "System.Enum", "System.ValueType", "System.Object"]
-    if not rehydrate:
-        base_types = [f"Deserialized.{t}" for t in base_types]
-    assert actual.PSTypeNames == base_types
-
-    if rehydrate:
-        assert isinstance(actual, ps_base.PSEnumBase)
-        assert isinstance(actual, ps_base.PSFlagBase)
-        assert isinstance(actual, FlagTest)
-
-    else:
-        assert not isinstance(actual, ps_base.PSEnumBase)
-        assert not isinstance(actual, ps_base.PSFlagBase)
-        assert not isinstance(actual, FlagTest)
-
-
-def test_ps_flags_operators():
-    class FlagTest(ps_base.PSFlagBase, PSInt):
-        PSObject = ps_base.PSObjectMetaEnum(type_names=["System.FlagTest", "System.Object"])
-
-        none = 0
-        Flag1 = 1
-        Flag2 = 2
-        Flag3 = 4
-        Flag4 = 8
-
-    val = FlagTest.none
-    assert str(val) == "None"
-
-    val |= FlagTest.Flag1 | FlagTest.Flag2
-    assert isinstance(val, FlagTest)
-    assert str(val) == "Flag1, Flag2"
-    assert val == 3
-
-    val &= FlagTest.Flag1
-    assert isinstance(val, FlagTest)
-    assert str(val) == "Flag1"
-    assert val == 1
-
-    val = (FlagTest.Flag1 | FlagTest.Flag2) ^ FlagTest.Flag1
-    assert isinstance(val, FlagTest)
-    assert str(val) == "Flag2"
-    assert val == 2
-
-    val = val << 2
-    assert isinstance(val, FlagTest)
-    assert str(val) == "Flag4"
-    assert val == 8
-
-    val = val >> 1
-    assert isinstance(val, FlagTest)
-    assert str(val) == "Flag3"
-    assert val == 4
-
-    val &= ~val
-    assert isinstance(val, FlagTest)
-    assert str(val) == "None"
-    assert val == 0
-
-
-def test_ps_enum_not_inheriting_int_base():
-    expected = re.escape(
-        "Enum type test_ps_enum_not_inheriting_int_base.<locals>.InvalidEnum must also inherit " "a PSIntegerBase type"
-    )
-    with pytest.raises(TypeError, match=expected):
-
-        class InvalidEnum(ps_base.PSEnumBase, PSString):
-            PSObject = ps_base.PSObjectMetaEnum(type_names=["Test"])
-            none = 0
-
-
-def test_ps_enum_to_ps_int():
-    class EnumToInt(ps_base.PSEnumBase, PSInt):
-        PSObject = ps_base.PSObjectMetaEnum(type_names=["System.EnumToInt", "System.Object"])
-
-        none = 0
-        Value1 = 1
-
-    value = PSInt(EnumToInt.Value1)
-    assert type(value) == PSInt
-    assert value == 1
-
-
-def test_ps_generic_instantiation():
-    expected = re.escape(
-        "Type PSGenericBase cannot be instantiated; it can be used only as a base class for generic " "types."
-    )
-    with pytest.raises(TypeError, match=expected):
-        ps_base.PSGenericBase()
-
-
-def test_ps_generic_child_instantiation():
-    class MyGenericType(ps_base.PSGenericBase):
-        PSObject = ps_base.PSObjectMetaGeneric(
-            type_names=["MyGenericType"],
-            required_types=1,
-            extended_properties=[
-                ps_base.PSNoteProperty("Prop", mandatory=True),
-            ],
-        )
-
-    expected = re.escape(
-        "Type MyGenericType cannot be instantiated; use MyGenericType[...]() to define the 1 generic " "type required."
-    )
-    with pytest.raises(TypeError, match=expected):
-        MyGenericType()
-
-    expected = re.escape("Type list to MyGenericType[...] must be 1 or more PSObject types")
-    with pytest.raises(TypeError, match=expected):
-        MyGenericType[""]
-
-    expected = re.escape("Type list to MyGenericType[...] must contain 1 PSObject type")
-    with pytest.raises(TypeError, match=expected):
-        MyGenericType[PSInt, PSString]
-
-    generic_obj = MyGenericType[PSInt]
-    assert generic_obj.PSObject.type_names == ["MyGenericType`1[[System.Int32]]", "System.Object"]
-    assert generic_obj.__name__ == "MyGenericType_PSInt"
-
-    expected = re.escape("__init__() missing 1 required arguments: 'Prop'")
-    with pytest.raises(TypeError, match=expected):
-        generic_obj()
-
-    obj = generic_obj("test")
-    assert obj.PSObject.type_names == ["MyGenericType`1[[System.Int32]]", "System.Object"]
-    assert isinstance(obj, ps_base.PSObject)
-    assert isinstance(obj, ps_base.PSGenericBase)
-    assert isinstance(obj, MyGenericType)
-
-    element = serialize(obj)
-    actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0">'
-        '<TN RefId="0"><T>MyGenericType`1[[System.Int32]]</T><T>System.Object</T></TN>'
-        "<MS>"
-        '<S N="Prop">test</S>'
-        "</MS>"
-        "</Obj>"
-    )
-
-    obj = deserialize(element)
-    assert isinstance(obj, ps_base.PSObject)
-    assert not isinstance(obj, ps_base.PSGenericBase)
-    assert not isinstance(obj, MyGenericType)
-    assert obj.Prop == "test"
-    assert obj.PSObject.type_names == ["Deserialized.MyGenericType`1[[System.Int32]]", "Deserialized.System.Object"]
-
-
-def test_ps_generic_ps_object():
-    class MyGenericPSObject(ps_base.PSGenericBase):
-        PSObject = ps_base.PSObjectMetaGeneric(
-            type_names=["MyGenericPSObject"],
-            required_types=1,
-        )
-
-    class MyPSObject(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            [],
-            extended_properties=[ps_base.PSNoteProperty("Test")],
-        )
-
-    obj = MyGenericPSObject[MyPSObject]()
-    assert obj.PSObject.type_names == ["MyGenericPSObject`1[[System.Management.Automation.PSObject]]", "System.Object"]
-
-    element = serialize(obj)
-    actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0">'
-        '<TN RefId="0"><T>MyGenericPSObject`1[[System.Management.Automation.PSObject]]</T><T>System.Object</T></TN>'
-        "</Obj>"
-    )
-
-
-def test_ps_generic_object():
-    class MyGenericObject(ps_base.PSGenericBase):
-        PSObject = ps_base.PSObjectMetaGeneric(
-            type_names=["MyGenericObject"],
-            required_types=1,
-        )
-
-    obj = MyGenericObject[ps_base.PSObject]()
-    assert obj.PSObject.type_names == ["MyGenericObject`1[[System.Object]]", "System.Object"]
-
-    element = serialize(obj)
-    actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0">'
-        '<TN RefId="0"><T>MyGenericObject`1[[System.Object]]</T><T>System.Object</T></TN>'
-        "</Obj>"
-    )
-
-
-def test_ps_dict_instantiation():
-    expected = re.escape(
-        "Type PSDictBase cannot be instantiated; it can be used only as a base class for dictionary " "types."
-    )
-    with pytest.raises(TypeError, match=expected):
-        ps_base.PSDictBase()
-
-
-def test_ps_list_instantiation():
-    expected = re.escape(
-        "Type PSListBase cannot be instantiated; it can be used only as a base class for list " "types."
-    )
-    with pytest.raises(TypeError, match=expected):
-        ps_base.PSListBase()
-
-
-def test_ps_queue_instantiation():
-    expected = re.escape(
-        "Type PSQueueBase cannot be instantiated; it can be used only as a base class for queue " "types."
-    )
-    with pytest.raises(TypeError, match=expected):
-        ps_base.PSQueueBase()
-
-
-def test_ps_stack_instantiation():
-    expected = re.escape(
-        "Type PSStackBase cannot be instantiated; it can be used only as a base class for list " "types."
-    )
-    with pytest.raises(TypeError, match=expected):
-        ps_base.PSStackBase()
 
 
 def test_add_member_properties():
@@ -1335,10 +820,11 @@ def test_add_member_against_existing():
 
 
 def test_add_member_against_object_class():
+    @ps_base.PSType(
+        type_names=["MutatedClass"],
+    )
     class MutatedClass(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["MutatedClass"],
-        )
+        pass
 
     first = MutatedClass()
     assert len(first.PSObject.adapted_properties) == 0
@@ -1395,23 +881,42 @@ def test_ps_instance_from_ps_type():
 
 
 def test_ps_instance_with_deserialized_object():
+    @ps_base.PSType(
+        type_names=["Deserialized.My.Other", "Deserialized.Intermediate", "Deserialzied.Object"],
+    )
     class MyDeserialized1(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["Deserialized.My.Other", "Deserialized.Intermediate", "Deserialzied.Object"],
-        )
+        pass
 
+    @ps_base.PSType(
+        type_names=["Deserialized.Intermediate", "Deserialzied.Object"],
+    )
     class MyDeserialized2(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["Deserialized.Intermediate", "Deserialzied.Object"],
-        )
+        pass
 
+    @ps_base.PSType(
+        type_names=["My.Other", "Intermediate", "ect"],
+    )
     class Serialized(ps_base.PSObject):
-        PSObject = ps_base.PSObjectMeta(
-            type_names=["My.Other", "Intermediate", "ect"],
-        )
+        pass
 
     obj = MyDeserialized1()
     assert ps_base.ps_isinstance(obj, MyDeserialized1)
     assert ps_base.ps_isinstance(obj, MyDeserialized2)
     assert not ps_base.ps_isinstance(obj, Serialized)
     assert ps_base.ps_isinstance(obj, Serialized, ignore_deserialized=True)
+
+
+def test_fail_to_create_ps_type_without_ps_object():
+
+    with pytest.raises(TypeError, match=r"PSType class [\w_\.<>]+ must be a subclass of PSObject"):
+
+        @ps_base.PSType()
+        class MyClass:
+            pass
+
+
+def test_fail_add_member_no_ps_object():
+    expected = re.escape("The passing in object does not contain the required PSObject attribute")
+
+    with pytest.raises(ValueError, match=expected):
+        ps_base.add_note_property("", "test", "value")

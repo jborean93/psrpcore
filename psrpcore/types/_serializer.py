@@ -6,33 +6,30 @@ import base64
 import binascii
 import datetime
 import decimal
+import enum
 import logging
 import queue
 import re
 import typing
 import uuid
+from xml.etree import ElementTree
 
-from xml.etree import (
-    ElementTree,
-)
-
-from psrpcore._crypto import (
-    PSRemotingCrypto,
-)
-
-from psrpcore._exceptions import (
-    MissingCipherError,
-)
-
-from psrpcore.types._complex_types import (
-    PSCustomObject,
+from psrpcore._crypto import PSRemotingCrypto
+from psrpcore._exceptions import MissingCipherError
+from psrpcore.types._base import PSObject, PSObjectMeta, TypeRegistry, add_note_property
+from psrpcore.types._collection import (
     PSDict,
+    PSDictBase,
     PSList,
+    PSListBase,
     PSQueue,
+    PSQueueBase,
     PSStack,
+    PSStackBase,
 )
-
-from psrpcore.types._primitive_types import (
+from psrpcore.types._complex import PSCustomObject
+from psrpcore.types._enum import PSEnumBase, PSFlagBase
+from psrpcore.types._primitive import (
     PSByte,
     PSByteArray,
     PSChar,
@@ -41,34 +38,22 @@ from psrpcore.types._primitive_types import (
     PSDouble,
     PSDuration,
     PSGuid,
-    PSInt16,
     PSInt,
+    PSInt16,
     PSInt64,
     PSSByte,
     PSScriptBlock,
     PSSecureString,
     PSSingle,
     PSString,
-    PSUInt16,
     PSUInt,
+    PSUInt16,
     PSUInt64,
     PSUri,
     PSVersion,
     PSXml,
     _timedelta_total_nanoseconds,
 )
-
-from psrpcore.types._ps_base import (
-    add_note_property,
-    PSDictBase,
-    PSEnumBase,
-    PSListBase,
-    PSObject,
-    PSQueueBase,
-    PSStackBase,
-    TypeRegistry,
-)
-
 
 log = logging.getLogger(__name__)
 
@@ -113,6 +98,7 @@ $""",
 def deserialize(
     value: ElementTree.Element,
     cipher: typing.Optional[PSRemotingCrypto] = None,
+    **kwargs: typing.Any,
 ) -> typing.Optional[typing.Union[bool, PSObject]]:
     """Deserialize CLIXML to a Python object.
 
@@ -121,16 +107,19 @@ def deserialize(
     Args:
         value: The CLIXML XML Element to deserialize to a Python object.
         cipher: The cipher to use when dealing with SecureStrings.
+        kwargs: Optional parameters to sent to the FromPSObjectForRemoting
+            method on classes that use that.
 
     Returns:
         Optional[Union[bool, PSObject]]: The CLIXML as an XML Element object.
     """
-    return _Serializer(cipher).deserialize(value)
+    return _Serializer(cipher, **kwargs).deserialize(value)
 
 
 def serialize(
     value: typing.Optional[typing.Any],
     cipher: typing.Optional[PSRemotingCrypto] = None,
+    **kwargs: typing.Any,
 ) -> ElementTree.Element:
     """Serialize the Python object to CLIXML.
 
@@ -139,11 +128,13 @@ def serialize(
     Args:
         value: The value to serialize.
         cipher: The cipher to use when dealing with SecureStrings.
+        kwargs: Optional parameters to sent to the ToPSObjectForRemoting
+            method on classes that use that.
 
     Returns:
         ElementTree.Element: The CLIXML as an XML Element object.
     """
-    return _Serializer(cipher).serialize(value)
+    return _Serializer(cipher, **kwargs).serialize(value)
 
 
 def _deserialize_datetime(
@@ -243,7 +234,7 @@ def _deserialize_duration(
 
 def _deserialize_secure_string(
     value: str,
-    cipher: PSRemotingCrypto,
+    cipher: typing.Optional[PSRemotingCrypto],
 ) -> PSSecureString:
     """Deserializes a CLIXML SecureString.
 
@@ -280,7 +271,7 @@ def _deserialize_string(
         (str): The Python str value that represents the actual string represented by the CLIXML.
     """
 
-    def rplcr(matchobj):
+    def rplcr(matchobj: "re.Match[bytes]") -> bytes:
         # The matched object is the UTF-16 byte representation of the UTF-8 hex string value. We need to decode the
         # byte str to unicode and then unhexlify that hex string to get the actual bytes of the _x****_ value, e.g.
         # group(0) == b'\x00_\x00x\x000\x000\x000\x00A\x00_'
@@ -300,7 +291,7 @@ def _deserialize_string(
 
 
 def _serialize_datetime(
-    value: typing.Union[PSDateTime, datetime.datetime],
+    value: datetime.datetime,
 ) -> str:
     """Serializes a datetime to a .NET DateTime CLIXML value.
 
@@ -333,7 +324,7 @@ def _serialize_datetime(
 
 
 def _serialize_duration(
-    value: typing.Union[PSDuration, datetime.timedelta],
+    value: datetime.timedelta,
 ) -> str:
     """Serialzies a duration to a .NET TimeSpan CLIXML value.
 
@@ -375,9 +366,26 @@ def _serialize_duration(
     return f"{negative_str}P{days_str}{time_str}"
 
 
+def _serialize_enum_to_string(
+    value: enum.Enum,
+) -> str:
+    flags: typing.List[enum.Enum]
+
+    if isinstance(value, enum.Flag):
+        flags = [f for f in type(value) if f in value]
+    else:
+        flags = [value]
+
+    normalize_none = isinstance(value, (PSEnumBase, PSFlagBase))
+
+    return ", ".join(
+        ["None" if f.name == "none" and normalize_none else f.name for f in flags if f.value != 0 or len(flags) == 1]
+    )
+
+
 def _serialize_secure_string(
     value: PSSecureString,
-    cipher: PSRemotingCrypto,
+    cipher: typing.Optional[PSRemotingCrypto],
 ) -> str:
     """Serializes a string as a .NET SecureString CLIXML value.
 
@@ -399,7 +407,7 @@ def _serialize_secure_string(
 
 
 def _serialize_string(
-    value: typing.Union[PSString, str],
+    value: str,
 ) -> str:
     """Serializes a string like value to a .NET String CLIXML value.
 
@@ -413,7 +421,7 @@ def _serialize_string(
         str: The string value as a valid CLIXML escaped string.
     """
 
-    def rplcr(matchobj):
+    def rplcr(matchobj: "re.Match[str]") -> str:
         surrogate_char = matchobj.group(0)
         byte_char = surrogate_char.encode("utf-16-be")
         hex_char = binascii.hexlify(byte_char).decode().upper()
@@ -444,8 +452,10 @@ class _Serializer:
     def __init__(
         self,
         cipher: typing.Optional[PSRemotingCrypto] = None,
-    ):
+        **kwargs: typing.Any,
+    ) -> None:
         self._cipher = cipher
+        self._kwargs = kwargs
 
         # Used for serialization to store the id() of each object against a unique identifier.
         self._obj_ref_list: typing.List[int] = []
@@ -454,6 +464,11 @@ class _Serializer:
         # Used for deserialization
         self._obj_ref_map: typing.Dict[str, typing.Any] = {}
         self._tn_ref_map: typing.Dict[str, typing.List[str]] = {}
+
+        # The type registry stores this in reverse but there are a few times when this is looked up by type.
+        self._type_to_element: typing.Dict[typing.Type[PSObject], str] = {
+            ps_type: tag for tag, ps_type in TypeRegistry().element_registry.items()
+        }
 
     def serialize(
         self,
@@ -464,9 +479,11 @@ class _Serializer:
         # be serialized.
         value_type = type(value)
         ps_object = getattr(value, "PSObject", None)
+        ps_type: typing.Type[PSObject]  # To satisfy mypy
+        is_enum = isinstance(value, enum.Enum)
 
         if hasattr(value_type, "ToPSObjectForRemoting"):
-            value = value_type.ToPSObjectForRemoting(value)
+            value = value_type.ToPSObjectForRemoting(value, **self._kwargs)
 
             if ps_object and hasattr(value, "PSObject"):
                 value.PSObject.type_names = ps_object.type_names
@@ -483,17 +500,21 @@ class _Serializer:
             element = ElementTree.Element("B")
             element.text = str(value).lower()
 
-        elif isinstance(value, (PSByteArray, bytes)):
-            element = ElementTree.Element(PSByteArray.PSObject.tag)
+        elif isinstance(value, bytes):
+            element = ElementTree.Element(self._type_to_element[PSByteArray])
             element.text = base64.b64encode(value).decode()
 
-        elif isinstance(value, (PSDateTime, datetime.datetime)):
-            element = ElementTree.Element(PSDateTime.PSObject.tag)
+        elif isinstance(value, datetime.datetime):
+            element = ElementTree.Element(self._type_to_element[PSDateTime])
             element.text = _serialize_datetime(value)
 
-        elif isinstance(value, (PSDuration, datetime.timedelta)):
-            element = ElementTree.Element(PSDuration.PSObject.tag)
+        elif isinstance(value, datetime.timedelta):
+            element = ElementTree.Element(self._type_to_element[PSDuration])
             element.text = _serialize_duration(value)
+
+        # We initially serialize the enum based on the raw value.
+        elif is_enum:
+            element = self.serialize(value.value)
 
         # Integer types
         elif isinstance(
@@ -516,30 +537,21 @@ class _Serializer:
                 PSDecimal,
             ),
         ):
-            # Need to test each integral integer type in case we are dealing with an enum. This is needed so we get the
-            # correct tag for the XML element
-            enum_types = [PSByte, PSByte, PSInt16, PSUInt16, PSInt, PSUInt, PSInt64, PSUInt64]
-            for enum_type in enum_types:
-                if isinstance(value, enum_type):
-                    ps_type = enum_type
-                    break
-
+            if isinstance(value, PSObject):
+                ps_type = type(value)
+            elif isinstance(value, int):
+                ps_type = PSInt64 if value > PSInt.MaxValue else PSInt
+            elif isinstance(value, float):
+                ps_type = PSSingle
             else:
-                if isinstance(value, PSObject):
-                    ps_type = type(value)
-                elif isinstance(value, int):
-                    ps_type = PSInt64 if value > PSInt.MaxValue else PSInt
-                elif isinstance(value, float):
-                    ps_type = PSSingle
-                else:
-                    ps_type = PSDecimal
+                ps_type = PSDecimal
 
             # Need to make sure int like types are represented by the int value.
             xml_value = value
             if not isinstance(xml_value, (decimal.Decimal, float)):
                 xml_value = int(xml_value)
 
-            element = ElementTree.Element(ps_type.PSObject.tag)
+            element = ElementTree.Element(self._type_to_element[ps_type])
             element.text = str(xml_value).upper()  # upper() needed for the Double and Single types.
 
         # Naive strings
@@ -556,40 +568,37 @@ class _Serializer:
             else:
                 ps_type = PSGuid
 
-            element = ElementTree.Element(ps_type.PSObject.tag)
+            element = ElementTree.Element(self._type_to_element[ps_type])
             element.text = str(value)
 
         # SecureString that needs encrypting
         elif isinstance(value, PSSecureString):
-            element = ElementTree.Element(PSSecureString.PSObject.tag)
+            element = ElementTree.Element(self._type_to_element[PSSecureString])
             element.text = _serialize_secure_string(value, self._cipher)
 
         # String types that need escaping
-        elif isinstance(
-            value,
-            (
-                str,
-                PSString,  # URI, XML, ScriptBlocks inherit PSString so they are included here.
-            ),
-        ):
+        elif isinstance(value, str):
             if isinstance(value, PSObject):
                 ps_type = type(value)
             else:
                 ps_type = PSString
 
-            element = ElementTree.Element(ps_type.PSObject.tag)
+            try:
+                element_tag = self._type_to_element[ps_type]
+            except KeyError:
+                element_tag = self._type_to_element[PSString]
+
+            element = ElementTree.Element(element_tag)
             element.text = _serialize_string(value)
 
         # These types of objects need to be placed inside a '<Obj></Obj>' entry.
-        is_complex = element is None
-        is_enum = isinstance(value, PSEnumBase)
         is_extended_primitive = (
-            not is_complex
+            element is not None
             and isinstance(value, PSObject)
             and bool(value.PSObject.adapted_properties or value.PSObject.extended_properties)
         )
 
-        if not (is_complex or is_extended_primitive or is_enum):
+        if element is not None and not is_extended_primitive and not is_enum:
             return element
 
         obj_id = id(value)
@@ -600,16 +609,18 @@ class _Serializer:
         self._obj_ref_list.append(obj_id)
         ref_id = self._obj_ref_list.index(obj_id)
 
-        if not is_complex:
+        if element is None:
+            is_complex = True
+            element = ElementTree.Element("Obj", RefId=str(ref_id))
+
+        else:
+            is_complex = False
             sub_element = element
             element = ElementTree.Element("Obj", RefId=str(ref_id))
             element.append(sub_element)
 
-        else:
-            element = ElementTree.Element("Obj", RefId=str(ref_id))
-
         if ps_object is None:
-            # Handle edge cases for known Python container types, otherwise default to a PSCustomObject.
+            # Handle edge cases for known Python container and enum types, otherwise default to a PSCustomObject.
             if isinstance(value, list):
                 ps_object = PSList.PSObject
 
@@ -618,6 +629,12 @@ class _Serializer:
 
             elif isinstance(value, dict):
                 ps_object = PSDict.PSObject
+
+            elif is_enum:
+                # Use the Python type name for a bare enums
+                types = list(PSEnumBase.PSObject.type_names)
+                types.insert(0, f"{value.__module__}.{type(value).__name__}")
+                ps_object = PSObjectMeta(types)
 
             else:
                 ps_object = PSCustomObject.PSObject
@@ -660,14 +677,14 @@ class _Serializer:
                 prop_elements.append(prop_element)
 
         if isinstance(value, (PSStackBase, PSListBase, list)):
-            element_tag = PSStackBase.PSObject.tag if isinstance(value, PSStackBase) else PSListBase.PSObject.tag
+            element_tag = self._type_to_element[PSStack if isinstance(value, PSStackBase) else PSList]
             container_element = ElementTree.SubElement(element, element_tag)
 
             for entry in value:
                 container_element.append(self.serialize(entry))
 
         elif isinstance(value, (PSQueueBase, queue.Queue)):
-            que_element = ElementTree.SubElement(element, PSQueueBase.PSObject.tag)
+            que_element = ElementTree.SubElement(element, self._type_to_element[PSQueue])
 
             while True:
                 try:
@@ -678,7 +695,7 @@ class _Serializer:
                     que_element.append(que_entry)
 
         elif isinstance(value, (PSDictBase, dict)):
-            dct_element = ElementTree.SubElement(element, PSDictBase.PSObject.tag)
+            dct_element = ElementTree.SubElement(element, self._type_to_element[PSDict])
 
             for dct_key, dct_value in value.items():
                 en_element = ElementTree.SubElement(dct_element, "En")
@@ -692,14 +709,20 @@ class _Serializer:
                 en_element.append(s_dct_value)
 
         else:
-            to_string = None if is_extended_primitive and not is_enum else ps_object.to_string
+            to_string = None
+            if is_enum:
+                to_string = _serialize_enum_to_string(value)
+
+            elif not is_extended_primitive:
+                to_string = ps_object.to_string
+
             if to_string:
                 ElementTree.SubElement(element, "ToString").text = to_string
 
             if is_complex and no_props and not isinstance(value, PSObject):
                 # If this was a complex object but no properties were defined we consider this a normal Python
                 # class instance to serialize. We use the instance attributes and properties to create the CLIXML.
-                prop_element = None
+                attr_element = None
                 private_prefix = f"_{type(value).__name__}__"  # Double underscores appear as _{class name}__{name}
                 for prop in dir(value):
                     prop_value = getattr(value, prop)
@@ -712,12 +735,12 @@ class _Serializer:
                     ):
                         continue
 
-                    elif not prop_element:
-                        prop_element = ElementTree.SubElement(element, "MS")
+                    elif not attr_element:
+                        attr_element = ElementTree.SubElement(element, "MS")
 
                     sub_element = self.serialize(prop_value)
                     sub_element.attrib["N"] = _serialize_string(prop)
-                    prop_element.append(sub_element)
+                    attr_element.append(sub_element)
 
         return element
 
@@ -728,79 +751,76 @@ class _Serializer:
         """Deserializes a XML element of the CLIXML value to a Python type."""
         # These types are pure primitive types and we don't need to do anything special when de-serializing
         element_tag = element.tag
+        element_text = element.text or ""
 
         if element.tag == "Ref":
             return self._obj_ref_map[element.attrib["RefId"]]
 
-        if element_tag == "Nil":
+        elif element_tag == "Nil":
             return None
 
         elif element_tag == "B":
             # Technically can be an extended primitive but due to limitations in Python we cannot subclass bool.
-            return element.text.lower() == "true"
+            return element_text.lower() == "true"
 
         elif element_tag == "ToString":
-            return _deserialize_string(element.text)
+            return _deserialize_string(element_text)
 
-        elif element_tag == PSSecureString.PSObject.tag:
-            return _deserialize_secure_string(element.text, self._cipher)
+        ps_type = TypeRegistry().element_registry.get(element_tag, None)
 
-        elif element_tag == PSByteArray.PSObject.tag:
-            return PSByteArray(base64.b64decode(element.text))
+        if ps_type == PSSecureString:
+            return _deserialize_secure_string(element_text, self._cipher)
 
-        elif element_tag == PSChar.PSObject.tag:
-            return PSChar(int(element.text))
+        elif ps_type == PSByteArray:
+            return PSByteArray(base64.b64decode(element_text))
 
-        elif element_tag == PSDateTime.PSObject.tag:
-            return _deserialize_datetime(element.text)
+        elif ps_type == PSChar:
+            return PSChar(int(element_text))
 
-        elif element_tag == PSDuration.PSObject.tag:
-            return _deserialize_duration(element.text)
+        elif ps_type == PSDateTime:
+            return _deserialize_datetime(element_text)
 
-        # Rely on the type to parse the value
-        type_map = {
-            cls.PSObject.tag: cls
-            for cls in [
-                PSByte,
-                PSDecimal,
-                PSDouble,
-                PSGuid,
-                PSInt16,
-                PSInt,
-                PSInt64,
-                PSSByte,
-                PSSingle,
-                PSUInt16,
-                PSUInt,
-                PSUInt64,
-                PSVersion,
-            ]
-        }
-        if element_tag in type_map:
-            return type_map[element_tag](element.text)
+        elif ps_type == PSDuration:
+            return _deserialize_duration(element_text)
+
+        # Integer types
+        elif ps_type in [
+            PSByte,
+            PSDecimal,
+            PSDouble,
+            PSGuid,
+            PSInt16,
+            PSInt,
+            PSInt64,
+            PSSByte,
+            PSSingle,
+            PSUInt16,
+            PSUInt,
+            PSUInt64,
+            PSVersion,
+        ]:
+            return ps_type(element.text)
 
         # String types
-        type_map = {
-            cls.PSObject.tag: cls
-            for cls in [
-                PSScriptBlock,
-                PSString,
-                PSUri,
-                PSXml,
-            ]
-        }
-        if element_tag in type_map:
+        if ps_type in [
+            PSScriptBlock,
+            PSString,
+            PSUri,
+            PSXml,
+        ]:
             # Empty strings are `<S />` which means element.text is None.
-            return type_map[element_tag](_deserialize_string(element.text or ""))
+            return ps_type(_deserialize_string(element_text))
 
         # By now we should have an Obj, if not something has gone wrong.
         if element_tag != "Obj":
             raise ValueError(f"Unknown element found: {element.tag}")
 
-        type_names = [e.text for e in element.findall("TN/T")]
+        type_names = [e.text or "" for e in element.findall("TN/T")]
         if type_names:
-            tn_ref_id = element.find("TN").attrib["RefId"]
-            self._tn_ref_map[tn_ref_id] = type_names
+            tn_ref = element.find("TN")
+            if tn_ref is not None:
+                tn_ref_id = tn_ref.attrib["RefId"]
+                self._tn_ref_map[tn_ref_id] = type_names
 
         else:
             tn_ref = element.find("TNRef")
@@ -810,13 +830,22 @@ class _Serializer:
 
         # Build the starting value based on the registered types. This could either be a rehydrated class that has been
         # registered with the TypeRegistry or just a blank PSObject.
-        value = TypeRegistry().rehydrate(type_names)
-        original_type_names = value.PSTypeNames
+        rehydrated_value = TypeRegistry().rehydrate(type_names)
+        value: PSObject
+        original_type_names: typing.List[str] = []
 
-        props = {
+        if isinstance(rehydrated_value, PSObject):
+            value = rehydrated_value
+            original_type_names = rehydrated_value.PSObject.type_names
+
+        elif issubclass(rehydrated_value, (PSEnumBase, PSFlagBase)):
+            original_type_names = rehydrated_value.PSObject.type_names
+
+        props: typing.Dict[str, typing.Optional[ElementTree.Element]] = {
             "adapted_properties": None,
             "extended_properties": None,
         }
+        to_string = None
         for obj_entry in element:
             if obj_entry.tag == "Props":
                 props["adapted_properties"] = obj_entry
@@ -825,45 +854,65 @@ class _Serializer:
                 props["extended_properties"] = obj_entry
 
             elif obj_entry.tag == "ToString":
-                value.PSObject.to_string = self.deserialize(obj_entry)
+                to_string = self.deserialize(obj_entry)
 
-            elif obj_entry.tag == PSDictBase.PSObject.tag:
-                raw_values = dict(
-                    [
-                        (
-                            self.deserialize(dict_entry.find('*/[@N="Key"]')),
-                            self.deserialize(dict_entry.find('*/[@N="Value"]')),
-                        )
-                        for dict_entry in obj_entry
-                    ]
-                )
+            elif obj_entry.tag == self._type_to_element[PSDict]:
+                raw_dict = {}
+                for dict_entry in obj_entry:
+                    dict_key = dict_entry.find('*/[@N="Key"]')
+                    dict_value = dict_entry.find('*/[@N="Value"]')
+                    if dict_key is None:
+                        raise ValueError("Failed to find dict Key attribute")
 
-                dict_type = type(value) if isinstance(value, PSDictBase) else PSDict
-                value = dict_type(raw_values)
+                    if dict_value is None:
+                        raise ValueError("Failed to find dict Value attribute")
 
-            elif obj_entry.tag == PSStackBase.PSObject.tag:
-                raw_values = [self.deserialize(stack_entry) for stack_entry in obj_entry]
-                stack_type = type(value) if isinstance(value, PSStackBase) else PSStack
-                value = stack_type(raw_values)
+                    raw_dict[self.deserialize(dict_key)] = self.deserialize(dict_value)
 
-            elif obj_entry.tag == PSQueueBase.PSObject.tag:
+                dict_type: typing.Type[PSDictBase] = PSDict
+                if isinstance(value, PSDictBase):
+                    dict_type = type(value)
+
+                value = dict_type(raw_dict)
+
+            elif obj_entry.tag == self._type_to_element[PSStack]:
+                raw_stack = [
+                    self.deserialize(stack_entry) for stack_entry in obj_entry
+                ]  # type ignore # This shouldn't be None ever
+
+                stack_type: typing.Type[PSStackBase] = PSStack
+                if isinstance(value, PSStackBase):
+                    stack_type = type(value)
+
+                value = stack_type(raw_stack)
+
+            elif obj_entry.tag == self._type_to_element[PSQueue]:
                 if not isinstance(value, PSQueueBase):
                     value = PSQueue()
 
                 for queue_entry in obj_entry:
                     value.put(self.deserialize(queue_entry))
 
-            elif obj_entry.tag in [PSListBase.PSObject.tag, "IE"]:  # IE isn't used by us but the docs refer to it.
-                raw_values = [self.deserialize(list_entry) for list_entry in obj_entry]
-                list_type = type(value) if isinstance(value, PSListBase) else PSList
-                value = list_type(raw_values)
+            elif obj_entry.tag in [
+                self._type_to_element[PSList],
+                "IE",
+            ]:  # IE isn't used by us but the docs refer to it.
+                raw_list = [
+                    self.deserialize(list_entry) for list_entry in obj_entry
+                ]  # type ignore # This shouldn't be None ever
+
+                list_type: typing.Type[PSListBase] = PSList
+                if isinstance(value, PSListBase):
+                    list_type = type(value)
+
+                value = list_type(raw_list)
 
             elif obj_entry.tag not in ["TN", "TNRef"]:
                 # Extended primitive types and enums store the value as a sub element of the Obj.
                 new_value = self.deserialize(obj_entry)
 
-                if isinstance(value, PSEnumBase):
-                    value = type(value)(new_value)
+                if isinstance(rehydrated_value, type) and issubclass(rehydrated_value, (PSEnumBase, PSFlagBase)):
+                    value = rehydrated_value(new_value)
 
                 else:
                     # If the TypeRegister returned any types, set them on the new object name.
@@ -871,6 +920,9 @@ class _Serializer:
                         new_value.PSObject.type_names = value.PSTypeNames
 
                     value = new_value
+
+        if to_string is not None:
+            value.PSObject.to_string = to_string
 
         if isinstance(value, PSObject):
             # Ensure the object's type names are what was in the CLIXML
@@ -896,8 +948,8 @@ class _Serializer:
 
         # Final override that allows classes to transform the raw CLIXML deserialized object to something more human
         # friendly.
-        value_type = type(value)
-        if hasattr(value_type, "FromPSObjectForRemoting"):
-            value = value_type.FromPSObjectForRemoting(value)
+        from_override = getattr(type(value), "FromPSObjectForRemoting", None)
+        if from_override:
+            value = from_override(value, **self._kwargs)
 
         return value

@@ -3,12 +3,11 @@
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
 import psrpcore
-
 from psrpcore.types import (
     ApartmentState,
-    HostMethodIdentifier,
     ErrorCategoryInfo,
     ErrorRecord,
+    HostMethodIdentifier,
     NETException,
     PSGuid,
     PSThreadOptions,
@@ -19,7 +18,7 @@ from .conftest import get_runspace_pair
 
 
 def test_open_runspacepool():
-    client = psrpcore.RunspacePool()
+    client = psrpcore.ClientRunspacePool()
     server = psrpcore.ServerRunspacePool()
     assert client.state == RunspacePoolState.BeforeOpen
     assert server.state == RunspacePoolState.BeforeOpen
@@ -43,7 +42,7 @@ def test_open_runspacepool():
     assert session_cap.ps_object.protocolversion == server.their_capability.protocolversion
     assert client.state == RunspacePoolState.NegotiationSent
     assert server.state == RunspacePoolState.NegotiationSucceeded
-    assert server.runspace_id == client.runspace_id
+    assert server.runspace_pool_id == client.runspace_pool_id
 
     second = server.data_to_send()
     assert len(second.data) > 0
@@ -101,7 +100,7 @@ def test_open_runspacepool():
 
 
 def test_open_runspacepool_small():
-    client = psrpcore.RunspacePool()
+    client = psrpcore.ClientRunspacePool()
     server = psrpcore.ServerRunspacePool()
     assert client.state == RunspacePoolState.BeforeOpen
     assert server.state == RunspacePoolState.BeforeOpen
@@ -298,7 +297,7 @@ def test_runspace_reset():
 
 def test_runspace_user_event():
     client, server = get_runspace_pair()
-    server.format_event(1, "source id", sender="pool", message_data=True)
+    server.send_event(1, "source id", sender="pool", message_data=True)
     client.receive_data(server.data_to_send())
     event = client.next_event()
 
@@ -306,7 +305,7 @@ def test_runspace_user_event():
     assert event.ps_object["PSEventArgs.ComputerName"] is not None
     assert event.ps_object["PSEventArgs.EventIdentifier"] == 1
     assert event.ps_object["PSEventArgs.MessageData"] is True
-    assert event.ps_object["PSEventArgs.RunspaceId"] == client.runspace_id
+    assert event.ps_object["PSEventArgs.RunspaceId"] == client.runspace_pool_id
     assert event.ps_object["PSEventArgs.Sender"] == "pool"
     assert event.ps_object["PSEventArgs.SourceArgs"] == []
     assert event.ps_object["PSEventArgs.SourceIdentifier"] == "source id"

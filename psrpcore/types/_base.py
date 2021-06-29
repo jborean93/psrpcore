@@ -12,8 +12,8 @@ Also define some helper functions to replicate functionality in PowerShell/.NET 
 """
 
 import abc
+import enum
 import inspect
-import queue
 import types
 import typing
 
@@ -21,16 +21,20 @@ import typing
 class _UnsetValue(object):
     """Used to mark a property with an unset value."""
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(  # type: ignore[misc]  # This is a sentinel value so it's expected
+        cls,
+        *args: typing.Any,
+        **kwargs: typing.Any,
+    ) -> typing.Type["_UnsetValue"]:
         return cls  # pragma: no cover
 
 
 class _Singleton(type):
     """Singleton used by TypeRegistry to ensure only 1 registry exists."""
 
-    __instances = {}
+    __instances: typing.Dict[typing.Type, object] = {}
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls, *args: typing.Any, **kwargs: typing.Any) -> object:
         if cls not in cls.__instances:
             cls.__instances[cls] = super().__call__(*args, **kwargs)
 
@@ -44,40 +48,28 @@ class TypeRegistry(metaclass=_Singleton):
     used for deserialization to provide a dynamic list of Python classes that can be dehydrated.
     """
 
-    def __init__(self):
-        self.registry: typing.Dict[str, _PSMetaType] = {}
-        self.psrp_registry: typing.Dict[int, _PSMetaTypePSRP] = {}
-
-    def register(
-        self,
-        type_name: str,
-        cls: "_PSMetaType",
-    ):
-        """Register a type that can be used for rehydration."""
-        if type_name not in self.registry:
-            self.registry[type_name] = cls
-
-    def register_psrp_message(
-        self,
-        message_type: int,
-        cls: "_PSMetaTypePSRP",
-    ):
-        """Register a PSRP message type."""
-        if message_type not in self.psrp_registry:
-            self.psrp_registry[message_type] = cls
+    def __init__(self) -> None:
+        self.type_registry: typing.Dict[str, typing.Type["PSObject"]] = {}
+        self.element_registry: typing.Dict[str, typing.Type["PSObject"]] = {}
 
     def rehydrate(
         self,
         type_names: typing.List[str],
-    ) -> "PSObject":
+    ) -> typing.Union["PSObject", typing.Type[enum.Enum]]:
         """Rehydrate a blank instance based on the type names."""
+        obj: typing.Union[PSObject, typing.Type[enum.Enum]]
 
         type_name = type_names[0] if type_names else None
-        if type_name and type_name in self.registry:
+        if type_name and type_name in self.type_registry:
             # Cannot call __init__ as it may be validating input arguments which the serializer does not specify when
             # rehydrating that type.
-            cls = self.registry[type_name]
-            obj = cls.__new__(cls)
+            cls = self.type_registry[type_name]
+            if issubclass(cls, enum.Enum):
+                # The deserializer will rehydrate the object by providing the value.
+                obj = cls
+
+            else:
+                obj = cls.__new__(cls)
 
         else:
             # The type is not registered, return a PSObject with the type names set to 'Deserialized.<TN>'.
@@ -92,7 +84,7 @@ class PSObjectMeta:
 
     This describes the metadata around the PSObject such as the properties and ETS info. This information is used by
     Python to (de)serialize the Python class to a .NET type through CLIXML. This should be assigned as the `PSObject`
-    class attribute for any time that inherits from `PSObject`.
+    class attribute for any type that inherits from `PSObject`.
 
     Using `rehydrate=True` (default) will register the type_name of the class so the deserializer will return an
     instance of that class when it comes to deserializing that type. A rehydrated object is created without calling
@@ -101,21 +93,17 @@ class PSObjectMeta:
     `rehydrate=False` then the deserialized object will be an instance of `class:PSObject` with the type names
     containing the `Deserialized.` prefix.
 
-    Setting `tag` should only be set by the builtin types to pypsrp.
-
     Args:
-        type_names: List of .NET type names that the type implements, this should contains at least 1 type.
+        type_names: List of .NET type names that the type implements, this should contain at least 1 type.
         adapted_properties: List of adapted properties, these are native to the .NET type.
         extended_properties: List of extended properties, these are added to the .NET type by PowerShell.
         rehydrate: Whether the type should be registered as rehydratable or not.
-        tag: The CLIXML element tag, this is designed for internal use.
 
     Attributes:
         type_names (List[str]): See args.
         adapted_properties (List[PSPropertyInfo]): See args.
         extended_properties (List[PSPropertyInfo]): See args.
         rehydrate (bool): See args.
-        tag (str): See args (Internal use only).
     """
 
     def __init__(
@@ -123,14 +111,13 @@ class PSObjectMeta:
         type_names: typing.List[str],
         adapted_properties: typing.Optional[typing.List["PSPropertyInfo"]] = None,
         extended_properties: typing.Optional[typing.List["PSPropertyInfo"]] = None,
+        *,
         rehydrate: bool = True,
-        tag: str = "Obj",
     ):
         self.type_names = type_names
         self.adapted_properties = adapted_properties or []
         self.extended_properties = extended_properties or []
         self.rehydrate = rehydrate
-        self.tag = tag
 
         self._to_string: typing.Optional[str] = None
         self._instance: typing.Optional[PSObject] = None
@@ -155,30 +142,32 @@ class PSObjectMeta:
             if "__str__" in cls.__dict__:
                 return str(self._instance)
 
+        return None
+
     @to_string.setter
     def to_string(
         self,
         value: str,
-    ):
+    ) -> None:
         """Explicitly set the `to_string` value."""
         self._to_string = value
 
     def set_instance(
         self,
-        instance: "PSObject",
-    ):
+        instance: typing.Union["PSObject", typing.Type["PSObject"]],
+    ) -> None:
         """Creates a copy of the existing meta and assign to the class instance."""
         meta_kwargs = self._copy_kwargs()
-        # TODO: Copy base class kwargs
-
         copy = type(self)(**meta_kwargs)
-        copy._instance = instance  # Assign a reference to the instance the PSObject is for.
-        instance.PSObject = copy
-        a = ""
+
+        if isinstance(instance, PSObject):
+            copy._instance = instance  # Assign a reference to the instance the PSObject is for.
+
+        setattr(instance, "PSObject", copy)
 
     def _copy_kwargs(self) -> typing.Dict[str, typing.Any]:
         """Generate the kwargs used for copying the instance."""
-        kwargs = {
+        kwargs: typing.Dict[str, typing.Any] = {
             "adapted_properties": [],
             "extended_properties": [],
         }
@@ -188,85 +177,7 @@ class PSObjectMeta:
 
         kwargs["type_names"] = list(self.type_names)
         kwargs["rehydrate"] = self.rehydrate
-        kwargs["tag"] = self.tag
 
-        return kwargs
-
-
-class PSObjectMetaEnum(PSObjectMeta):
-    """The PowerShell PSObject metadata for an enum type.
-
-    This is the meta object to be used for any PSObject enum types that derive from `PSEnumBase`. This contains the
-    same information as `PSObjectMeta` plus specific extras only used for enums.
-
-    Attributes:
-        enum_map (List[Tuple[int, str]]): A list of enum values and their label.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.enum_map = []
-
-
-class PSObjectMetaGeneric(PSObjectMeta):
-    """The PowerShell PSObject metadata for a generic type.
-
-    This is the meta object to be used for any PSObject generic types that derive from `PSGenericBase`. It contains the
-    same information as `PSObjectMeta` plus extra information used for building a generic type. A generic type cannot
-    have `rehydrate=True`.
-
-    Args:
-        type_names: List of .NET type names that the type implements, this should contains at least 1 type.
-        required_types: The number of generic types that must be specified when creating the object.
-
-    Attributes:
-        required_types (int): See args.
-        generic_types (Tuple[_PSMetaType, ...]): A tuple of the generic types used when the instance class was created.
-    """
-
-    def __init__(self, type_names: typing.List[str], required_types: int, *args, **kwargs):
-        super().__init__(type_names, rehydrate=False, *args, **kwargs)
-        self.required_types = required_types
-        self.generic_types = ()
-
-    def set_instance(
-        self,
-        instance: "PSObject",
-    ):
-        super().set_instance(instance)
-        instance.PSObject.generic_types = self.generic_types
-
-    def _copy_kwargs(self) -> typing.Dict[str, typing.Any]:
-        kwargs = super()._copy_kwargs()
-        kwargs.pop("rehydrate")
-        kwargs["required_types"] = self.required_types
-        return kwargs
-
-
-class PSObjectMetaPSRP(PSObjectMeta):
-    """The PowerShell PSObject metadata for a PSRP message type.
-
-    This is the meta object to be used for any PSObject types that are used as a PSRP message. It contains the same
-    information as `PSObjectMeta` plus the message type identifier used internally.
-
-    Args:
-        psrp_message_type: The PSRP message type identifier
-
-    Attributes:
-        psrp_message_type (int): See args.
-    """
-
-    def __init__(self, psrp_message_type: int, *args, **kwargs):
-        type_names = []
-        if "type_names" in kwargs:
-            type_names = kwargs.pop("type_names")
-
-        super().__init__(type_names=type_names, *args, **kwargs)
-        self.psrp_message_type = psrp_message_type
-
-    def _copy_kwargs(self) -> typing.Dict[str, typing.Any]:
-        kwargs = super()._copy_kwargs()
-        kwargs["psrp_message_type"] = self.psrp_message_type
         return kwargs
 
 
@@ -324,13 +235,13 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
         self.optional = optional
         self.mandatory = mandatory
 
-        self._value = _UnsetValue
+        self._value: typing.Union[typing.Type[_UnsetValue], PSObject] = _UnsetValue
 
-        self._getter = None
+        self._getter: typing.Optional[typing.Callable[["PSObject"], typing.Any]] = None
         if getter:
             self.getter = getter
 
-        self._setter = None
+        self._setter: typing.Optional[typing.Callable[["PSObject", typing.Any], None]] = None
         if setter:
             self.setter = setter
 
@@ -339,8 +250,8 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
                 raise ValueError(f"Cannot set property value for '{self.name}' with a getter")
 
             # The PSObject is required when setting a value for a custom setter. Because we do not set a value if there
-            # is a getter/setter present then this can be None without causing any issues.
-            self.set_value(value, None)
+            # is a getter/setter present then this can be a random object without causing any issues.
+            self.set_value(value, PSObject())
 
     @abc.abstractmethod
     def copy(self) -> "PSPropertyInfo":
@@ -356,7 +267,7 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
     def getter(
         self,
         getter: typing.Callable[["PSObject"], None],
-    ):
+    ) -> None:
         if self._value != _UnsetValue:
             raise ValueError(f"Cannot add getter for '{self.name}': existing value already set")
 
@@ -375,7 +286,7 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
     def setter(
         self,
         setter: typing.Optional[typing.Callable[["PSObject", typing.Any], None]],
-    ):
+    ) -> None:
         if self.getter is None:
             raise ValueError(f"Cannot set property setter for '{self.name}' without an existing getter")
 
@@ -402,6 +313,7 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
             (typing.Any): The value of the property.
         """
         getter = self.getter
+        value: typing.Optional[typing.Union[typing.Type[_UnsetValue], PSObject]]
 
         if getter:
             raw_value = getter(ps_object)
@@ -418,8 +330,8 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
     def set_value(
         self,
         value: typing.Any,
-        ps_object: typing.Optional["PSObject"],
-    ):
+        ps_object: "PSObject",
+    ) -> None:
         """Set the property value.
 
         Sets the value of the property to the value specified. The value will be casted to the property's `ps_type` if
@@ -439,7 +351,7 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
         else:
             self._value = self._cast(value)
 
-    def _cast(self, value):
+    def _cast(self, value: typing.Any) -> "PSObject":
         """Try to cast the raw value to the property's ps_type if possible."""
         if value is not None and self.ps_type is not None and not isinstance(value, self.ps_type):
             return self.ps_type(value)
@@ -452,7 +364,7 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
         func: typing.Callable,
         expected_count: int,
         use: str,
-    ):
+    ) -> None:
         """Validates the callable has the required argument count for use as a property getter/setter."""
         if not isinstance(func, types.FunctionType):
             raise TypeError(
@@ -477,7 +389,7 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
                 total_count = expected_count
                 break
 
-        def plural(name, count):
+        def plural(name: str, count: int) -> str:
             s = "" if count == 1 else "s"
             return f"{count} {name}{s}"
 
@@ -610,255 +522,39 @@ class PSScriptProperty(PSPropertyInfo):
         super().__init__(name, optional=optional, mandatory=mandatory, ps_type=ps_type, getter=getter, setter=setter)
 
     def copy(self) -> "PSScriptProperty":
-        return PSScriptProperty(self.name, self.getter, self.setter, self.optional, self.mandatory, self.ps_type)
-
-
-class _PSMetaType(type):
-    """The meta type for all PowerShell objects.
-
-    This is the meta type that all PowerShell objects are based on. This type has 3 main functions that is done when
-    a class that is based on this type is created:
-
-        1. The class has a PSObject class attribute, if not already set it is the PSObjectMeta with no types or props.
-        2. Registers the .NET type in the `:class:TypeRegistry` if has `rehydrate=True` in the PSObject metadata.
-        3. Adds an `__init__` function to validate and set all the registered properties in the PSObject metadata.
-
-    The `TypeRegistry` is used by the deserializer so that it can recreate the registered Python object for that type
-    instead of a generic PSObject.
-
-    The `__init__` function is only added to the class when `__init__` has not already been defined on that class or
-    any of its parents.
-
-    This class is used internally and is not designed for public consumption. You should inherit from the existing
-    base classes that have already set this as their metaclass.
-    """
-
-    __registry = TypeRegistry()
-
-    def __init__(
-        cls,
-        name,
-        bases,
-        attributes,
-        meta_type: type = PSObjectMeta,
-    ):
-        super().__init__(name, bases, attributes)
-
-        # Make sure the cls as a valid PSObject set.
-        if not hasattr(cls, "PSObject"):
-            setattr(cls, "PSObject", PSObjectMeta([]))
-
-        if not isinstance(cls.PSObject, meta_type):
-            raise TypeError(
-                f"Invalid PSObject type '{type(cls.PSObject).__qualname__}' for '{cls.__qualname__}', "
-                f"must be '{meta_type.__name__}'"
-            )
-
-        # Register the type for rehydration if it is set to and contains at least 1 type name.
-        if cls.PSObject.rehydrate and cls.PSObject.type_names:
-            cls.__registry.register(cls.PSObject.type_names[0], cls)
-
-        base_cls = cls.__mro__[1]
-        # We don't want to inherit the types and properties in the following examples:
-        #   This is PSObject
-        #   The class is derived from PSGenericBase
-        #   The class does not have an explicit PSObject (just inherits from parent)
-        #   Is a PSRP Message derived directly from PSObject.
-        if not (
-            (cls.__module__ == _PSMetaType.__module__ and cls.__qualname__ == "PSObject")
-            or issubclass(cls, globals().get("PSGenericBase", ()))
-            or cls.PSObject == base_cls.PSObject
-            or (
-                isinstance(cls, globals().get("_PSMetaTypePSRP", ()))
-                and base_cls.__module__ == _PSMetaType.__module__
-                and base_cls.__qualname__ == "PSObject"
-            )
-        ):
-            base_cls = cls.__mro__[1]
-            cls.PSObject.type_names.extend(base_cls.PSObject.type_names)
-            cls.PSObject.adapted_properties.extend(base_cls.PSObject.adapted_properties)
-            cls.PSObject.extended_properties.extend(base_cls.PSObject.extended_properties)
-
-            # If the class has the default tag, always inherit the base class tag
-            if cls.PSObject.tag == "Obj":
-                cls.PSObject.tag = base_cls.PSObject.tag
-
-    def __call__(cls, *args, **kwargs):
-        # Skip creating a new object if we are trying to cast to the same type again.
-        if len(args) == 1 and type(args[0]) == cls:
-            return args[0]
-
-        return super().__call__(*args, **kwargs)
-
-
-class _PSMetaTypeEnum(_PSMetaType):
-    """The meta type for all PowerShell enum objects.
-
-    This is the meta type that extends `:class:_PSMetaType` to support enum objects. In addition to the work that
-    `_PSMetaType` adds to the class, this also does the following:
-
-        1. Validates the enum class also inherits from `:class:PSIntegerBase`.
-        2. Casts the class attributes to an instance of that class like a Python enum.
-        3. Creates a map of the enum names and values and assigns it to the PSObject metadata.
-
-    This class is used internally and is not designed for public consumption. You should inherit from the existing
-    base classes that have already set this as their metaclass.
-    """
-
-    def __init__(
-        cls,
-        name,
-        bases,
-        attributes,
-    ):
-        super().__init__(name, bases, attributes, meta_type=PSObjectMetaEnum)
-
-        # No need for the further validation for the base enum classes.
-        if cls.__module__ == _PSMetaType.__module__ and cls.__qualname__ in ["PSEnumBase", "PSFlagBase"]:
-            return
-
-        if not issubclass(cls, PSIntegerBase):
-            raise TypeError(f"Enum type {cls.__qualname__} must also inherit a " f"{PSIntegerBase.__qualname__} type")
-
-        # Convert the class attributes representing the enum values to an instance of that class.
-        ps_object = cls.PSObject
-        for k, v in attributes.items():
-            if k.startswith("__") or k == "PSObject":
-                continue
-
-            enum_val = cls(v)
-            setattr(cls, k, enum_val)
-
-            # Make sure the class' PSObject has the enum map. Special edge case for none -> None as None is a
-            # reserved keyword in Python but the string should still show the capitalised version.
-            if k == "none":
-                k = "None"
-            ps_object.enum_map.append((v, k))
-
-
-class _PSMetaTypeGeneric(_PSMetaType):
-    """The meta type for all PowerShell generic objects.
-
-    This is the meta type that extends `:class:_PSMetaType` to support generic objects. In addition to the work that
-    `_PSMetaType` adds to the class, this adds the `__getitem__` function to each class that generates the actual
-    generic class implementation.
-
-    This class is used internally and is not designed for public consumption. You should inherit from the existing
-    base classes that have already set this as their metaclass.
-    """
-
-    def __init__(
-        cls,
-        name,
-        bases,
-        attributes,
-    ):
-        super().__init__(name, bases, attributes, meta_type=PSObjectMetaGeneric)
-        # The base class avoid adding the PSObject types to a generic object so we just need to do so here again.
-        if "System.Object" not in cls.PSObject.type_names:
-            cls.PSObject.type_names.append("System.Object")
-
-    def __getitem__(
-        cls,
-        item: typing.Union[_PSMetaType, typing.Tuple[_PSMetaType, ...]],
-    ) -> _PSMetaType:
-        """Return a dynamic class instance using the type(s) specified as the item."""
-        if isinstance(item, _PSMetaType):
-            item = (item,)
-
-        elif not isinstance(item, tuple):
-            raise TypeError(f"Type list to {cls.__name__}[...] must be 1 or more PSObject types")
-
-        required_types = cls.PSObject.required_types
-        if len(item) != required_types:
-            plural = "" if required_types == 1 else "s"
-            raise TypeError(f"Type list to {cls.__name__}[...] must contain {required_types} PSObject " f"type{plural}")
-
-        def _get_generic_type(
-            ps_type: _PSMetaType,
-            required_types: int = 1,
-        ) -> str:
-            """Calculate the type to use for a generic type."""
-            if len(ps_type.PSObject.type_names) >= required_types:
-                value = ps_type.PSObject.type_names[0]
-
-            # If there are no explicit types, use PSObject if there are extended properties, otherwise Object.
-            elif ps_type.PSObject.extended_properties:
-                value = "System.Management.Automation.PSObject"
-
-            else:
-                value = "System.Object"
-
-            return value
-
-        type_names = "],[".join([_get_generic_type(t, required_types=2) for t in item])
-        type_names = [f"{_get_generic_type(cls)}`{required_types}[[{type_names}]]"]
-        if len(cls.PSObject.type_names) > 1:
-            type_names.extend(cls.PSObject.type_names[1:])
-
-        ps_object = PSObjectMetaGeneric(
-            required_types=required_types,
-            type_names=type_names,
-            adapted_properties=cls.PSObject.adapted_properties,
-            extended_properties=cls.PSObject.extended_properties,
-            tag=cls.PSObject.tag,
-        )
-        ps_object.generic_types = item
-
-        ps_type_names = "_".join(t.__name__ for t in item)
-        base_classes = list(cls.__bases__)
-        base_classes.insert(0, cls)
-        return _PSMetaType(
-            f"{cls.__name__}_{ps_type_names}",
-            tuple(base_classes),
-            {
-                "PSObject": ps_object,
-            },
+        return PSScriptProperty(
+            self.name,
+            self.getter,  # type: ignore[arg-type] # The class does not allow self.getter to be None
+            self.setter,
+            self.optional,
+            self.mandatory,
+            self.ps_type,
         )
 
 
-class _PSMetaTypePSRP(_PSMetaType):
-    """The meta type for all PowerShell PSRP message objects.
-
-    This is the meta type that extends `:class:_PSMetaType` to support PSRP message objects. In addition to the work
-    that `_PSMetaType` adds to the class, this also registers the PSRP message type identifier in the type registry.
-
-    This class is used internally and is not designed for public consumption. You should inherit from the existing
-    base classes that have already set this as their metaclass.
-    """
-
-    def __init__(
-        cls,
-        name,
-        bases,
-        attributes,
-    ):
-        super().__init__(name, bases, attributes, meta_type=PSObjectMetaPSRP)
-        TypeRegistry().register_psrp_message(cls.PSObject.psrp_message_type, cls)
-
-
-class PSObject(metaclass=_PSMetaType):
+class PSObject:
     """The base PSObject type.
 
     This is the base PSObject type that all PS object classes must inherit. It controls all the behaviour around
     getting and setting attributes that are based on PowerShell properties in a way that is similar to PowerShell
     itself.
-
-    This object can also be used as a blank PSObject which the caller can build up dynamically with their own
-    properties at runtime.
     """
 
-    PSObject = PSObjectMetaEnum(
+    PSObject = PSObjectMeta(
         type_names=[
             "System.Object",
         ]
     )
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(  # type: ignore[no-untyped-def]  # Trying to set PSObject here sends mypy into haywire
+        cls,
+        *args: typing.Any,
+        **kwargs: typing.Any,
+    ):
         if super().__new__ is object.__new__ and cls.__init__ is not object.__init__:
             obj = super().__new__(cls)
         else:
-            obj = super().__new__(cls, *args, **kwargs)
+            obj = super().__new__(cls, *args, **kwargs)  # type: ignore[call-arg]  # The __mro__ may be screwed up.
 
         # Make sure the class instance has a copy of the class PSObject so they aren't shared. Also add a reference to
         # the instance for that PSObject.
@@ -866,7 +562,11 @@ class PSObject(metaclass=_PSMetaType):
 
         return obj
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        # Skip creating a new object if we are trying to cast to the same type again.
+        # if len(args) == 1 and type(args[0]) == cls:
+        #    return args[0]
+
         # Favour extended properties in case there is one with the same name. This is how PowerShell's ETS works.
         prop_entries = {p.name: p for p in self.PSObject.adapted_properties}
         prop_entries.update({p.name: p for p in self.PSObject.extended_properties})
@@ -901,17 +601,17 @@ class PSObject(metaclass=_PSMetaType):
             setattr(self, prop_name, raw_value)
 
     @property
-    def PSBase(self):
+    def PSBase(self) -> None:
         """The raw .NET object without the extended type system properties."""
         raise NotImplementedError()  # pragma: no cover
 
     @property
-    def PSAdapted(self):
+    def PSAdapted(self) -> None:
         """A dict of all the adapted properties."""
         raise NotImplementedError()  # pragma: no cover
 
     @property
-    def PSExtended(self):
+    def PSExtended(self) -> None:
         """A dict of all the extended properties."""
         raise NotImplementedError()  # pragma: no cover
 
@@ -920,7 +620,7 @@ class PSObject(metaclass=_PSMetaType):
         """Shortcut to PSObject.type_names, one of PowerShell's reserved properties."""
         return self.PSObject.type_names
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: typing.Any) -> None:
         # __getattribute__ uses PSObject so bypass all that and just set it directly.
         if key == "PSObject":
             return super().__setattr__(key, value)
@@ -944,7 +644,7 @@ class PSObject(metaclass=_PSMetaType):
         # set the key/value to the object itself.
         super().__setattr__(key, value)
 
-    def __getattribute__(self, item):
+    def __getattribute__(self, item: str) -> typing.Any:
         # Use __getattribute__ instead of self.PSObject to avoid a recursive call.
         ps_object = super().__getattribute__("PSObject")
 
@@ -975,7 +675,7 @@ class PSObject(metaclass=_PSMetaType):
 
         return val
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> typing.Any:
         """Allow getting properties using the index syntax.
 
         By overriding __getitem__ you can access properties on an object using the index syntax, i.e.
@@ -993,10 +693,10 @@ class PSObject(metaclass=_PSMetaType):
         """
         return getattr(self, item)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: typing.Any) -> None:
         setattr(self, key, value)
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.PSObject.to_string is not None:
             return self.PSObject.to_string
 
@@ -1004,382 +704,54 @@ class PSObject(metaclass=_PSMetaType):
             return super().__str__()
 
 
-class PSIntegerBase(PSObject, int):
-    """Base class for integer based primitive types.
-
-    This is the base class to use for primitive integer types. It defines common functions required to seamlessly use
-    numerical operators like `|`, `<`, `&`, etc while preserving the type. It should not be initialised directly but is
-    inherited by the various primitive integer types.
-    """
-
-    MinValue = 0
-    MaxValue = 0
-
-    def __new__(cls, *args, **kwargs):
-        if cls == PSIntegerBase:
-            raise TypeError(
-                f"Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for "
-                f"integer types."
-            )
-
-        if args and args[0] is None:
-            # In .NET integer cannot be null and PowerShell casts it to 0.
-            num = 0
-        else:
-            num = super().__new__(cls, *args, **kwargs)
-
-        if cls != type(num):
-            # If the value is not the exact instance recreate it from an actual int.
-            return super().__new__(cls, int(num))
-
-        if num < cls.MinValue or num > cls.MaxValue:
-            raise ValueError(
-                f"Cannot create {cls.__qualname__} with value '{num}': Value must be between "
-                f"{cls.MinValue} and {cls.MaxValue}."
-            )
-
-        return num
-
-    def __init__(self, x, base=10, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def __abs__(self):
-        return type(self)(super().__abs__())
-
-    def __add__(self, *args, **kwargs):
-        return type(self)(super().__add__(*args, **kwargs))
-
-    def __and__(self, *args, **kwargs):
-        return type(self)(super().__and__(*args, **kwargs))
-
-    def __divmod__(self, *args, **kwargs):
-        quotient, remainder = super().__divmod__(*args, **kwargs)
-        return type(self)(quotient), remainder
-
-    def __floordiv__(self, *args, **kwargs):
-        return type(self)(super().__floordiv__(*args, **kwargs))
-
-    def __invert__(self):
-        return type(self)(super().__invert__())
-
-    def __lshift__(self, *args, **kwargs):
-        return type(self)(super().__lshift__(*args, **kwargs))
-
-    def __mod__(self, *args, **kwargs):
-        return type(self)(super().__mod__(*args, **kwargs))
-
-    def __mul__(self, *args, **kwargs):
-        return type(self)(super().__mul__(*args, **kwargs))
-
-    def __neg__(self):
-        return type(self)(super().__neg__())
-
-    def __or__(self, *args, **kwargs):
-        return type(self)(super().__or__(*args, **kwargs))
-
-    def __pos__(self):
-        return type(self)(super().__pos__())
-
-    def __pow__(self, *args, **kwargs):
-        return type(self)(super().__pow__(*args, **kwargs))
-
-    def __rshift__(self, *args, **kwargs):
-        return type(self)(super().__rshift__(*args, **kwargs))
-
-    def __sub__(self, *args, **kwargs):
-        return type(self)(super().__sub__(*args, **kwargs))
-
-    def __xor__(self, *args, **kwargs):
-        return type(self)(super().__xor__(*args, **kwargs))
-
-
-class PSEnumBase(PSObject, metaclass=_PSMetaTypeEnum):
-    """The base enum PSObject type.
-
-    This is the base enum PSObject type that all enum complex objects should inherit from. While we cannot use the
-    `enum` module as a PSObject has a different metaclass we can try and replicate some of the functionality here. Any
-    objects that inherit `PSEnumBase` should also inherit one of the integer PS types like `PSInt` and any other class
-    attributes (apart from PSObject) are treated as enum value. An example enum would look like:
-
-    .. code-block:: python
-
-        class MyEnum(PSEnumBase, PSInt):
-            PSObject = PSObjectMeta(
-                type_names=['System.MyEnum', 'System.Enum', 'System.ValueType', 'System.Object'],
-                rehydrate=True,
-            )
-
-            Label = 1
-            Other = 2
-
-    A user of that enum would then access it like `MyEnum.Label` or `MyEnum.Other`. This class is designed for enums
-    that allow only 1 value, if you require a flag like enum, use `PSFlagBase` as the base type.
-    """
-
-    PSObject = PSObjectMetaEnum(
-        type_names=[
-            "System.Enum",
-            "System.ValueType",
-        ],
-    )
-
-    def __new__(cls, *args, **kwargs):
-        if cls in [PSEnumBase, PSFlagBase]:
-            raise TypeError(
-                f"Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for "
-                f"enum types."
-            )
-
-        return super().__new__(cls, *args, **kwargs)
-
-    def __str__(self):
-        # The enum map is stored in the instance's class PSObject not the instance's PSObject.
-        enum_map = dict((k, v) for k, v in self.__class__.PSObject.enum_map)
-
-        return enum_map.get(self, "Unknown")
-
-    def __repr__(self):
-        key = str(self)
-        if key == "None":
-            key = "none"
-
-        return f"{self.__class__.__name__}.{key}"
-
-
-class PSFlagBase(PSEnumBase):
-    """The base flags enum PSObject type.
-
-    This is like `PSEnumBase` but supports having multiple values set like `[FlagsAttribute]` in .NET. Using any
-    bitwise operations will preserve the type so `MyFlags.Flag1 | MyFlags.Flag2` will still be an instance of
-    `MyFlags`.
-
-    Like `PSEnumBase`, an implementing type needs to inherit both `PSFlagBase` as well as one of the integer PS types
-    like `PSInt`. An example flag enum would look like:
-
-    .. code-block:: python
-
-        class MyFlags(PSFlagBase, PSInt):
-            PSObject = PSObjectMeta(
-                type_names=['System.MyFlags', 'System.Enum', 'System.ValueType', 'System.Object'],
-                rehydrate=True,
-            )
-
-            Flag1 = 1
-            Flag2 = 2
-            Flag3 = 4
-    """
-
-    PSObject = PSObjectMetaEnum([])
-
-    def __str__(self):
-        # The enum map is stored in the instance's class PSObject not the instance's PSObject.
-        enum_map = dict((k, v) for k, v in self.__class__.PSObject.enum_map)
-
-        val = int(self)
-
-        # Special edge case where the value is 0
-        if val == 0 and 0 in enum_map:
-            return enum_map[0]
-
-        elif 0 in enum_map:
-            del enum_map[0]
-
-        flag_list = []
-        for enum_val, enum_name in enum_map.items():
-            if val & enum_val == enum_val:
-                flag_list.append(enum_name)
-                val &= ~enum_val
-
-            if val == 0:
-                break
-
-        return ", ".join(flag_list)
-
-    def __repr__(self):
-        type_name = self.__class__.__name__
-        flags = [f if f != "None" else "none" for f in str(self).split(", ")]
-
-        return " | ".join([f"{type_name}.{f}" for f in flags])
-
-
-class PSGenericBase(PSObject, metaclass=_PSMetaTypeGeneric):
-    """Base class for generic based types.
-
-    This is the base class to use for generic types. It cannot be instantiated directly but it exposes a way to
-    dynamically define a generic type based on user input. The PSObject attribute must be a `PSObjectMetaGeneric`
-    object that defines both the type names and the number of types that are required when creating the object. Because
-    generic types aren't preserved when they are serialized this is mostly used for specific use cases by the various
-    PSRP message types.
-    """
-
-    PSObject = PSObjectMetaGeneric(type_names=[], required_types=0)
-
-    def __new__(cls, *args, **kwargs):
-        if cls.PSObject.required_types == 0 or not cls.PSObject.type_names:
-            # Either instantiating PSGenericBase or a class that is inheriting this PSObject.
-            raise TypeError(
-                f"Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for "
-                f"generic types."
-            )
-
-        elif not cls.PSObject.generic_types:
-            # Instantiating a generic object directly and not one from 'Obj[type]()'.
-            plural = "" if cls.PSObject.required_types == 1 else "s"
-            raise TypeError(
-                f"Type {cls.__name__} cannot be instantiated; use {cls.__name__}[...]() to define the "
-                f"{cls.PSObject.required_types} generic type{plural} required."
-            )
-
-        return super().__new__(cls, *args, **kwargs)
-
-
-class PSDictBase(PSObject, dict):
-    """The base dictionary type.
-
-    This is the base dictionary PSObject type that all dictionary like objects should inherit from. It cannot be
-    instantiated directly and is meant to be used as a base class for any .NET dictionary types.
-
-    Note:
-        While you can implement your own custom dictionary .NET type like
-        `System.Collections.Generic.Dictionary<TKey, TValue>`, any dictionary based .NET types will be deserialized by
-        the remote PowerShell runspace as `System.Collections.Hashtable`_. This .NET type is represented by
-        `:class:psrp.dotnet.complex_types.PSDict`.
-
-    .. _System.Collections.Hashtable:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.hashtable?view=net-5.0
-    """
-
-    PSObject = PSObjectMeta([], tag="DCT")
-
-    def __new__(cls, *args, **kwargs):
-        if cls == PSDictBase:
-            raise TypeError(
-                f"Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for "
-                f"dictionary types."
-            )
-        return super().__new__(cls, *args, **kwargs)
-
-    def __init__(self, *args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
-
-    def __getitem__(self, item):
-        try:
-            return dict.__getitem__(self, item)
-        except KeyError:
-            return super().__getitem__(item)
-
-    def __setitem__(self, key, value):
-        dict.__setitem__(self, key, value)
-
-
-class _PSListBase(PSObject, list):
-    """Common list base class for PSListBase and PSStackBase."""
-
-    def __new__(cls, *args, **kwargs):
-        if cls in [_PSListBase, PSListBase, PSStackBase]:
-            raise TypeError(
-                f"Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for "
-                f"list types."
-            )
-        return super().__new__(cls, *args, **kwargs)
-
-    def __init__(self, seq=(), *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        list.__init__(self, seq)
-
-    def __getitem__(self, item):
-        try:
-            return list.__getitem__(self, item)
-        except TypeError:
-            return super().__getitem__(item)
-
-    def __setitem__(self, key, value):
-        if isinstance(key, str):
-            return super().__setitem__(key, value)
-        else:
-            return list.__setitem__(self, key, value)
-
-
-class PSListBase(_PSListBase):
-    """The base list type.
-
-    This is the base list PSObject type that all list like objects should inherit from. It cannot be instantiated
-    directly and is meant to be used as a base class for any .NET list types.
-
-    Note:
-        While you can implement your own custom list .NET type like `System.Collections.Generic.List<T>`, any list
-        based .NET types will be deserialized by the remote PowerShell runspace as `System.Collections.ArrayList`_.
-        This .NET type is represented by `:class:psrp.dotnet.complex_types.PSList`.
-
-    .. _System.Collections.ArrayList:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=net-5.0
-    """
-
-    # Would prefer an Generic.List<T> but regardless of the type a list is always deserialized by PowerShell as an
-    # ArrayList so just do that here.
-    PSObject = PSObjectMeta([], tag="LST")
-
-
-class PSQueueBase(PSObject, queue.Queue):
-    """The base queue type.
-
-    This is the base queue PSObject type that all queue like objects should inherit from. It cannot be instantiated
-    directly and is meant to be used as a base class for any .NET queue types.
-
-    Note:
-        While you can implement your own custom queue .NET type like `System.Collections.Generic.Queue<T>`, any queue
-        based .NET types will be deserialized by the remote PowerShell runspace as `System.Collections.Queue`_. This
-        .NET type is represented by `:class:psrp.dotnet.complex_types.PSQueue`.
-
-    .. _System.Collections.Queue:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.queue?view=net-5.0
-    """
-
-    PSObject = PSObjectMeta([], tag="QUE")
-
-    def __new__(cls, *args, **kwargs):
-        if cls == PSQueueBase:
-            raise TypeError(
-                f"Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for "
-                f"queue types."
-            )
-
-        que = super().__new__(cls)
-
-        # Need to make sure __init__ is always called when creating the instance as rehydration will only call __new__
-        # and certain props are set in __init__ to make a queue useful.
-        queue.Queue.__init__(que, *args, **kwargs)
-
-        return que
-
-    def __init__(self, *args, **kwargs):
-        pass  # We cannot call the base __init__() function in ase any properties are set.
-
-
-class PSStackBase(_PSListBase):
-    """The base stack type.
-
-    This is the base stack PSObject type that all stack like objects should inherit from. It cannot be instantiated
-    directly and is meant to be used as the base class for any .NET stack types. A stack is a last-in, first out
-    collection but Python does not have a native stack type so this just replicates the a Python list.
-
-    Note:
-        While you can implement your own custom stack .NET type like `System.Collections.Generic.Stack<T>`, any stack
-        based .NET types will be deserialized by the remote PowerShell runspace as `System.Collections.Stack`_. This
-        .NET type is represented by `:class:psrp.dotnet.complex_types.PSStack`.
-
-    .. System.Collections.Stack:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.stack?view=net-5.0
-    """
-
-    PSObject = PSObjectMeta([], tag="STK")
+class PSType:
+    def __init__(
+        self,
+        type_names: typing.List[str] = None,
+        adapted_properties: typing.List[PSPropertyInfo] = None,
+        extended_properties: typing.List[PSPropertyInfo] = None,
+        *,
+        skip_inheritance: bool = False,
+        rehydrate: bool = True,
+        tag: typing.Optional[str] = None,
+    ):
+        self.type_names = type_names or []
+        self.adapted_properties = adapted_properties or []
+        self.extended_properties = extended_properties or []
+        self.skip_inheritance = skip_inheritance
+        self.rehydrate = rehydrate
+        self.tag = tag
+
+    def __call__(
+        self,
+        cls: typing.Type[PSObject],
+    ) -> typing.Type[PSObject]:
+        if not issubclass(cls, PSObject):
+            raise TypeError(f"PSType class {cls.__module__}.{cls.__qualname__} must be a subclass of PSObject")
+
+        if not self.skip_inheritance:
+            self.type_names.extend(cls.PSObject.type_names)
+            self.adapted_properties.extend(cls.PSObject.adapted_properties)
+            self.extended_properties.extend(cls.PSObject.extended_properties)
+
+        cls.PSObject = PSObjectMeta(self.type_names, self.adapted_properties, self.extended_properties)
+
+        registry = TypeRegistry()
+
+        if self.rehydrate and self.type_names and self.type_names[0] not in registry.type_registry:
+            registry.type_registry[self.type_names[0]] = cls
+
+        if self.tag is not None and self.tag not in registry.element_registry:
+            registry.element_registry[self.tag] = cls
+
+        return cls
 
 
 def add_member(
-    obj: typing.Union[_PSMetaType, PSObject],
+    obj: typing.Union[PSObject, typing.Type[PSObject]],
     prop: PSPropertyInfo,
     force: bool = False,
-):
+) -> None:
     """Add an extended property.
 
     This can add an extended property to a PSObject class or a specific instance of a class. This replicates some of
@@ -1397,11 +769,15 @@ def add_member(
     .. _Add-Member:
         https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/add-member
     """
-    prop_name = prop.name
-    adapted_properties = {p.name: i for i, p in enumerate(obj.PSObject.adapted_properties)}
-    extended_properties = {p.name: i for i, p in enumerate(obj.PSObject.extended_properties)}
+    ps_object = getattr(obj, "PSObject", None)
+    if not ps_object:
+        raise ValueError("The passing in object does not contain the required PSObject attribute")
 
-    insert_idx = len(obj.PSObject.extended_properties)
+    prop_name = prop.name
+    adapted_properties = {p.name: i for i, p in enumerate(ps_object.adapted_properties)}
+    extended_properties = {p.name: i for i, p in enumerate(ps_object.extended_properties)}
+
+    insert_idx = len(ps_object.extended_properties)
     if prop_name in adapted_properties or prop_name in extended_properties:
         if not force:
             raise RuntimeError(f"Property '{prop_name}' already exists on PSObject, use force=True to overwrite it")
@@ -1409,18 +785,18 @@ def add_member(
         # If we had a duplicated extended prop, swap the older with the new one, adapted props stays the same.
         if prop_name in extended_properties:
             insert_idx = extended_properties[prop_name]
-            obj.PSObject.extended_properties.pop(insert_idx)
+            ps_object.extended_properties.pop(insert_idx)
 
-    obj.PSObject.extended_properties.insert(insert_idx, prop)
+    ps_object.extended_properties.insert(insert_idx, prop)
 
 
 def add_alias_property(
-    obj: typing.Union[PSObject, _PSMetaType],
+    obj: typing.Union[PSObject, typing.Type[PSObject]],
     name: str,
     alias: str,
     ps_type: typing.Optional[type] = None,
     force: bool = False,
-):
+) -> None:
     """Add an alias property to a PSObject.
 
     Adds an alias as an extended property to a PSObject class or a specific instance of a class.
@@ -1436,12 +812,12 @@ def add_alias_property(
 
 
 def add_note_property(
-    obj: typing.Union[PSObject, _PSMetaType],
+    obj: typing.Union[PSObject, typing.Type[PSObject]],
     name: str,
     value: typing.Any,
     ps_type: typing.Optional[type] = None,
     force: bool = False,
-):
+) -> None:
     """Add a note property to a PSObject.
 
     Adds a note property as an extended property to a PSObject class or a specific instance of a class. A note property
@@ -1458,13 +834,13 @@ def add_note_property(
 
 
 def add_script_property(
-    obj: typing.Union[PSObject, _PSMetaType],
+    obj: typing.Union[PSObject, typing.Type[PSObject]],
     name: str,
     getter: typing.Callable[["PSObject"], typing.Any],
     setter: typing.Optional[typing.Callable[["PSObject", typing.Any], None]] = None,
     ps_type: typing.Optional[type] = None,
     force: bool = False,
-):
+) -> None:
     """Add a script property to a PSObject.
 
     Adds a script property as an extended property to a PSObject class or a specific instance of a class. A script
@@ -1484,7 +860,7 @@ def add_script_property(
 
 def ps_isinstance(
     obj: PSObject,
-    other: typing.Union[_PSMetaType, typing.Tuple[_PSMetaType, ...], str, typing.Tuple[str, ...]],
+    other: typing.Union[typing.Type[PSObject], typing.Tuple[typing.Type[PSObject], ...], str, typing.Tuple[str, ...]],
     ignore_deserialized: bool = False,
 ) -> bool:
     """Checks the inheritance of a PSObject.
@@ -1507,7 +883,7 @@ def ps_isinstance(
         bool: Whether the obj is inherited from any of the other types in .NET.
     """
 
-    def strip_deserialized(type_names):
+    def strip_deserialized(type_names: typing.List[str]) -> typing.List[str]:
         if not ignore_deserialized:
             return type_names
 
@@ -1520,14 +896,12 @@ def ps_isinstance(
 
         return new_names
 
-    if not isinstance(other, (list, tuple)):
-        other = [other]
-
+    other_instances = other if isinstance(other, (list, tuple)) else [other]
     raw_other_types = []
-    for o in other:
+    for o in other_instances:
         if isinstance(o, str):
             raw_other_types.append(o)
-        else:
+        elif hasattr(o, "PSObject"):
             raw_other_types.append(o.PSObject.type_names[0])
 
     obj_types = set(strip_deserialized(obj.PSTypeNames))
