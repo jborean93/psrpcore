@@ -113,7 +113,7 @@ class RunspacePool:
         self._ci_handlers: typing.Dict[int, typing.Optional[typing.Callable[[PSRPEvent], None]]] = {}
         self._ci_events: typing.Dict[int, PSRPEvent] = {}
         self.__ci_counter = 1
-        self.__fragment_counter = 1
+        self._fragment_count = 1
         self._cipher: typing.Optional[PSRemotingCrypto] = None
         self._exchange_key: typing.Optional[rsa.RSAPrivateKey] = None
         self._min_runspaces = 0
@@ -157,9 +157,27 @@ class RunspacePool:
         self,
     ) -> int:
         """Counter used for fragment object IDs."""
-        count = self.__fragment_counter
-        self.__fragment_counter += 1
+        count = self._fragment_count
+        self._fragment_count += 1
         return count
+
+    def disconnect(self) -> None:
+        if self.state == RunspacePoolState.Opened:
+            self.state = RunspacePoolState.Disconnected
+
+        if self.state != RunspacePoolState.Disconnected:
+            raise InvalidRunspacePoolState("disconnect a Runspace Pool", self.state, [RunspacePoolState.Opened])
+
+    def reconnect(self) -> None:
+        if self.state == RunspacePoolState.Opened:
+            return
+
+        if self.state != RunspacePoolState.Disconnected:
+            raise InvalidRunspacePoolState(
+                "reconnecting to Runspace Pool", self.state, [RunspacePoolState.Disconnected]
+            )
+
+        self.state = RunspacePoolState.Opened
 
     def data_to_send(
         self,
@@ -266,13 +284,14 @@ class RunspacePool:
                     raw_message.message_type, raw_message.data, raw_message.rpid, raw_message.pid, fragment.object_id
                 )
                 self._incoming_messages[fragment.object_id] = message
+                del self._incoming_fragments[fragment.object_id]
 
         for object_id in list(self._incoming_messages.keys()):
             message = self._incoming_messages[object_id]
-            event = self._process_message(message)
-
-            # We only want to clear the incoming buffer entry once we know the caller has the object.
+            # In case of a failure it is expected for the client to receive the correct data instead
             del self._incoming_messages[object_id]
+
+            event = self._process_message(message)
 
             return event
 

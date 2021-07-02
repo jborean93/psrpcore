@@ -128,8 +128,8 @@ class ClientRunspacePool(RunspacePool):
     def connect(self) -> None:
         if self.state == RunspacePoolState.Opened:
             return
-        if self.state != RunspacePoolState.Disconnected:
-            raise InvalidRunspacePoolState("connect to Runspace Pool", self.state, [RunspacePoolState.Disconnected])
+        if self.state != RunspacePoolState.BeforeOpen:
+            raise InvalidRunspacePoolState("connect to Runspace Pool", self.state, [RunspacePoolState.BeforeOpen])
 
         self.state = RunspacePoolState.Connecting
 
@@ -317,6 +317,8 @@ class ClientRunspacePool(RunspacePool):
         event: ApplicationPrivateDataEvent,
     ) -> None:
         self.application_private_data = event.ps_object.ApplicationPrivateData
+        if self.state == RunspacePoolState.Connecting:
+            self.state = RunspacePoolState.Opened
 
     def _process_DebugRecord(
         self,

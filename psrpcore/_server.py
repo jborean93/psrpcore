@@ -39,6 +39,7 @@ from psrpcore._exceptions import (
     InvalidPipelineState,
     InvalidProtocolVersion,
     InvalidRunspacePoolState,
+    PSRPCoreError,
 )
 from psrpcore._payload import EMPTY_UUID, StreamType
 from psrpcore.types import (
@@ -95,6 +96,20 @@ class ServerRunspacePool(RunspacePool):
             application_arguments={},
             application_private_data=application_private_data or {},
         )
+
+    def connect(self) -> None:
+        if self.state == RunspacePoolState.Opened:
+            return
+        if self.state != RunspacePoolState.Disconnected:
+            raise InvalidRunspacePoolState(
+                "accept Runspace Pool connections", self.state, [RunspacePoolState.BeforeOpen]
+            )
+
+        # The incoming messages will be from a blank runspace pool so start back at 0
+        # TODO: Should I also reset ci count.
+        # TODO: Verify there are no incoming fragments/messages not processed.
+        self._fragment_count = 0
+        self.state = RunspacePoolState.Connecting
 
     def send_event(
         self,
@@ -176,9 +191,9 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: ConnectRunspacePoolEvent,
     ) -> None:
-        # FIXME: Handle <S></S> ConnectRunspacePool object
-        self._max_runspaces = event.ps_object.MaxRunspaces
-        self._min_runspaces = event.ps_object.MinRunspaces
+        # TODO: Verify this behaviour when the props aren't set
+        self._max_runspaces = getattr(event.ps_object, "MaxRunspaces", self.max_runspaces)
+        self._min_runspaces = getattr(event.ps_object, "MinRunspaces", self.min_runspaces)
 
         self.prepare_message(
             RunspacePoolInitData(
@@ -188,6 +203,7 @@ class ServerRunspacePool(RunspacePool):
         )
 
         self.prepare_message(ApplicationPrivateData(ApplicationPrivateData=self.application_private_data))
+        self.state = RunspacePoolState.Opened
 
     def _process_CreatePipeline(
         self,
@@ -311,9 +327,16 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: SessionCapabilityEvent,
     ) -> None:
+        pre_state = self.state
         super()._process_SessionCapability(event)
-        self.prepare_message(self.our_capability)
-        self.runspace_pool_id = event.runspace_pool_id
+
+        if pre_state == RunspacePoolState.Connecting:
+            if self.runspace_pool_id != event.runspace_pool_id:
+                raise PSRPCoreError("Incoming connection is targeted towards a different Runspace Pool")
+
+        else:
+            self.prepare_message(self.our_capability)
+            self.runspace_pool_id = event.runspace_pool_id
 
     def _process_SetMaxRunspaces(
         self,

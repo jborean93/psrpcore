@@ -14,7 +14,7 @@ between the client and the server.
 import enum
 import typing
 
-from psrpcore.types._base import PSNoteProperty, PSObject, PSType, add_note_property
+from psrpcore.types._base import PSNoteProperty, PSObject, PSType, T, add_note_property
 from psrpcore.types._complex import (
     ApartmentState,
     CommandTypes,
@@ -106,8 +106,8 @@ class PSMessageType(PSType):
 
     def __call__(
         self,
-        cls: typing.Type[PSObject],
-    ) -> typing.Type[PSObject]:
+        cls: T,
+    ) -> T:
         cls = super().__call__(cls)
 
         _REGISTRY[cls] = self.message_type

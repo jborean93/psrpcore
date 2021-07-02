@@ -384,6 +384,4 @@ def test_unhandled_message_received(caplog):
     assert isinstance(cap_event, psrpcore.SessionCapabilityEvent)
     assert isinstance(init_event, psrpcore.InitRunspacePoolEvent)
 
-    assert caplog.text == (
-        "WARNING  psrpcore._base:_base.py:365 Received PSRPMessageType.InitRunspacePool but could not process it\n"
-    )
+    assert re.match(r"WARNING.*Received PSRPMessageType\.InitRunspacePool but could not process it", caplog.text)
