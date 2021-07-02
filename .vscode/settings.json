@@ -6,6 +6,7 @@
     "files.trimTrailingWhitespace": true,
     "editor.trimAutoWhitespace": true,
     "python.formatting.provider": "black",
+    "python.linting.mypyEnabled": true,
     "python.testing.pytestArgs": [
         "tests",
         "-vv"
@@ -13,4 +14,12 @@
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        },
+    },
+    "python.linting.ignorePatterns": [
+        "tests/**"
+    ]
 }

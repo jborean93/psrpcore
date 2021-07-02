@@ -6,21 +6,9 @@ import struct
 import typing
 
 from cryptography.hazmat.backends import default_backend
-
-from cryptography.hazmat.primitives.asymmetric import (
-    rsa,
-    padding,
-)
-
-from cryptography.hazmat.primitives.ciphers import (
-    algorithms,
-    Cipher,
-    modes,
-)
-
-from cryptography.hazmat.primitives.padding import (
-    PKCS7,
-)
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.padding import PKCS7
 
 
 def create_keypair() -> typing.Tuple[rsa.RSAPrivateKey, bytes]:

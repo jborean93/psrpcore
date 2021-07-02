@@ -1,0 +1,139 @@
+# -*- coding: utf-8 -*-
+# Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
+# MIT License (see LICENSE or https://opensource.org/licenses/MIT)
+
+import enum
+import typing
+
+from psrpcore.types._base import PSType
+from psrpcore.types._primitive import PSInt, PSIntegerBase
+
+
+class PSEnumMeta(enum.EnumMeta):
+    """The meta type for all PowerShell enum objects.
+
+    This is the meta type that extends `:class:_PSMetaType` to support enum objects. In addition to the work that
+    `_PSMetaType` adds to the class, this also does the following:
+
+        1. Validates the enum class also inherits from `:class:PSIntegerBase`.
+        2. Casts the class attributes to an instance of that class like a Python enum.
+        3. Creates a map of the enum names and values and assigns it to the PSObject metadata.
+
+    This class is used internally and is not designed for public consumption. You should inherit from the existing
+    base classes that have already set this as their metaclass.
+    """
+
+    @classmethod
+    def __prepare__(
+        metacls,
+        __name: str,
+        __bases: typing.Tuple[type, ...],
+        **kwds: typing.Any,
+    ) -> typing.Mapping[str, typing.Any]:
+        # Python <3.9 will fail when passing the kwds if base_type was specified, it's omitted entirely here.
+        return super().__prepare__(__name, __bases)
+
+    def __new__(
+        mcls,
+        name: str,
+        bases: typing.Tuple[type, ...],
+        namespace: typing.Dict[str, typing.Any],
+        **kw: typing.Type[PSIntegerBase],
+    ) -> "PSEnumMeta":
+        # Ensure the enum values are casted to the PS integer type for serialization.
+        base_type = kw.get("base_type", PSInt)
+        if not isinstance(base_type, type) or not issubclass(base_type, PSIntegerBase):
+            raise TypeError(f"PSEnumType {name} base_type must be a subclass of PSIntegerBase")
+
+        def new(cls: typing.Type, val: typing.Any) -> typing.Type:
+            val = base_type(val)
+            obj = int.__new__(cls, val)
+            obj._value_ = val
+
+            return obj
+
+        namespace["__new__"] = new
+
+        return super().__new__(mcls, name, bases, namespace)
+
+
+@PSType(["System.Enum", "System.ValueType"], rehydrate=False)
+class PSEnumBase(PSIntegerBase, enum.Enum, metaclass=PSEnumMeta):
+    """The base enum PSObject type.
+
+    This is the base enum PSObject type that all enum complex objects should inherit from. While we cannot use the
+    `enum` module as a PSObject has a different metaclass we can try and replicate some of the functionality here. Any
+    objects that inherit `PSEnumBase` should also inherit one of the integer PS types like `PSInt` and any other class
+    attributes (apart from PSObject) are treated as enum value. An example enum would look like:
+
+    FIXME: Update this example
+
+    .. code-block:: python
+
+        class MyEnum(PSEnumBase, PSInt):
+            PSObject = PSObjectMeta(
+                type_names=['System.MyEnum', 'System.Enum', 'System.ValueType', 'System.Object'],
+                rehydrate=True,
+            )
+
+            Label = 1
+            Other = 2
+
+    A user of that enum would then access it like `MyEnum.Label` or `MyEnum.Other`. This class is designed for enums
+    that allow only 1 value, if you require a flag like enum, use `PSFlagBase` as the base type.
+    """
+
+
+@PSType(["System.Enum", "System.ValueType"], rehydrate=False)
+class PSFlagBase(PSIntegerBase, enum.Flag, metaclass=PSEnumMeta):
+    """The base flags enum PSObject type.
+
+    This is like `PSEnumBase` but supports having multiple values set like `[FlagsAttribute]` in .NET. Using any
+    bitwise operations will preserve the type so `MyFlags.Flag1 | MyFlags.Flag2` will still be an instance of
+    `MyFlags`.
+
+    Like `PSEnumBase`, an implementing type needs to inherit both `PSFlagBase` as well as one of the integer PS types
+    like `PSInt`. An example flag enum would look like:
+
+    FIXME: Update this example
+
+    .. code-block:: python
+
+        class MyFlags(PSFlagBase, PSInt):
+            PSObject = PSObjectMeta(
+                type_names=['System.MyFlags', 'System.Enum', 'System.ValueType', 'System.Object'],
+                rehydrate=True,
+            )
+
+            Flag1 = 1
+            Flag2 = 2
+            Flag3 = 4
+    """
+
+    # We ignore most of these mypy errors due to the weird __mro__ setup
+
+    @classmethod
+    def _missing_(cls, value):  # type: ignore[no-untyped-def]
+        # Calls the unbound func so it runs the operations against our class.
+        return enum.IntFlag._missing_.__func__(cls, value)  # type: ignore[attr-defined]
+
+    @classmethod
+    def _create_pseudo_member_(cls, value):  # type: ignore[no-untyped-def]
+        # Calls the unbound func so it runs the operations against our class.
+        return enum.IntFlag._create_pseudo_member_.__func__(cls, value)  # type: ignore[attr-defined]
+
+    def __or__(self, other):  # type: ignore[no-untyped-def]
+        return enum.IntFlag.__or__(self, other)
+
+    def __and__(self, other):  # type: ignore[no-untyped-def]
+        return enum.IntFlag.__and__(self, other)
+
+    def __xor__(self, other):  # type: ignore[no-untyped-def]
+        return enum.IntFlag.__xor__(self, other)
+
+    __ror__ = __or__
+    __rand__ = __and__
+    __rxor__ = __xor__
+
+    def __invert__(self):  # type: ignore[no-untyped-def]
+        return enum.IntFlag.__invert__(self)

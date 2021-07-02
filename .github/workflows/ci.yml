@@ -65,7 +65,9 @@ jobs:
 
     - name: Run Sanity Test
       run: |
-        poetry run python -m black --check .
+        poetry run python -m black . --check
+        poetry run python -m isort . --check-only
+        poetry run python -m mypy .
 
     - name: Run Tests
       run: |

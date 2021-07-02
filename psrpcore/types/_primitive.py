@@ -17,17 +17,14 @@ of the Progress and Information records which are complex types.
 
 import datetime
 import decimal
+import enum
 import operator
 import re
 import struct
 import typing
 import uuid
 
-from psrpcore.types._ps_base import (
-    PSIntegerBase,
-    PSObject,
-    PSObjectMeta,
-)
+from psrpcore.types._base import PSObject, PSType
 
 # Used by PSVersion to validate the string input. Must be int.int with an optional 3rd and 4th integer values.
 _VERSION_PATTERN = re.compile(
@@ -50,15 +47,14 @@ $
 
 def _ensure_types_and_self(
     valid_types: typing.Union[type, typing.List[type]],
-):
+) -> typing.Callable:
     """Decorator that validates the first and only argument is either the current instance or the supplied types."""
-    if not isinstance(valid_types, list):
-        valid_types = [valid_types]
+    types_to_check: typing.List[typing.Type] = valid_types if isinstance(valid_types, list) else [valid_types]
 
-    def decorator(func):
-        def wrapped(self, other):
-            valid_types.append(type(self))
-            if not isinstance(other, tuple(valid_types)):
+    def decorator(func: typing.Callable) -> typing.Callable:
+        def wrapped(self: PSObject, other: object) -> typing.Any:
+            types_to_check.append(type(self))
+            if not isinstance(other, tuple(types_to_check)):
                 return NotImplemented
 
             return func(self, other)
@@ -96,11 +92,113 @@ def _timedelta_total_nanoseconds(
     return nanoseconds
 
 
-class _PSStringBase(PSObject, str):
-    def __init__(self, *args, **kwargs):
+class PSIntegerBase(PSObject, int):
+    """Base class for integer based primitive types.
+
+    This is the base class to use for primitive integer types. It defines common functions required to seamlessly use
+    numerical operators like `|`, `<`, `&`, etc while preserving the type. It should not be initialised directly but is
+    inherited by the various primitive integer types.
+    """
+
+    MinValue = 0
+    MaxValue = 0
+
+    def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> "PSIntegerBase":
+        if cls == PSIntegerBase:
+            raise TypeError(
+                f"Type {cls.__qualname__} cannot be instantiated; it can be used only as a base class for "
+                f"integer types."
+            )
+
+        num = None
+        if args:
+            if args[0] is None:
+                # In .NET integer cannot be null and PowerShell casts it to 0.
+                num = 0
+
+            elif isinstance(args[0], enum.Enum):
+                num = args[0].value
+
+        if num is None:
+            num = super().__new__(cls, *args, **kwargs)
+
+        if cls != type(num):
+            # If the value is not the exact instance recreate it from an actual int.
+            return super().__new__(cls, int(num))
+
+        if num < cls.MinValue or num > cls.MaxValue:
+            raise ValueError(
+                f"Cannot create {cls.__qualname__} with value '{num}': Value must be between "
+                f"{cls.MinValue} and {cls.MaxValue}."
+            )
+
+        return num
+
+    def __init__(
+        self,
+        x: typing.Union[int, str],
+        base: int = 10,
+        *args: typing.Any,
+        **kwargs: typing.Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+
+    def __abs__(self) -> "PSIntegerBase":
+        return type(self)(super().__abs__())
+
+    def __and__(self, n: int) -> "PSIntegerBase":
+        return type(self)(super().__and__(n))
+
+    def __add__(self, x: int) -> "PSIntegerBase":
+        return type(self)(super().__add__(x))
+
+    def __divmod__(self, x: int) -> typing.Tuple["PSIntegerBase", int]:
+        quotient, remainder = super().__divmod__(x)
+        return type(self)(quotient), remainder
+
+    def __floordiv__(self, x: int) -> "PSIntegerBase":
+        return type(self)(super().__floordiv__(x))
+
+    def __invert__(self) -> "PSIntegerBase":
+        return type(self)(super().__invert__())
+
+    def __lshift__(self, n: int) -> "PSIntegerBase":
+        return type(self)(super().__lshift__(n))
+
+    def __mod__(self, x: int) -> "PSIntegerBase":
+        return type(self)(super().__mod__(x))
+
+    def __mul__(self, x: int) -> "PSIntegerBase":
+        return type(self)(super().__mul__(x))
+
+    def __neg__(self) -> "PSIntegerBase":
+        return type(self)(super().__neg__())
+
+    def __or__(self, n: int) -> "PSIntegerBase":
+        return type(self)(super().__or__(n))
+
+    def __pos__(self) -> "PSIntegerBase":
+        return type(self)(super().__pos__())
+
+    def __pow__(self, *args: typing.Any, **kwargs: typing.Any) -> "PSIntegerBase":
+        val = super().__pow__(*args, **kwargs)  # type: ignore[call-overload]  # base has an overload so this is easier
+        return type(self)(val)
+
+    def __rshift__(self, n: int) -> "PSIntegerBase":
+        return type(self)(super().__rshift__(n))
+
+    def __sub__(self, x: int) -> "PSIntegerBase":
+        return type(self)(super().__sub__(x))
+
+    def __xor__(self, n: int) -> "PSIntegerBase":
+        return type(self)(super().__xor__(n))
+
+
+class PSStringBase(PSObject, str):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: typing.Union[int, str, slice]) -> "PSStringBase":
         # Allows slicing alongside getting extended properties which preserves the underlying type.
         if isinstance(item, str):
             return super().__getitem__(item)
@@ -110,7 +208,8 @@ class _PSStringBase(PSObject, str):
             return type(self)(str.__getitem__(self, item))
 
 
-class PSString(_PSStringBase):
+@PSType(["System.String"], tag="S")
+class PSString(PSStringBase):
     """The String primitive type.
 
     This is the string primitive type which represents the following types:
@@ -130,21 +229,10 @@ class PSString(_PSStringBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.string?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.String"], tag="S")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__()
-
-    def __getitem__(self, item):
-        # Allows slicing alongside getting extended properties which preserves the underlying type.
-        if isinstance(item, str):
-            return super().__getitem__(item)
-
-        else:
-            # String indexing, need to preserve the type.
-            return type(self)(str.__getitem__(self, item))
+    pass
 
 
+@PSType(["System.Char", "System.ValueType"], tag="C")
 class PSChar(PSObject, int):
     """The Char primitive type.
 
@@ -175,9 +263,7 @@ class PSChar(PSObject, int):
         https://docs.microsoft.com/en-us/dotnet/api/system.char?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Char", "System.ValueType"], tag="C")
-
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> "PSChar":
         raw_args = list(args)
 
         if isinstance(raw_args[0], bytes):
@@ -197,10 +283,10 @@ class PSChar(PSObject, int):
 
         return char
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         # While backed by an int value, the str representation should be the char it represents.
         return str(chr(self))
 
@@ -229,6 +315,7 @@ we can't represent an extended primitive object of this type in Python as well.
 """
 
 
+@PSType(["System.DateTime", "System.ValueType"], tag="DT")
 class PSDateTime(PSObject, datetime.datetime):
     """The Date/Time primitive type.
 
@@ -255,15 +342,11 @@ class PSDateTime(PSObject, datetime.datetime):
         https://docs.microsoft.com/en-us/dotnet/api/system.datetime?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.DateTime", "System.ValueType"], tag="DT")
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
-        # This could be set in new, default to 0 just in case it wasn't
-        if not self.nanosecond:
-            self.nanosecond = 0
+        self.nanosecond = getattr(self, "nanosecond", None) or 0
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> "PSDateTime":
         nanosecond = 0
         if "nanosecond" in kwargs:
             nanosecond = kwargs.pop("nanosecond")
@@ -307,8 +390,8 @@ class PSDateTime(PSObject, datetime.datetime):
         if off is not None:
             plus_or_minus = "+" if off.days >= 0 else "-"
             off = abs(off)
-            hours, minutes = divmod(off, datetime.timedelta(hours=1))
-            minutes, seconds = divmod(minutes, datetime.timedelta(minutes=1))
+            hours, minutes_off = divmod(off, datetime.timedelta(hours=1))
+            minutes, seconds = divmod(minutes_off, datetime.timedelta(minutes=1))
 
             # While Python does support tz with an offset of less than minutes, .NET does not.
             offset = f"{plus_or_minus}{hours:02d}:{minutes:02d}"
@@ -317,7 +400,7 @@ class PSDateTime(PSObject, datetime.datetime):
 
     def __add__(
         self,
-        other: typing.Union["PSDuration", datetime.timedelta],
+        other: datetime.timedelta,
     ) -> "PSDateTime":
         nanosecond_diff = self.nanosecond + getattr(other, "nanoseconds", 0)
         new_date = PSDateTime(super().__add__(other))
@@ -332,9 +415,9 @@ class PSDateTime(PSObject, datetime.datetime):
 
         return new_date
 
-    def __sub__(
+    def __sub__(  # type: ignore[override] # cannot seem to document NotImplemented as a return type
         self,
-        other: typing.Union["PSDateTime", "PSDuration", datetime.datetime, datetime.timedelta],
+        other: typing.Union[datetime.datetime, datetime.timedelta],
     ) -> typing.Union["PSDateTime", "PSDuration"]:
         if isinstance(other, (PSDuration, datetime.timedelta)):
             return self + -other
@@ -343,7 +426,16 @@ class PSDateTime(PSObject, datetime.datetime):
         nanosecond_diff = self.nanosecond - getattr(other, "nanosecond", 0)
         return duration + PSDuration(nanoseconds=nanosecond_diff)
 
+    @classmethod
+    def strptime(
+        cls,
+        date_string: str,
+        format: str,
+    ) -> "PSDateTime":
+        return cls(super().strptime(date_string, format))
 
+
+@PSType(["System.TimeSpan", "System.ValueType"], tag="TS")
 class PSDuration(PSObject, datetime.timedelta):
     """The Duration primitive type.
 
@@ -369,14 +461,11 @@ class PSDuration(PSObject, datetime.timedelta):
         https://docs.microsoft.com/en-us/dotnet/api/system.timespan?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.TimeSpan", "System.ValueType"], tag="TS")
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
-        if not self.nanoseconds:
-            self.nanoseconds = 0
+        self.nanoseconds = getattr(self, "nanoseconds", None) or 0
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> "PSDuration":
         nanoseconds = 0
         if "nanoseconds" in kwargs:
             nanoseconds = kwargs.pop("nanoseconds")
@@ -397,7 +486,7 @@ class PSDuration(PSObject, datetime.timedelta):
 
         return instance
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         values = []
         for field in ["days", "seconds", "microseconds", "nanoseconds"]:
             value = getattr(self, field, None)
@@ -411,7 +500,7 @@ class PSDuration(PSObject, datetime.timedelta):
         cls = self.__class__
         return f"{cls.__qualname__}({kwargs})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = ""
         if self.days:
             plural = "s" if abs(self.days) != 1 else ""
@@ -431,7 +520,7 @@ class PSDuration(PSObject, datetime.timedelta):
     @_ensure_types_and_self(datetime.timedelta)
     def __add__(
         self,
-        other: typing.Union["PSDuration", datetime.timedelta],
+        other: datetime.timedelta,
     ) -> "PSDuration":
         new_nano = _timedelta_total_nanoseconds(self) + _timedelta_total_nanoseconds(other)
         return PSDuration(nanoseconds=new_nano)
@@ -439,7 +528,7 @@ class PSDuration(PSObject, datetime.timedelta):
     @_ensure_types_and_self(datetime.timedelta)
     def __sub__(
         self,
-        other: typing.Union["PSDuration", datetime.timedelta],
+        other: datetime.timedelta,
     ) -> "PSDuration":
         new_nano = _timedelta_total_nanoseconds(self) - _timedelta_total_nanoseconds(other)
         return PSDuration(nanoseconds=new_nano)
@@ -447,7 +536,7 @@ class PSDuration(PSObject, datetime.timedelta):
     @_ensure_types_and_self(datetime.timedelta)
     def __rsub__(
         self,
-        other: typing.Union["PSDuration", datetime.timedelta],
+        other: datetime.timedelta,
     ) -> "PSDuration":
         return -self + other
 
@@ -460,42 +549,42 @@ class PSDuration(PSObject, datetime.timedelta):
     @_ensure_types_and_self(datetime.timedelta)
     def __eq__(
         self,
-        other: typing.Union["PSDuration", datetime.timedelta],
+        other: datetime.timedelta,
     ) -> bool:
         return _timedelta_total_nanoseconds(self) == _timedelta_total_nanoseconds(other)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __ne__(
         self,
-        other: typing.Union["PSDuration", datetime.timedelta],
+        other: datetime.timedelta,
     ) -> bool:
         return _timedelta_total_nanoseconds(self) != _timedelta_total_nanoseconds(other)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __le__(
         self,
-        other: typing.Union["PSDuration", datetime.timedelta],
+        other: datetime.timedelta,
     ) -> bool:
         return _timedelta_total_nanoseconds(self) <= _timedelta_total_nanoseconds(other)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __lt__(
         self,
-        other: typing.Union["PSDuration", datetime.timedelta],
+        other: datetime.timedelta,
     ) -> bool:
         return _timedelta_total_nanoseconds(self) < _timedelta_total_nanoseconds(other)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __ge__(
         self,
-        other: typing.Union["PSDuration", datetime.timedelta],
+        other: datetime.timedelta,
     ) -> bool:
         return _timedelta_total_nanoseconds(self) >= _timedelta_total_nanoseconds(other)
 
     @_ensure_types_and_self(datetime.timedelta)
     def __gt__(
         self,
-        other: typing.Union["PSDuration", datetime.timedelta],
+        other: datetime.timedelta,
     ) -> bool:
         return _timedelta_total_nanoseconds(self) > _timedelta_total_nanoseconds(other)
 
@@ -509,6 +598,7 @@ PSDuration.max = PSDuration(nanoseconds=922337203685477580700)
 PSDuration.resolution = PSDuration(nanoseconds=100)
 
 
+@PSType(["System.Byte", "System.ValueType"], tag="By")
 class PSByte(PSIntegerBase):
     """The Unsigned byte primitive type.
 
@@ -533,12 +623,11 @@ class PSByte(PSIntegerBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.byte?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Byte", "System.ValueType"], tag="By")
-
     MinValue = 0
     MaxValue = 255
 
 
+@PSType(["System.SByte", "System.ValueType"], tag="SB")
 class PSSByte(PSIntegerBase):
     """The Signed byte primitive type.
 
@@ -563,12 +652,11 @@ class PSSByte(PSIntegerBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.sbyte?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.SByte", "System.ValueType"], tag="SB")
-
     MinValue = -128
     MaxValue = 127
 
 
+@PSType(["System.UInt16", "System.ValueType"], tag="U16")
 class PSUInt16(PSIntegerBase):
     """The Unsigned short primitive type.
 
@@ -593,12 +681,11 @@ class PSUInt16(PSIntegerBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.uint16?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.UInt16", "System.ValueType"], tag="U16")
-
     MinValue = 0
     MaxValue = 65535
 
 
+@PSType(["System.Int16", "System.ValueType"], tag="I16")
 class PSInt16(PSIntegerBase):
     """The Signed short primitive type.
 
@@ -623,12 +710,11 @@ class PSInt16(PSIntegerBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.int16?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Int16", "System.ValueType"], tag="I16")
-
     MinValue = -32768
     MaxValue = 32767
 
 
+@PSType(["System.UInt32", "System.ValueType"], tag="U32")
 class PSUInt(PSIntegerBase):
     """The Unsigned int primitive type.
 
@@ -653,12 +739,11 @@ class PSUInt(PSIntegerBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.uint32?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.UInt32", "System.ValueType"], tag="U32")
-
     MinValue = 0
     MaxValue = 4294967295
 
 
+@PSType(["System.Int32", "System.ValueType"], tag="I32")
 class PSInt(PSIntegerBase):
     """The Signed int primitive type.
 
@@ -682,12 +767,11 @@ class PSInt(PSIntegerBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.int32?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Int32", "System.ValueType"], tag="I32")
-
     MinValue = -2147483648
     MaxValue = 2147483647
 
 
+@PSType(["System.UInt64", "System.ValueType"], tag="U64")
 class PSUInt64(PSIntegerBase):
     """The Unsigned long primitive type.
 
@@ -712,12 +796,11 @@ class PSUInt64(PSIntegerBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.uint64?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.UInt64", "System.ValueType"], tag="U64")
-
     MinValue = 0
     MaxValue = 18446744073709551615
 
 
+@PSType(["System.Int64", "System.ValueType"], tag="I64")
 class PSInt64(PSIntegerBase):
     """The Signed long primitive type.
 
@@ -742,12 +825,11 @@ class PSInt64(PSIntegerBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.int64?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Int64", "System.ValueType"], tag="I64")
-
     MinValue = -9223372036854775808
     MaxValue = 9223372036854775807
 
 
+@PSType(["System.Single", "System.ValueType"], tag="Sg")
 class PSSingle(PSObject, float):
     """The Single primitive type.
 
@@ -768,12 +850,11 @@ class PSSingle(PSObject, float):
         https://docs.microsoft.com/en-us/dotnet/api/system.single?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Single", "System.ValueType"], tag="Sg")
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
 
 
+@PSType(["System.Double", "System.ValueType"], tag="Db")
 class PSDouble(PSObject, float):
     """The Double primitive type.
 
@@ -794,12 +875,11 @@ class PSDouble(PSObject, float):
         https://docs.microsoft.com/en-us/dotnet/api/system.double?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Double", "System.ValueType"], tag="Db")
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
 
 
+@PSType(["System.Decimal", "System.ValueType"], tag="D")
 class PSDecimal(PSObject, decimal.Decimal):
     """The Decimal primitive type.
 
@@ -820,12 +900,11 @@ class PSDecimal(PSObject, decimal.Decimal):
         https://docs.microsoft.com/en-us/dotnet/api/system.decimal?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Decimal", "System.ValueType"], tag="D")
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
 
 
+@PSType(["System.Byte[]", "System.Array"], tag="BA")
 class PSByteArray(PSObject, bytes):
     """The Byte Array primitive type.
 
@@ -843,12 +922,13 @@ class PSByteArray(PSObject, bytes):
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/489ed886-34d2-4306-a2f5-73843c219b14
     """
 
-    PSObject = PSObjectMeta(["System.Byte[]", "System.Array"], tag="BA")
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
 
-    def __getitem__(self, item):
+    def __getitem__(  # type: ignore[override]  # The __mro__ is confusing mypy
+        self,
+        item: typing.Union[str, int, slice],
+    ) -> "PSByteArray":
         # Allows slicing alongside getting extended properties which preserves the underlying type.
         if isinstance(item, str):
             return super().__getitem__(item)
@@ -858,6 +938,7 @@ class PSByteArray(PSObject, bytes):
             return type(self)(bytes.__getitem__(self, item))
 
 
+@PSType(["System.Guid", "System.ValueType"], tag="G")
 class PSGuid(PSObject, uuid.UUID):
     """The GUID/UUID primitive type.
 
@@ -878,12 +959,10 @@ class PSGuid(PSObject, uuid.UUID):
         https://docs.microsoft.com/en-us/dotnet/api/system.guid?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Guid", "System.ValueType"], tag="G")
-
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> "PSGuid":
         return super().__new__(cls)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
 
         # UUID does not support __init__ with a UUID instance. Just rewrite the args to support this here.
@@ -893,14 +972,13 @@ class PSGuid(PSObject, uuid.UUID):
 
         # Python 3.6 and 3.7 uses a __dict__ for a UUID whereas newer ones use __slots. We adjust the way we initialise
         # the UUID props based on this behaviour.
-        if hasattr(uuid.UUID, "__slots__"):
+        if hasattr(uuid.UUID, "__slots__"):  # pragma: no cover
             uuid.UUID.__init__(self, *args, **kwargs)
-
-        else:
+        else:  # pragma: no cover
             uuid_val = uuid.UUID(*args, **kwargs)
             uuid.UUID.__getattribute__(self, "__dict__").update(uuid.UUID.__getattribute__(uuid_val, "__dict__"))
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: typing.Any) -> None:
         # UUID raises TypeError on __setattr__ and there are cases where we need to override the psobject attribute.
         if name == "PSObject":
             # Because PSObject returns a copy when requesting a __dict__ we need to go a step further to ensure we can
@@ -911,7 +989,8 @@ class PSGuid(PSObject, uuid.UUID):
         super().__setattr__(name, value)
 
 
-class PSUri(_PSStringBase):
+@PSType(["System.Uri"], tag="URI")
+class PSUri(PSStringBase):
     """The URI primitive type.
 
     This is the URI primitive type which represents the following types:
@@ -935,8 +1014,6 @@ class PSUri(_PSStringBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.uri?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Uri"], tag="URI")
-
 
 PSNull = None
 """The Null Value primitive type.
@@ -958,6 +1035,7 @@ This isn't a type but rather just a placeholder for `None` in PSRP.
 """
 
 
+@PSType(["System.Version"], tag="Version")
 class PSVersion(PSObject):
     """The Version primitive type.
 
@@ -1000,8 +1078,6 @@ class PSVersion(PSObject):
         https://docs.microsoft.com/en-us/dotnet/api/system.version?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Version"], tag="Version")
-
     def __init__(
         self,
         version_str: typing.Optional[str] = None,
@@ -1009,7 +1085,7 @@ class PSVersion(PSObject):
         minor: typing.Optional[int] = None,
         build: typing.Optional[int] = None,
         revision: typing.Optional[int] = None,
-    ):
+    ) -> None:
         super().__init__()
 
         if version_str:
@@ -1021,10 +1097,10 @@ class PSVersion(PSObject):
                 )
 
             matches = version_match.groupdict()
-            major = matches["major"]
-            minor = matches["minor"]
-            build = matches["build"]
-            revision = matches["revision"]
+            major = int(matches["major"])
+            minor = int(matches["minor"])
+            build = int(matches["build"]) if matches["build"] is not None else None
+            revision = int(matches["revision"]) if matches["revision"] is not None else None
 
         elif major is None or minor is None:
             raise ValueError(
@@ -1034,12 +1110,12 @@ class PSVersion(PSObject):
         elif revision is not None and build is None:
             raise ValueError(f"The build version must be set when revision is set.")
 
-        self.major = int(major)
-        self.minor = int(minor)
-        self.build = int(build) if build is not None else None
-        self.revision = int(revision) if revision is not None else None
+        self.major = major
+        self.minor = minor
+        self.build = build
+        self.revision = revision
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> "PSVersion":
         return super().__new__(cls)
 
     def __repr__(self) -> str:
@@ -1059,7 +1135,7 @@ class PSVersion(PSObject):
 
     def __eq__(
         self,
-        other: typing.Union["PSVersion", str],
+        other: object,
     ) -> bool:
         if not isinstance(other, (PSVersion, str)):
             return False
@@ -1104,7 +1180,7 @@ class PSVersion(PSObject):
                 f"'{op_symbol}' not supported between instances of 'PSVersion' and " f"'{type(other).__name__}"
             )
 
-        def version_tuple(version):
+        def version_tuple(version: "PSVersion") -> typing.Tuple[int, ...]:
             parts = [version.major, version.minor, version.build, version.revision]
             return tuple([p for p in parts if p is not None])
 
@@ -1114,7 +1190,8 @@ class PSVersion(PSObject):
         return cmp(self_tuple, other_tuple)
 
 
-class PSXml(_PSStringBase):
+@PSType(["System.Xml.XmlDocument", "System.Xml.XmlNode"], tag="XD")
+class PSXml(PSStringBase):
     """The XML Document primitive type.
 
     This is the XML Document primitive type which represents the following
@@ -1139,10 +1216,9 @@ class PSXml(_PSStringBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.xml.xmldocument?view=net-5.0
     """
 
-    PSObject = PSObjectMeta(["System.Xml.XmlDocument", "System.Xml.XmlNode"], tag="XD")
 
-
-class PSScriptBlock(_PSStringBase):
+@PSType(["System.Management.Automation.ScriptBlock"], tag="SBK")
+class PSScriptBlock(PSStringBase):
     """The ScriptBlock primitive type.
 
     This is the PowerShell ScriptBlock primitive type which represents the
@@ -1168,10 +1244,9 @@ class PSScriptBlock(_PSStringBase):
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.scriptblock?view=powershellsdk-7.0.0
     """
 
-    PSObject = PSObjectMeta(["System.Management.Automation.ScriptBlock"], tag="SBK")
 
-
-class PSSecureString(_PSStringBase):
+@PSType(["System.Security.SecureString"], tag="SS")
+class PSSecureString(PSStringBase):
     """The Secure String primitive type.
 
     This is the PowerShell secure string primitive type which represents the
@@ -1202,5 +1277,3 @@ class PSSecureString(_PSStringBase):
     .. _System.Security.SecureString:
         https://docs.microsoft.com/en-us/dotnet/api/system.security.securestring?view=net-5.0
     """
-
-    PSObject = PSObjectMeta(["System.Security.SecureString"], tag="SS")

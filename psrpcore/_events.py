@@ -6,132 +6,202 @@ import typing
 import uuid
 
 from psrpcore.types import (
+    ApplicationPrivateData,
+    ConnectRunspacePool,
+    CreatePipeline,
+    DebugRecordMsg,
+    EncryptedSessionKey,
+    EndOfPipelineInput,
     ErrorRecord,
+    ErrorRecordMsg,
+    GetAvailableRunspaces,
+    GetCommandMetadata,
+    InformationRecordMsg,
+    InitRunspacePool,
+    PipelineHostCall,
+    PipelineHostResponse,
+    PipelineState,
+    ProgressRecord,
     PSBool,
     PSInvocationState,
     PSObject,
-    RunspacePoolState,
-)
-
-from psrpcore.types._psrp_messages import (
-    CreatePipeline,
-    GetCommandMetadata,
     PSRPMessageType,
+    PublicKey,
+    PublicKeyRequest,
+    ResetRunspaceState,
+    RunspaceAvailability,
+    RunspacePoolHostCall,
+    RunspacePoolHostResponse,
+    RunspacePoolInitData,
+    RunspacePoolState,
+    RunspacePoolStateMsg,
+    SessionCapability,
+    SetMaxRunspaces,
+    SetMinRunspaces,
+    UserEvent,
+    VerboseRecordMsg,
+    WarningRecordMsg,
 )
 
+if typing.TYPE_CHECKING:
+    from psrpcore._server import ServerGetCommandMetadata, ServerPowerShell
 
-class _PSRPEventRegistry(type):
-    __registry = {}
-
-    def __init__(cls, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        message_type = getattr(cls, "MESSAGE_TYPE", None)
-        if message_type is not None and message_type not in cls.__registry:
-            cls.__registry[message_type] = cls
-
-    def __call__(
-        cls,
-        message_type: PSRPMessageType,
-        ps_object: PSObject,
-        runspace_pool_id: uuid.UUID,
-        pipeline_id: typing.Optional[uuid.UUID] = None,
-    ):
-        new_cls = cls.__registry.get(message_type, cls)
-        return super(_PSRPEventRegistry, new_cls).__call__(message_type, ps_object, runspace_pool_id, pipeline_id)
+T1 = typing.TypeVar("T1")
+T2 = typing.TypeVar("T2")
+_OptionalPipelineType = typing.Optional[uuid.UUID]
 
 
-class PSRPEvent(metaclass=_PSRPEventRegistry):
+class PSRPEvent(typing.Generic[T1, T2]):
     def __init__(
         self,
         message_type: PSRPMessageType,
-        ps_object: PSObject,
+        ps_object: T1,
         runspace_pool_id: uuid.UUID,
-        pipeline_id: typing.Optional[uuid.UUID] = None,
+        pipeline_id: T2,
     ):
+        self.message_type = message_type
         self.ps_object = ps_object
         self.runspace_pool_id = runspace_pool_id
         self.pipeline_id = pipeline_id
 
-
-class ApplicationPrivateDataEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.ApplicationPrivateData
-
-
-class ConnectRunspacePoolEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.ConnectRunspacePool
-
-
-class CreatePipelineEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.CreatePipeline
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.pipeline: typing.Optional[CreatePipeline] = None
+    @classmethod
+    def create(
+        cls,
+        message_type: PSRPMessageType,
+        ps_object: T1,
+        runspace_pool_id: uuid.UUID,
+        pipeline_id: T2 = None,
+    ) -> "PSRPEvent":
+        event_cls = _REGISTRY[message_type]
+        return event_cls(message_type, ps_object, runspace_pool_id, pipeline_id)
 
 
-class DebugRecordEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.DebugRecord
+_REGISTRY: typing.Dict[PSRPMessageType, typing.Type[PSRPEvent]] = {}
 
 
-class EncryptedSessionKeyEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.EncryptedSessionKey
+def RegisterEvent(cls: typing.Type) -> typing.Type[PSRPEvent]:
+    msg_type = cls.__orig_bases__[0].__args__[0]
+
+    # PipelineInput and PipelineOutput can accept anything.
+    msg_id = None
+    if msg_type != typing.Any:
+        msg_id = PSRPMessageType.get_message_id(msg_type)
+
+    elif cls.__module__ in RegisterEvent.__module__:
+        msg_id = {
+            "PipelineInputEvent": PSRPMessageType.PipelineInput,
+            "PipelineOutputEvent": PSRPMessageType.PipelineOutput,
+        }[cls.__qualname__]
+
+    if msg_id:
+        _REGISTRY[msg_id] = cls
+
+    return cls
 
 
-class EndOfPipelineInputEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.EndOfPipelineInput
+@RegisterEvent
+class ApplicationPrivateDataEvent(PSRPEvent[ApplicationPrivateData, None]):
+    pass
 
 
-class ErrorRecordEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.ErrorRecord
+@RegisterEvent
+class ConnectRunspacePoolEvent(PSRPEvent[ConnectRunspacePool, None]):
+    pass
 
 
-class GetAvailableRunspacesEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.GetAvailableRunspaces
+@RegisterEvent
+class CreatePipelineEvent(PSRPEvent[CreatePipeline, uuid.UUID]):
+    def __init__(
+        self,
+        message_type: PSRPMessageType,
+        ps_object: CreatePipeline,
+        runspace_pool_id: uuid.UUID,
+        pipeline_id: uuid.UUID,
+    ):
+        super().__init__(message_type, ps_object, runspace_pool_id, pipeline_id=pipeline_id)
+        self.pipeline: typing.Optional["ServerPowerShell"] = None
 
 
-class GetCommandMetadataEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.GetCommandMetadata
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.pipeline: typing.Optional[GetCommandMetadata] = None
+@RegisterEvent
+class DebugRecordEvent(PSRPEvent[DebugRecordMsg, _OptionalPipelineType]):
+    pass
 
 
-class InformationRecordEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.InformationRecord
+@RegisterEvent
+class EncryptedSessionKeyEvent(PSRPEvent[EncryptedSessionKey, _OptionalPipelineType]):
+    pass
 
 
-class InitRunspacePoolEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.InitRunspacePool
+@RegisterEvent
+class EndOfPipelineInputEvent(PSRPEvent[EndOfPipelineInput, uuid.UUID]):
+    pass
 
 
-class PipelineHostCallEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.PipelineHostCall
+@RegisterEvent
+class ErrorRecordEvent(PSRPEvent[ErrorRecordMsg, _OptionalPipelineType]):
+    pass
 
 
-class PipelineHostResponseEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.PipelineHostResponse
+@RegisterEvent
+class GetAvailableRunspacesEvent(PSRPEvent[GetAvailableRunspaces, None]):
+    pass
 
 
-class PublicKeyEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.PublicKey
+@RegisterEvent
+class GetCommandMetadataEvent(PSRPEvent[GetCommandMetadata, uuid.UUID]):
+    def __init__(
+        self,
+        message_type: PSRPMessageType,
+        ps_object: GetCommandMetadata,
+        runspace_pool_id: uuid.UUID,
+        pipeline_id: uuid.UUID,
+    ):
+        super().__init__(message_type, ps_object, runspace_pool_id, pipeline_id=pipeline_id)
+        self.pipeline: typing.Optional["ServerGetCommandMetadata"] = None
 
 
-class PublicKeyRequestEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.PublicKeyRequest
+@RegisterEvent
+class InformationRecordEvent(PSRPEvent[InformationRecordMsg, _OptionalPipelineType]):
+    pass
 
 
-class PipelineInputEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.PipelineInput
+@RegisterEvent
+class InitRunspacePoolEvent(PSRPEvent[InitRunspacePool, None]):
+    pass
 
 
-class PipelineOutputEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.PipelineOutput
+@RegisterEvent
+class PipelineHostCallEvent(PSRPEvent[PipelineHostCall, uuid.UUID]):
+    pass
 
 
-class PipelineStateEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.PipelineState
+@RegisterEvent
+class PipelineHostResponseEvent(PSRPEvent[PipelineHostResponse, uuid.UUID]):
+    pass
 
+
+@RegisterEvent
+class PublicKeyEvent(PSRPEvent[PublicKey, None]):
+    pass
+
+
+@RegisterEvent
+class PublicKeyRequestEvent(PSRPEvent[PublicKeyRequest, None]):
+    pass
+
+
+@RegisterEvent
+class PipelineInputEvent(PSRPEvent[typing.Any, uuid.UUID]):
+    pass
+
+
+@RegisterEvent
+class PipelineOutputEvent(PSRPEvent[typing.Any, uuid.UUID]):
+    pass
+
+
+@RegisterEvent
+class PipelineStateEvent(PSRPEvent[PipelineState, uuid.UUID]):
     @property
     def state(self) -> PSInvocationState:
         return PSInvocationState(self.ps_object.PipelineState)
@@ -141,33 +211,32 @@ class PipelineStateEvent(PSRPEvent):
         return getattr(self.ps_object, "ExceptionAsErrorRecord", None)
 
 
-class ProgressRecordEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.ProgressRecord
+@RegisterEvent
+class ProgressRecordEvent(PSRPEvent[ProgressRecord, _OptionalPipelineType]):
+    pass
 
 
-class ResetRunspaceStateEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.ResetRunspaceState
+@RegisterEvent
+class ResetRunspaceStateEvent(PSRPEvent[ResetRunspaceState, None]):
+    pass
 
 
-class RunspaceAvailabilityEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.RunspaceAvailability
-
+@RegisterEvent
+class RunspaceAvailabilityEvent(PSRPEvent[RunspaceAvailability, None]):
     def __new__(
         cls,
         message_type: PSRPMessageType,
         ps_object: PSObject,
         runspace_pool_id: uuid.UUID,
-        pipeline_id: typing.Optional[uuid.UUID] = None,
-    ):
+        pipeline_id: None = None,
+    ) -> "RunspaceAvailabilityEvent":
         # Special case, this message has a boolean value when in response to Set[Max|Min]Runspaces and an Int64
         # value when in response to GetAvailableRunspaces. We want to make sure our event is clear what it is in
         # response to.
         if isinstance(ps_object.SetMinMaxRunspacesResponse, PSBool):
-            new_cls = SetRunspaceAvailabilityEvent
+            return super().__new__(SetRunspaceAvailabilityEvent)
         else:
-            new_cls = GetRunspaceAvailabilityEvent
-
-        return super().__new__(new_cls)
+            return super().__new__(GetRunspaceAvailabilityEvent)
 
 
 class SetRunspaceAvailabilityEvent(RunspaceAvailabilityEvent):
@@ -182,21 +251,23 @@ class GetRunspaceAvailabilityEvent(RunspaceAvailabilityEvent):
         return int(self.ps_object.SetMinMaxRunspacesResponse)
 
 
-class RunspacePoolHostCallEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.RunspacePoolHostCall
+@RegisterEvent
+class RunspacePoolHostCallEvent(PSRPEvent[RunspacePoolHostCall, None]):
+    pass
 
 
-class RunspacePoolHostResponseEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.RunspacePoolHostResponse
+@RegisterEvent
+class RunspacePoolHostResponseEvent(PSRPEvent[RunspacePoolHostResponse, None]):
+    pass
 
 
-class RunspacePoolInitDataEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.RunspacePoolInitData
+@RegisterEvent
+class RunspacePoolInitDataEvent(PSRPEvent[RunspacePoolInitData, None]):
+    pass
 
 
-class RunspacePoolStateEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.RunspacePoolState
-
+@RegisterEvent
+class RunspacePoolStateEvent(PSRPEvent[RunspacePoolStateMsg, None]):
     @property
     def state(self) -> RunspacePoolState:
         return RunspacePoolState(self.ps_object.RunspaceState)
@@ -206,25 +277,31 @@ class RunspacePoolStateEvent(PSRPEvent):
         return getattr(self.ps_object, "ExceptionAsErrorRecord", None)
 
 
-class SessionCapabilityEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.SessionCapability
+@RegisterEvent
+class SessionCapabilityEvent(PSRPEvent[SessionCapability, None]):
+    pass
 
 
-class SetMaxRunspacesEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.SetMaxRunspaces
+@RegisterEvent
+class SetMaxRunspacesEvent(PSRPEvent[SetMaxRunspaces, None]):
+    pass
 
 
-class SetMinRunspacesEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.SetMinRunspaces
+@RegisterEvent
+class SetMinRunspacesEvent(PSRPEvent[SetMinRunspaces, None]):
+    pass
 
 
-class UserEventEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.UserEvent
+@RegisterEvent
+class UserEventEvent(PSRPEvent[UserEvent, None]):
+    pass
 
 
-class VerboseRecordEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.VerboseRecord
+@RegisterEvent
+class VerboseRecordEvent(PSRPEvent[VerboseRecordMsg, _OptionalPipelineType]):
+    pass
 
 
-class WarningRecordEvent(PSRPEvent):
-    MESSAGE_TYPE = PSRPMessageType.WarningRecord
+@RegisterEvent
+class WarningRecordEvent(PSRPEvent[WarningRecordMsg, _OptionalPipelineType]):
+    pass

@@ -4,18 +4,16 @@
 
 import datetime
 import decimal
-import pytest
-import re
+import enum
 import queue
+import re
 import uuid
-
-import psrpcore._serializer as serializer
 import xml.etree.ElementTree as ElementTree
 
-from psrpcore import (
-    MissingCipherError,
-)
+import pytest
 
+import psrpcore.types._serializer as serializer
+from psrpcore import MissingCipherError
 from psrpcore.types import (
     PSBool,
     PSByte,
@@ -30,10 +28,10 @@ from psrpcore.types import (
     PSInt16,
     PSInt64,
     PSQueue,
-    PSSingle,
     PSSByte,
     PSScriptBlock,
     PSSecureString,
+    PSSingle,
     PSString,
     PSUInt,
     PSUInt16,
@@ -43,12 +41,10 @@ from psrpcore.types import (
     PSXml,
 )
 
+from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING
 
 # A lot of the serializer tests are done in the tests for each object, these are just for extra edge cases we want to
 # validate
-
-COMPLEX_STRING = "treble clef\n _x0000_ _X0000_ %s café" % b"\xF0\x9D\x84\x9E".decode("utf-8")
-COMPLEX_ENCODED_STRING = "treble clef_x000A_ _x005F_x0000_ _x005F_X0000_ _xD834__xDD1E_ café"
 
 
 @pytest.mark.parametrize(
@@ -219,3 +215,110 @@ def test_serialize_secure_string_without_cipher():
 
     with pytest.raises(MissingCipherError):
         serializer.deserialize(ElementTree.fromstring("<SS></SS>"))
+
+
+def test_serialize_native_enum():
+    class MyEnum(enum.IntEnum):
+        none = 0
+        test1 = 1
+
+    element = serializer.serialize(MyEnum.none)
+    actual = ElementTree.tostring(element, encoding="utf-8").decode()
+    assert actual == (
+        '<Obj RefId="0">'
+        "<I32>0</I32>"
+        '<TN RefId="0">'
+        f"<T>{MyEnum.__module__}.{MyEnum.__name__}</T>"
+        "<T>System.Enum</T>"
+        "<T>System.ValueType</T>"
+        "<T>System.Object</T>"
+        "</TN>"
+        "<ToString>none</ToString>"
+        "</Obj>"
+    )
+
+    element = serializer.serialize(MyEnum.test1)
+    actual = ElementTree.tostring(element, encoding="utf-8").decode()
+    assert actual == (
+        '<Obj RefId="0">'
+        "<I32>1</I32>"
+        '<TN RefId="0">'
+        f"<T>{MyEnum.__module__}.{MyEnum.__name__}</T>"
+        "<T>System.Enum</T>"
+        "<T>System.ValueType</T>"
+        "<T>System.Object</T>"
+        "</TN>"
+        "<ToString>test1</ToString>"
+        "</Obj>"
+    )
+
+
+def test_serialize_native_flags():
+    class MyEnum(enum.IntFlag):
+        none = 0
+        test1 = 1
+        test2 = 2
+
+    element = serializer.serialize(MyEnum.none)
+    actual = ElementTree.tostring(element, encoding="utf-8").decode()
+    assert actual == (
+        '<Obj RefId="0">'
+        "<I32>0</I32>"
+        '<TN RefId="0">'
+        f"<T>{MyEnum.__module__}.{MyEnum.__name__}</T>"
+        "<T>System.Enum</T>"
+        "<T>System.ValueType</T>"
+        "<T>System.Object</T>"
+        "</TN>"
+        "<ToString>none</ToString>"
+        "</Obj>"
+    )
+
+    element = serializer.serialize(MyEnum.test1 | MyEnum.test2)
+    actual = ElementTree.tostring(element, encoding="utf-8").decode()
+    assert actual == (
+        '<Obj RefId="0">'
+        "<I32>3</I32>"
+        '<TN RefId="0">'
+        f"<T>{MyEnum.__module__}.{MyEnum.__name__}</T>"
+        "<T>System.Enum</T>"
+        "<T>System.ValueType</T>"
+        "<T>System.Object</T>"
+        "</TN>"
+        "<ToString>test1, test2</ToString>"
+        "</Obj>"
+    )
+
+
+def test_fail_deserialize_dict_no_key():
+    clixml = (
+        '<Obj RefId="0">'
+        '<TN RefId="0">'
+        "<T>System.Collections.Hashtable</T>"
+        "<T>System.Object</T>"
+        "</TN>"
+        "<DCT>"
+        '<En><S N="NotKey">1</S><S N="Value">test</S></En>'
+        "</DCT>"
+        "</Obj>"
+    )
+
+    with pytest.raises(ValueError, match="Failed to find dict Key attribute"):
+        serializer.deserialize(ElementTree.fromstring(clixml))
+
+
+def test_fail_deserialize_dict_no_value():
+    clixml = (
+        '<Obj RefId="0">'
+        '<TN RefId="0">'
+        "<T>System.Collections.Hashtable</T>"
+        "<T>System.Object</T>"
+        "</TN>"
+        "<DCT>"
+        '<En><S N="Key">1</S><S N="NotValue">test</S></En>'
+        "</DCT>"
+        "</Obj>"
+    )
+
+    with pytest.raises(ValueError, match="Failed to find dict Value attribute"):
+        serializer.deserialize(ElementTree.fromstring(clixml))

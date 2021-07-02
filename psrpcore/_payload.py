@@ -9,9 +9,7 @@ import struct
 import typing
 import uuid
 
-from psrpcore.types._psrp_messages import (
-    PSRPMessageType,
-)
+from psrpcore.types import PSObject, PSRPMessageType, add_note_property
 
 EMPTY_UUID = uuid.UUID(bytes=b"\x00" * 16)
 
@@ -225,8 +223,8 @@ def unpack_message(
     """
     destination = struct.unpack("<I", data[0:4])[0]
     message_type = PSRPMessageType(struct.unpack("<I", data[4:8])[0])
-    rpid = uuid.UUID(bytes_le=bytes(data[8:24]))
-    pid = uuid.UUID(bytes_le=bytes(data[24:40]))
+    rpid: typing.Optional[uuid.UUID] = uuid.UUID(bytes_le=bytes(data[8:24]))
+    pid: typing.Optional[uuid.UUID] = uuid.UUID(bytes_le=bytes(data[24:40]))
 
     if rpid == EMPTY_UUID:
         rpid = None
@@ -308,3 +306,12 @@ def ps_guid_packet(
     """
     ps_guid = ps_guid or EMPTY_UUID
     return b"<%s PSGuid='%s' />\n" % (element.encode(), str(ps_guid).encode())
+
+
+def dict_to_psobject(**kwargs: typing.Any) -> PSObject:
+    """Builds a PSObject with note properties set by the kwargs."""
+    obj = PSObject()
+    for key, value in kwargs.items():
+        add_note_property(obj, key, value)
+
+    return obj

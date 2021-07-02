@@ -4,30 +4,19 @@
 
 import datetime
 import decimal
-import psrpcore.types._primitive_types as primitive_types
-import pytest
 import re
 import sys
 import uuid
 import xml.etree.ElementTree as ElementTree
 
-from psrpcore._crypto import (
-    PSRemotingCrypto,
-)
+import pytest
 
-from psrpcore._serializer import (
-    deserialize,
-    serialize,
-)
+import psrpcore.types._primitive as primitive
+from psrpcore._crypto import PSRemotingCrypto
+from psrpcore.types import PSNoteProperty, PSObject
+from psrpcore.types._serializer import deserialize, serialize
 
-from psrpcore.types import (
-    PSNoteProperty,
-    PSObject,
-)
-
-# Contains control characters, non-ascii chars, and chars that are surrogate pairs in UTF-16
-COMPLEX_STRING = "treble clef\n _x0000_ _X0000_ %s café" % b"\xF0\x9D\x84\x9E".decode("utf-8")
-COMPLEX_ENCODED_STRING = "treble clef_x000A_ _x005F_x0000_ _x005F_X0000_ _xD834__xDD1E_ café"
+from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING
 
 
 class FakeCryptoProvider(PSRemotingCrypto):
@@ -41,13 +30,22 @@ class FakeCryptoProvider(PSRemotingCrypto):
         return value
 
 
+def test_fail_to_create_integer_base():
+    expected = re.escape(
+        "Type PSIntegerBase cannot be instantiated; it can be used only as a base class for integer types."
+    )
+
+    with pytest.raises(TypeError, match=expected):
+        primitive.PSIntegerBase(1)
+
+
 @pytest.mark.parametrize(
     "ps_type, tag, type_names",
     [
-        (primitive_types.PSString, "S", ["System.String", "System.Object"]),
-        (primitive_types.PSUri, "URI", ["System.Uri", "System.Object"]),
-        (primitive_types.PSXml, "XD", ["System.Xml.XmlDocument", "System.Xml.XmlNode", "System.Object"]),
-        (primitive_types.PSScriptBlock, "SBK", ["System.Management.Automation.ScriptBlock", "System.Object"]),
+        (primitive.PSString, "S", ["System.String", "System.Object"]),
+        (primitive.PSUri, "URI", ["System.Uri", "System.Object"]),
+        (primitive.PSXml, "XD", ["System.Xml.XmlDocument", "System.Xml.XmlNode", "System.Object"]),
+        (primitive.PSScriptBlock, "SBK", ["System.Management.Automation.ScriptBlock", "System.Object"]),
     ],
 )
 def test_ps_string_types(ps_type, tag, type_names):
@@ -80,10 +78,10 @@ def test_ps_string_from_string():
 @pytest.mark.parametrize(
     "ps_type, tag, type_names",
     [
-        (primitive_types.PSString, "S", ["System.String", "System.Object"]),
-        (primitive_types.PSUri, "URI", ["System.Uri", "System.Object"]),
-        (primitive_types.PSXml, "XD", ["System.Xml.XmlDocument", "System.Xml.XmlNode", "System.Object"]),
-        (primitive_types.PSScriptBlock, "SBK", ["System.Management.Automation.ScriptBlock", "System.Object"]),
+        (primitive.PSString, "S", ["System.String", "System.Object"]),
+        (primitive.PSUri, "URI", ["System.Uri", "System.Object"]),
+        (primitive.PSXml, "XD", ["System.Xml.XmlDocument", "System.Xml.XmlNode", "System.Object"]),
+        (primitive.PSScriptBlock, "SBK", ["System.Management.Automation.ScriptBlock", "System.Object"]),
     ],
 )
 def test_ps_string_with_properties(ps_type, tag, type_names):
@@ -143,8 +141,8 @@ def test_ps_char(input_val):
     else:
         input_val = sparkles
 
-    ps_char = primitive_types.PSChar(input_val)
-    assert isinstance(ps_char, primitive_types.PSChar)
+    ps_char = primitive.PSChar(input_val)
+    assert isinstance(ps_char, primitive.PSChar)
     assert isinstance(ps_char, int)
     assert str(ps_char) == sparkles
 
@@ -154,7 +152,7 @@ def test_ps_char(input_val):
     assert actual == "<C>%s</C>" % int(ps_char)
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSChar)
+    assert isinstance(actual, primitive.PSChar)
     assert isinstance(actual, int)
     assert actual == ps_char
     assert int(actual) == ord(sparkles)
@@ -178,8 +176,8 @@ def test_ps_char(input_val):
 def test_ps_char_edge_cases(input_val, expected):
     str_expected = str(chr(expected))
 
-    actual = primitive_types.PSChar(input_val)
-    assert isinstance(actual, primitive_types.PSChar)
+    actual = primitive.PSChar(input_val)
+    assert isinstance(actual, primitive.PSChar)
     assert actual == expected
     assert str(actual) == str_expected
 
@@ -189,7 +187,7 @@ def test_ps_char_edge_cases(input_val, expected):
     assert actual == "<C>%s</C>" % expected
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSChar)
+    assert isinstance(actual, primitive.PSChar)
     assert actual == expected
     assert str(actual) == str_expected
     assert actual.PSTypeNames == ["System.Char", "System.ValueType", "System.Object"]
@@ -204,17 +202,17 @@ def test_ps_char_edge_cases(input_val, expected):
 )
 def test_ps_char_invalid_string(input_val):
     with pytest.raises(ValueError, match="A PSChar must be 1 UTF-16 codepoint"):
-        primitive_types.PSChar(input_val)
+        primitive.PSChar(input_val)
 
 
 @pytest.mark.parametrize("input_val", [-1, 65536])
 def test_ps_char_invalid_int(input_val):
     with pytest.raises(ValueError, match="A PSChar must be between 0 and 65535."):
-        primitive_types.PSChar(input_val)
+        primitive.PSChar(input_val)
 
 
 def test_ps_char_with_properties():
-    ps_char = primitive_types.PSChar("c")
+    ps_char = primitive.PSChar("c")
     ps_char.PSObject.extended_properties.append(PSNoteProperty("Test Property"))
     ps_char["Test Property"] = 1
 
@@ -224,12 +222,12 @@ def test_ps_char_with_properties():
     assert actual == '<Obj RefId="0"><C>99</C><MS><I32 N="Test Property">1</I32></MS></Obj>'
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSChar)
+    assert isinstance(actual, primitive.PSChar)
     assert isinstance(actual, int)
     assert actual == 99
     assert str(actual) == "c"
     assert actual["Test Property"] == 1
-    assert isinstance(actual["Test Property"], primitive_types.PSInt)
+    assert isinstance(actual["Test Property"], primitive.PSInt)
     assert actual.PSTypeNames == ["System.Char", "System.ValueType", "System.Object"]
 
 
@@ -245,8 +243,8 @@ def test_ps_char_with_properties():
     ],
 )
 def test_ps_bool(input_val, expected):
-    actual = primitive_types.PSBool(input_val)
-    assert isinstance(actual, primitive_types.PSBool)
+    actual = primitive.PSBool(input_val)
+    assert isinstance(actual, primitive.PSBool)
     assert isinstance(actual, bool)
     assert actual == expected
 
@@ -256,7 +254,7 @@ def test_ps_bool(input_val, expected):
     assert actual == "<B>%s</B>" % str(expected).lower()
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSBool)
+    assert isinstance(actual, primitive.PSBool)
     assert isinstance(actual, bool)
     assert not isinstance(actual, PSObject)  # We cannot subclass bool so this won't be a PSObject
     assert actual == expected
@@ -275,7 +273,7 @@ def test_ps_bool_deserialize_extended():
     element = ElementTree.fromstring(xml_val)
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSBool)
+    assert isinstance(actual, primitive.PSBool)
     assert isinstance(actual, bool)
     assert not isinstance(actual, PSObject)
     assert actual is True
@@ -324,8 +322,8 @@ def test_ps_datetime(input_val, expected, expected_str, expected_repr):
     if sys.version_info[:2] == (3, 6):
         expected_repr = expected_repr.replace("datetime.timedelta(seconds=", "datetime.timedelta(0, ")
 
-    ps_datetime = primitive_types.PSDateTime(input_val)
-    assert isinstance(ps_datetime, primitive_types.PSDateTime)
+    ps_datetime = primitive.PSDateTime(input_val)
+    assert isinstance(ps_datetime, primitive.PSDateTime)
     assert isinstance(ps_datetime, datetime.datetime)
 
     element = serialize(ps_datetime)
@@ -333,7 +331,7 @@ def test_ps_datetime(input_val, expected, expected_str, expected_repr):
     assert actual == expected
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSDateTime)
+    assert isinstance(actual, primitive.PSDateTime)
     assert isinstance(actual, datetime.datetime)
     assert actual.year == input_val.year
     assert actual.month == input_val.month
@@ -356,8 +354,8 @@ def test_ps_datetime_from_datetime():
 
 @pytest.mark.parametrize("nanosecond, fraction", [(7, 0), (70, 0), (700, 7)])
 def test_ps_datetime_nanosecond(nanosecond, fraction):
-    ps_datetime = primitive_types.PSDateTime(1970, 6, 11, 4, 8, 23, microsecond=123456, nanosecond=nanosecond)
-    assert isinstance(ps_datetime, primitive_types.PSDateTime)
+    ps_datetime = primitive.PSDateTime(1970, 6, 11, 4, 8, 23, microsecond=123456, nanosecond=nanosecond)
+    assert isinstance(ps_datetime, primitive.PSDateTime)
     assert isinstance(ps_datetime, datetime.datetime)
 
     element = serialize(ps_datetime)
@@ -369,8 +367,8 @@ def test_ps_datetime_nanosecond(nanosecond, fraction):
 
 def test_ps_datetime_nanosecond_timezone():
     tz = datetime.timezone(offset=datetime.timedelta(hours=-10, minutes=-35))
-    ps_datetime = primitive_types.PSDateTime(1970, 6, 11, 4, 8, 23, microsecond=123456, nanosecond=454, tzinfo=tz)
-    assert isinstance(ps_datetime, primitive_types.PSDateTime)
+    ps_datetime = primitive.PSDateTime(1970, 6, 11, 4, 8, 23, microsecond=123456, nanosecond=454, tzinfo=tz)
+    assert isinstance(ps_datetime, primitive.PSDateTime)
     assert isinstance(ps_datetime, datetime.datetime)
 
     element = serialize(ps_datetime)
@@ -381,7 +379,7 @@ def test_ps_datetime_nanosecond_timezone():
 
 
 def test_ps_datetime_with_properties():
-    ps_datetime = primitive_types.PSDateTime(2000, 2, 29, 15, 43, 10, microsecond=10)
+    ps_datetime = primitive.PSDateTime(2000, 2, 29, 15, 43, 10, microsecond=10)
     ps_datetime.PSObject.extended_properties.append(PSNoteProperty("Test Property"))
     ps_datetime["Test Property"] = 1
 
@@ -393,7 +391,7 @@ def test_ps_datetime_with_properties():
     )
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSDateTime)
+    assert isinstance(actual, primitive.PSDateTime)
     assert isinstance(actual, datetime.datetime)
     assert actual.year == ps_datetime.year
     assert actual.month == ps_datetime.month
@@ -404,17 +402,17 @@ def test_ps_datetime_with_properties():
     assert actual.microsecond == ps_datetime.microsecond
     assert str(actual) == "2000-02-29 15:43:10.000010+00:00"
     assert actual["Test Property"] == 1
-    assert isinstance(actual["Test Property"], primitive_types.PSInt)
+    assert isinstance(actual["Test Property"], primitive.PSInt)
     assert actual.PSTypeNames == ["System.DateTime", "System.ValueType", "System.Object"]
 
 
 def test_ps_datetime_add_duration():
-    datetime_obj = primitive_types.PSDateTime(2000, 2, 29, 15, 43, 10, microsecond=10, nanosecond=733)
-    duration = primitive_types.PSDuration(days=400, hours=10, minutes=20, seconds=55, microseconds=100, nanoseconds=400)
+    datetime_obj = primitive.PSDateTime(2000, 2, 29, 15, 43, 10, microsecond=10, nanosecond=733)
+    duration = primitive.PSDuration(days=400, hours=10, minutes=20, seconds=55, microseconds=100, nanoseconds=400)
 
     actual = datetime_obj + duration
 
-    assert isinstance(actual, primitive_types.PSDateTime)
+    assert isinstance(actual, primitive.PSDateTime)
     assert isinstance(actual, datetime.datetime)
     assert actual.year == 2001
     assert actual.month == 4
@@ -431,12 +429,12 @@ def test_ps_datetime_add_duration():
 
 
 def test_ps_datetime_sub_duration():
-    datetime_obj = primitive_types.PSDateTime(2000, 2, 29, 15, 43, 10, microsecond=10, nanosecond=733)
-    duration = primitive_types.PSDuration(days=400, hours=10, minutes=20, seconds=55, microseconds=100, nanoseconds=400)
+    datetime_obj = primitive.PSDateTime(2000, 2, 29, 15, 43, 10, microsecond=10, nanosecond=733)
+    duration = primitive.PSDuration(days=400, hours=10, minutes=20, seconds=55, microseconds=100, nanoseconds=400)
 
     actual = datetime_obj - duration
 
-    assert isinstance(actual, primitive_types.PSDateTime)
+    assert isinstance(actual, primitive.PSDateTime)
     assert isinstance(actual, datetime.datetime)
     assert actual.year == 1999
     assert actual.month == 1
@@ -453,12 +451,12 @@ def test_ps_datetime_sub_duration():
 
 
 def test_ps_datetime_sub_datetime():
-    datetime_obj = primitive_types.PSDateTime(2000, 2, 29, 15, 43, 10, microsecond=10, nanosecond=731)
-    sub_datetime = primitive_types.PSDateTime(1970, 1, 1, nanosecond=732)
+    datetime_obj = primitive.PSDateTime(2000, 2, 29, 15, 43, 10, microsecond=10, nanosecond=731)
+    sub_datetime = primitive.PSDateTime(1970, 1, 1, nanosecond=732)
 
     actual = datetime_obj - sub_datetime
 
-    assert isinstance(actual, primitive_types.PSDuration)
+    assert isinstance(actual, primitive.PSDuration)
     assert isinstance(actual, datetime.timedelta)
     assert actual.days == 11016
     assert actual.seconds == 56590
@@ -489,8 +487,8 @@ def test_ps_datetime_sub_datetime():
     ],
 )
 def test_ps_duration(input_val, expected, expected_str, expected_repr):
-    ps_duration = primitive_types.PSDuration(input_val)
-    assert isinstance(ps_duration, primitive_types.PSDuration)
+    ps_duration = primitive.PSDuration(input_val)
+    assert isinstance(ps_duration, primitive.PSDuration)
     assert isinstance(ps_duration, datetime.timedelta)
 
     element = serialize(ps_duration)
@@ -498,7 +496,7 @@ def test_ps_duration(input_val, expected, expected_str, expected_repr):
     assert actual == expected
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSDuration)
+    assert isinstance(actual, primitive.PSDuration)
     assert isinstance(actual, datetime.timedelta)
     assert actual.days == input_val.days
     assert actual.microseconds == input_val.microseconds
@@ -522,8 +520,8 @@ def test_ps_duration_with_nanoseconds(nanosecond):
     if nanosecond > 100:
         fraction = f"0{nanosecond // 100}"
 
-    ps_duration = primitive_types.PSDuration(nanoseconds=(base_nanoseconds + nanosecond))
-    assert isinstance(ps_duration, primitive_types.PSDuration)
+    ps_duration = primitive.PSDuration(nanoseconds=(base_nanoseconds + nanosecond))
+    assert isinstance(ps_duration, primitive.PSDuration)
     assert isinstance(ps_duration, datetime.timedelta)
 
     element = serialize(ps_duration)
@@ -538,9 +536,7 @@ def test_ps_duration_with_nanoseconds(nanosecond):
 
 
 def test_ps_duration_with_properties():
-    ps_duration = primitive_types.PSDuration(
-        days=10, hours=25, minutes=70, seconds=129, microseconds=1000, nanoseconds=1100
-    )
+    ps_duration = primitive.PSDuration(days=10, hours=25, minutes=70, seconds=129, microseconds=1000, nanoseconds=1100)
     ps_duration.PSObject.extended_properties.append(PSNoteProperty("Test Property"))
     ps_duration["Test Property"] = 1
 
@@ -550,7 +546,7 @@ def test_ps_duration_with_properties():
     assert actual == '<Obj RefId="0"><TS>P11DT2H12M9.0010011S</TS><MS><I32 N="Test Property">1</I32></MS></Obj>'
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSDuration)
+    assert isinstance(actual, primitive.PSDuration)
     assert isinstance(actual, datetime.timedelta)
     assert actual.days == ps_duration.days
     assert actual.microseconds == ps_duration.microseconds
@@ -559,7 +555,7 @@ def test_ps_duration_with_properties():
     assert actual.nanoseconds == ps_duration.nanoseconds
     assert str(actual) == "11 days, 2:12:09.001001100"
     assert actual["Test Property"] == 1
-    assert isinstance(actual["Test Property"], primitive_types.PSInt)
+    assert isinstance(actual["Test Property"], primitive.PSInt)
     assert actual.PSTypeNames == ["System.TimeSpan", "System.ValueType", "System.Object"]
 
 
@@ -567,32 +563,32 @@ def test_ps_duration_with_properties():
     "other, expected",
     [
         (
-            primitive_types.PSDuration(days=30, hours=23, minutes=50, seconds=45, microseconds=19, nanoseconds=521),
-            primitive_types.PSDuration(days=41, hours=10, minutes=4, seconds=44, microseconds=2013, nanoseconds=175),
+            primitive.PSDuration(days=30, hours=23, minutes=50, seconds=45, microseconds=19, nanoseconds=521),
+            primitive.PSDuration(days=41, hours=10, minutes=4, seconds=44, microseconds=2013, nanoseconds=175),
         ),
         (
-            primitive_types.PSDuration(days=-30, hours=23, minutes=-50, seconds=45, microseconds=-19, nanoseconds=521),
-            primitive_types.PSDuration(days=-19, hours=8, minutes=24, seconds=44, microseconds=1975, nanoseconds=175),
+            primitive.PSDuration(days=-30, hours=23, minutes=-50, seconds=45, microseconds=-19, nanoseconds=521),
+            primitive.PSDuration(days=-19, hours=8, minutes=24, seconds=44, microseconds=1975, nanoseconds=175),
         ),
         (
             datetime.timedelta(days=30, hours=23, minutes=50, seconds=45, microseconds=19),
-            primitive_types.PSDuration(days=41, hours=10, minutes=4, seconds=44, microseconds=2012, nanoseconds=654),
+            primitive.PSDuration(days=41, hours=10, minutes=4, seconds=44, microseconds=2012, nanoseconds=654),
         ),
         (
             datetime.timedelta(days=-30, hours=23, minutes=-50, seconds=45, microseconds=-19),
-            primitive_types.PSDuration(days=-19, hours=8, minutes=24, seconds=44, microseconds=1974, nanoseconds=654),
+            primitive.PSDuration(days=-19, hours=8, minutes=24, seconds=44, microseconds=1974, nanoseconds=654),
         ),
     ],
 )
 def test_ps_duration_add(other, expected):
-    duration = primitive_types.PSDuration(days=10, hours=10, minutes=13, seconds=59, microseconds=1993, nanoseconds=654)
+    duration = primitive.PSDuration(days=10, hours=10, minutes=13, seconds=59, microseconds=1993, nanoseconds=654)
 
     actual = duration + other
     assert actual == expected
 
 
 def test_ps_duration_add_invalid_type():
-    duration = primitive_types.PSDuration(1)
+    duration = primitive.PSDuration(1)
 
     with pytest.raises(TypeError):
         duration += 1
@@ -602,32 +598,32 @@ def test_ps_duration_add_invalid_type():
     "other, expected",
     [
         (
-            primitive_types.PSDuration(days=30, hours=23, minutes=50, seconds=45, microseconds=19, nanoseconds=521),
-            primitive_types.PSDuration(days=-21, hours=10, minutes=23, seconds=14, microseconds=1974, nanoseconds=133),
+            primitive.PSDuration(days=30, hours=23, minutes=50, seconds=45, microseconds=19, nanoseconds=521),
+            primitive.PSDuration(days=-21, hours=10, minutes=23, seconds=14, microseconds=1974, nanoseconds=133),
         ),
         (
-            primitive_types.PSDuration(days=-30, hours=23, minutes=-50, seconds=45, microseconds=-19, nanoseconds=521),
-            primitive_types.PSDuration(days=39, hours=12, minutes=3, seconds=14, microseconds=2012, nanoseconds=133),
+            primitive.PSDuration(days=-30, hours=23, minutes=-50, seconds=45, microseconds=-19, nanoseconds=521),
+            primitive.PSDuration(days=39, hours=12, minutes=3, seconds=14, microseconds=2012, nanoseconds=133),
         ),
         (
             datetime.timedelta(days=30, hours=23, minutes=50, seconds=45, microseconds=19),
-            primitive_types.PSDuration(days=-21, hours=10, minutes=23, seconds=14, microseconds=1974, nanoseconds=654),
+            primitive.PSDuration(days=-21, hours=10, minutes=23, seconds=14, microseconds=1974, nanoseconds=654),
         ),
         (
             datetime.timedelta(days=-30, hours=23, minutes=-50, seconds=45, microseconds=-19),
-            primitive_types.PSDuration(days=39, hours=12, minutes=3, seconds=14, microseconds=2012, nanoseconds=654),
+            primitive.PSDuration(days=39, hours=12, minutes=3, seconds=14, microseconds=2012, nanoseconds=654),
         ),
     ],
 )
 def test_ps_duration_sub(other, expected):
-    duration = primitive_types.PSDuration(days=10, hours=10, minutes=13, seconds=59, microseconds=1993, nanoseconds=654)
+    duration = primitive.PSDuration(days=10, hours=10, minutes=13, seconds=59, microseconds=1993, nanoseconds=654)
 
     actual = duration - other
     assert actual == expected
 
 
 def test_ps_duration_sub_invalid_type():
-    duration = primitive_types.PSDuration(1)
+    duration = primitive.PSDuration(1)
 
     with pytest.raises(TypeError):
         duration -= 1
@@ -638,32 +634,30 @@ def test_ps_duration_sub_invalid_type():
     [
         (
             datetime.timedelta(days=30, hours=23, minutes=50, seconds=45, microseconds=19),
-            primitive_types.PSDuration(days=20, hours=13, minutes=36, seconds=45, microseconds=998025, nanoseconds=346),
+            primitive.PSDuration(days=20, hours=13, minutes=36, seconds=45, microseconds=998025, nanoseconds=346),
         ),
         (
             datetime.timedelta(days=-30, hours=23, minutes=-50, seconds=45, microseconds=-19),
-            primitive_types.PSDuration(
-                days=-40, hours=11, minutes=56, seconds=45, microseconds=997987, nanoseconds=346
-            ),
+            primitive.PSDuration(days=-40, hours=11, minutes=56, seconds=45, microseconds=997987, nanoseconds=346),
         ),
     ],
 )
 def test_ps_duration_rsub(other, expected):
-    duration = primitive_types.PSDuration(days=10, hours=10, minutes=13, seconds=59, microseconds=1993, nanoseconds=654)
+    duration = primitive.PSDuration(days=10, hours=10, minutes=13, seconds=59, microseconds=1993, nanoseconds=654)
 
     actual = other - duration
     assert actual == expected
 
 
 def test_ps_duration_negative():
-    original = primitive_types.PSDuration(days=30, hours=10, nanoseconds=500)
+    original = primitive.PSDuration(days=30, hours=10, nanoseconds=500)
 
     pos = +original
-    assert isinstance(pos, primitive_types.PSDuration)
+    assert isinstance(pos, primitive.PSDuration)
     assert original == +original
 
     sub = -original
-    assert isinstance(sub, primitive_types.PSDuration)
+    assert isinstance(sub, primitive.PSDuration)
     assert sub.days == -31
     assert sub.seconds == 50399
     assert sub.microseconds == 999999
@@ -674,12 +668,12 @@ def test_ps_duration_negative():
 
 
 def test_duration_equality():
-    duration_lowest = primitive_types.PSDuration(nanoseconds=1)
-    duration_lower = primitive_types.PSDuration(nanoseconds=2)
-    duration_lower2 = primitive_types.PSDuration(nanoseconds=2)
-    duration_higher = primitive_types.PSDuration(nanoseconds=3)
-    duration_higher2 = primitive_types.PSDuration(nanoseconds=3)
-    duration_highest = primitive_types.PSDuration(nanoseconds=4)
+    duration_lowest = primitive.PSDuration(nanoseconds=1)
+    duration_lower = primitive.PSDuration(nanoseconds=2)
+    duration_lower2 = primitive.PSDuration(nanoseconds=2)
+    duration_higher = primitive.PSDuration(nanoseconds=3)
+    duration_higher2 = primitive.PSDuration(nanoseconds=3)
+    duration_highest = primitive.PSDuration(nanoseconds=4)
 
     assert duration_lower == duration_lower2
     assert duration_lowest != duration_lower
@@ -696,11 +690,11 @@ def test_duration_equality():
 
 
 def test_duration_timedelta_equality():
-    duration_low = primitive_types.PSDuration(days=1)
-    duration_low_ns = primitive_types.PSDuration(days=1, nanoseconds=1)
+    duration_low = primitive.PSDuration(days=1)
+    duration_low_ns = primitive.PSDuration(days=1, nanoseconds=1)
     timedelta_low = datetime.timedelta(days=1)
 
-    duration_high = primitive_types.PSDuration(days=2, nanoseconds=1)
+    duration_high = primitive.PSDuration(days=2, nanoseconds=1)
     timedelta_high = datetime.timedelta(days=2)
 
     assert duration_low == timedelta_low
@@ -723,14 +717,14 @@ def test_duration_timedelta_equality():
 @pytest.mark.parametrize(
     "ps_type, tag, type_name",
     [
-        (primitive_types.PSByte, "By", "Byte"),
-        (primitive_types.PSSByte, "SB", "SByte"),
-        (primitive_types.PSUInt16, "U16", "UInt16"),
-        (primitive_types.PSInt16, "I16", "Int16"),
-        (primitive_types.PSUInt, "U32", "UInt32"),
-        (primitive_types.PSInt, "I32", "Int32"),
-        (primitive_types.PSUInt64, "U64", "UInt64"),
-        (primitive_types.PSInt64, "I64", "Int64"),
+        (primitive.PSByte, "By", "Byte"),
+        (primitive.PSSByte, "SB", "SByte"),
+        (primitive.PSUInt16, "U16", "UInt16"),
+        (primitive.PSInt16, "I16", "Int16"),
+        (primitive.PSUInt, "U32", "UInt32"),
+        (primitive.PSInt, "I32", "Int32"),
+        (primitive.PSUInt64, "U64", "UInt64"),
+        (primitive.PSInt64, "I64", "Int64"),
     ],
 )
 def test_numeric(ps_type, tag, type_name):
@@ -774,8 +768,8 @@ def test_ps_int_from_int(input_value, tag):
     ],
 )
 def test_ps_int_with_base(input_args):
-    ps_value = primitive_types.PSInt(*input_args)
-    assert isinstance(ps_value, primitive_types.PSInt)
+    ps_value = primitive.PSInt(*input_args)
+    assert isinstance(ps_value, primitive.PSInt)
     assert isinstance(ps_value, int)
 
     element = serialize(ps_value)
@@ -786,14 +780,14 @@ def test_ps_int_with_base(input_args):
 @pytest.mark.parametrize(
     "ps_type, tag, type_name",
     [
-        (primitive_types.PSByte, "By", "Byte"),
-        (primitive_types.PSSByte, "SB", "SByte"),
-        (primitive_types.PSUInt16, "U16", "UInt16"),
-        (primitive_types.PSInt16, "I16", "Int16"),
-        (primitive_types.PSUInt, "U32", "UInt32"),
-        (primitive_types.PSInt, "I32", "Int32"),
-        (primitive_types.PSUInt64, "U64", "UInt64"),
-        (primitive_types.PSInt64, "I64", "Int64"),
+        (primitive.PSByte, "By", "Byte"),
+        (primitive.PSSByte, "SB", "SByte"),
+        (primitive.PSUInt16, "U16", "UInt16"),
+        (primitive.PSInt16, "I16", "Int16"),
+        (primitive.PSUInt, "U32", "UInt32"),
+        (primitive.PSInt, "I32", "Int32"),
+        (primitive.PSUInt64, "U64", "UInt64"),
+        (primitive.PSInt64, "I64", "Int64"),
     ],
 )
 def test_numeric_with_properties(ps_type, tag, type_name):
@@ -815,29 +809,29 @@ def test_numeric_with_properties(ps_type, tag, type_name):
     assert isinstance(actual, int)
     assert actual == 10
     assert actual["Test Property"] == 1
-    assert isinstance(actual["Test Property"], primitive_types.PSInt)
+    assert isinstance(actual["Test Property"], primitive.PSInt)
     assert actual.PSTypeNames == [f"System.{type_name}", "System.ValueType", "System.Object"]
 
 
 @pytest.mark.parametrize(
     "ps_type, value",
     [
-        (primitive_types.PSByte, -1),
-        (primitive_types.PSByte, 256),
-        (primitive_types.PSSByte, -129),
-        (primitive_types.PSSByte, 128),
-        (primitive_types.PSUInt16, -1),
-        (primitive_types.PSUInt16, 65536),
-        (primitive_types.PSInt16, -32769),
-        (primitive_types.PSInt16, 32768),
-        (primitive_types.PSUInt, -1),
-        (primitive_types.PSUInt, 4294967296),
-        (primitive_types.PSInt, -2147483649),
-        (primitive_types.PSInt, 2147483648),
-        (primitive_types.PSUInt64, -1),
-        (primitive_types.PSUInt64, 18446744073709551616),
-        (primitive_types.PSInt64, -9223372036854775809),
-        (primitive_types.PSInt64, 9223372036854775808),
+        (primitive.PSByte, -1),
+        (primitive.PSByte, 256),
+        (primitive.PSSByte, -129),
+        (primitive.PSSByte, 128),
+        (primitive.PSUInt16, -1),
+        (primitive.PSUInt16, 65536),
+        (primitive.PSInt16, -32769),
+        (primitive.PSInt16, 32768),
+        (primitive.PSUInt, -1),
+        (primitive.PSUInt, 4294967296),
+        (primitive.PSInt, -2147483649),
+        (primitive.PSInt, 2147483648),
+        (primitive.PSUInt64, -1),
+        (primitive.PSUInt64, 18446744073709551616),
+        (primitive.PSInt64, -9223372036854775809),
+        (primitive.PSInt64, 9223372036854775808),
     ],
 )
 def test_numeric_invalid_value(ps_type, value):
@@ -852,14 +846,14 @@ def test_numeric_invalid_value(ps_type, value):
 @pytest.mark.parametrize(
     "ps_type",
     [
-        primitive_types.PSByte,
-        primitive_types.PSSByte,
-        primitive_types.PSUInt16,
-        primitive_types.PSInt16,
-        primitive_types.PSUInt,
-        primitive_types.PSInt,
-        primitive_types.PSUInt64,
-        primitive_types.PSInt64,
+        primitive.PSByte,
+        primitive.PSSByte,
+        primitive.PSUInt16,
+        primitive.PSInt16,
+        primitive.PSUInt,
+        primitive.PSInt,
+        primitive.PSUInt64,
+        primitive.PSInt64,
     ],
 )
 def test_numeric_operators(ps_type):
@@ -930,10 +924,10 @@ def test_numeric_operators(ps_type):
 @pytest.mark.parametrize(
     "ps_type",
     [
-        primitive_types.PSSByte,
-        primitive_types.PSInt16,
-        primitive_types.PSInt,
-        primitive_types.PSInt64,
+        primitive.PSSByte,
+        primitive.PSInt16,
+        primitive.PSInt,
+        primitive.PSInt64,
     ],
 )
 def test_numeric_negative_operators(ps_type):
@@ -969,18 +963,18 @@ def test_numeric_negative_operators(ps_type):
 @pytest.mark.parametrize(
     "ps_type, input_val, expected, type_name",
     [
-        (primitive_types.PSSingle, 1, "<Sg>1.0</Sg>", "Single"),
-        (primitive_types.PSSingle, 1.0, "<Sg>1.0</Sg>", "Single"),
-        (primitive_types.PSSingle, 1.1, "<Sg>1.1</Sg>", "Single"),
-        (primitive_types.PSSingle, 3.402823e38, "<Sg>3.402823E+38</Sg>", "Single"),
-        (primitive_types.PSSingle, -3.402823e38, "<Sg>-3.402823E+38</Sg>", "Single"),
-        (primitive_types.PSDouble, 1, "<Db>1.0</Db>", "Double"),
-        (primitive_types.PSDouble, 1.0, "<Db>1.0</Db>", "Double"),
-        (primitive_types.PSDouble, 1.1, "<Db>1.1</Db>", "Double"),
-        (primitive_types.PSDouble, 1.7976931348623157e308, "<Db>1.7976931348623157E+308</Db>", "Double"),
-        (primitive_types.PSDouble, 1.79769313486232e308, "<Db>INF</Db>", "Double"),
-        (primitive_types.PSDouble, -1.79769313486232e307, "<Db>-1.79769313486232E+307</Db>", "Double"),
-        (primitive_types.PSDouble, -1.79769313486232e308, "<Db>-INF</Db>", "Double"),
+        (primitive.PSSingle, 1, "<Sg>1.0</Sg>", "Single"),
+        (primitive.PSSingle, 1.0, "<Sg>1.0</Sg>", "Single"),
+        (primitive.PSSingle, 1.1, "<Sg>1.1</Sg>", "Single"),
+        (primitive.PSSingle, 3.402823e38, "<Sg>3.402823E+38</Sg>", "Single"),
+        (primitive.PSSingle, -3.402823e38, "<Sg>-3.402823E+38</Sg>", "Single"),
+        (primitive.PSDouble, 1, "<Db>1.0</Db>", "Double"),
+        (primitive.PSDouble, 1.0, "<Db>1.0</Db>", "Double"),
+        (primitive.PSDouble, 1.1, "<Db>1.1</Db>", "Double"),
+        (primitive.PSDouble, 1.7976931348623157e308, "<Db>1.7976931348623157E+308</Db>", "Double"),
+        (primitive.PSDouble, 1.79769313486232e308, "<Db>INF</Db>", "Double"),
+        (primitive.PSDouble, -1.79769313486232e307, "<Db>-1.79769313486232E+307</Db>", "Double"),
+        (primitive.PSDouble, -1.79769313486232e308, "<Db>-INF</Db>", "Double"),
     ],
 )
 def test_ps_single_and_double(ps_type, input_val, expected, type_name):
@@ -1008,8 +1002,8 @@ def test_ps_single_from_float():
 @pytest.mark.parametrize(
     "ps_type, tag, type_name",
     [
-        (primitive_types.PSSingle, "Sg", "Single"),
-        (primitive_types.PSDouble, "Db", "Double"),
+        (primitive.PSSingle, "Sg", "Single"),
+        (primitive.PSDouble, "Db", "Double"),
     ],
 )
 def test_ps_single_and_double_with_properties(ps_type, tag, type_name):
@@ -1027,7 +1021,7 @@ def test_ps_single_and_double_with_properties(ps_type, tag, type_name):
     assert isinstance(actual, float)
     assert actual == 1.1
     assert actual["Test Property"] == 1.1
-    assert isinstance(actual["Test Property"], primitive_types.PSSingle)
+    assert isinstance(actual["Test Property"], primitive.PSSingle)
     assert actual.PSTypeNames == [f"System.{type_name}", "System.ValueType", "System.Object"]
 
 
@@ -1043,8 +1037,8 @@ def test_ps_single_and_double_with_properties(ps_type, tag, type_name):
     ],
 )
 def test_ps_decimal(input_value, expected):
-    ps_value = primitive_types.PSDecimal(input_value)
-    assert isinstance(ps_value, primitive_types.PSDecimal)
+    ps_value = primitive.PSDecimal(input_value)
+    assert isinstance(ps_value, primitive.PSDecimal)
     assert isinstance(ps_value, decimal.Decimal)
 
     element = serialize(ps_value)
@@ -1052,14 +1046,14 @@ def test_ps_decimal(input_value, expected):
     assert actual == expected
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSDecimal)
+    assert isinstance(actual, primitive.PSDecimal)
     assert isinstance(actual, decimal.Decimal)
     assert actual == decimal.Decimal(input_value)
     assert actual.PSTypeNames == ["System.Decimal", "System.ValueType", "System.Object"]
 
 
 def test_ps_decimal_with_properties():
-    ps_value = primitive_types.PSDecimal("1.302000")
+    ps_value = primitive.PSDecimal("1.302000")
     ps_value.PSObject.extended_properties.append(PSNoteProperty("Test Property"))
     ps_value["Test Property"] = decimal.Decimal(0)
 
@@ -1068,11 +1062,11 @@ def test_ps_decimal_with_properties():
     assert actual == f'<Obj RefId="0"><D>1.302000</D><MS><D N="Test Property">0</D></MS></Obj>'
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSDecimal)
+    assert isinstance(actual, primitive.PSDecimal)
     assert isinstance(actual, decimal.Decimal)
     assert actual == decimal.Decimal("1.302000")
     assert actual["Test Property"] == decimal.Decimal(0)
-    assert isinstance(actual["Test Property"], primitive_types.PSDecimal)
+    assert isinstance(actual["Test Property"], primitive.PSDecimal)
     assert actual.PSTypeNames == ["System.Decimal", "System.ValueType", "System.Object"]
 
 
@@ -1084,8 +1078,8 @@ def test_ps_decimal_with_properties():
     ],
 )
 def test_ps_byte_array(input_value, expected):
-    ps_value = primitive_types.PSByteArray(input_value)
-    assert isinstance(ps_value, primitive_types.PSByteArray)
+    ps_value = primitive.PSByteArray(input_value)
+    assert isinstance(ps_value, primitive.PSByteArray)
     assert isinstance(ps_value, bytes)
 
     element = serialize(ps_value)
@@ -1093,7 +1087,7 @@ def test_ps_byte_array(input_value, expected):
     assert actual == expected
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSByteArray)
+    assert isinstance(actual, primitive.PSByteArray)
     assert isinstance(actual, bytes)
     assert actual == input_value
     assert actual.PSTypeNames == ["System.Byte[]", "System.Array", "System.Object"]
@@ -1102,7 +1096,7 @@ def test_ps_byte_array(input_value, expected):
 def test_ps_byte_array_with_properties():
     value = "café".encode("utf-8")
 
-    ps_value = primitive_types.PSByteArray(value)
+    ps_value = primitive.PSByteArray(value)
     ps_value.PSObject.extended_properties.append(PSNoteProperty("Test Property"))
     ps_value["Test Property"] = value
 
@@ -1111,22 +1105,22 @@ def test_ps_byte_array_with_properties():
     assert actual == f'<Obj RefId="0"><BA>Y2Fmw6k=</BA><MS><BA N="Test Property">Y2Fmw6k=</BA></MS></Obj>'
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSByteArray)
+    assert isinstance(actual, primitive.PSByteArray)
     assert isinstance(actual, bytes)
     assert actual == value
     assert actual["Test Property"] == value
-    assert isinstance(actual["Test Property"], primitive_types.PSByteArray)
+    assert isinstance(actual["Test Property"], primitive.PSByteArray)
     assert actual.PSTypeNames == ["System.Byte[]", "System.Array", "System.Object"]
 
     # Check that we can still slice bytes and the type is preserved
     sliced_actual = actual[:2]
-    assert isinstance(sliced_actual, primitive_types.PSByteArray)
+    assert isinstance(sliced_actual, primitive.PSByteArray)
     assert isinstance(sliced_actual, bytes)
     assert sliced_actual == value[:2]
     assert sliced_actual.PSObject.extended_properties == []
 
     # Check that a new PSString instance does not inherit the same PSObject values
-    new_str = primitive_types.PSByteArray(b"other")
+    new_str = primitive.PSByteArray(b"other")
     assert new_str.PSObject.adapted_properties == []
     assert new_str.PSObject.extended_properties == []
 
@@ -1140,8 +1134,8 @@ def test_ps_byte_array_with_properties():
     ],
 )
 def test_ps_guid(input_value, expected):
-    ps_value = primitive_types.PSGuid(input_value)
-    assert isinstance(ps_value, primitive_types.PSGuid)
+    ps_value = primitive.PSGuid(input_value)
+    assert isinstance(ps_value, primitive.PSGuid)
     assert isinstance(ps_value, uuid.UUID)
 
     element = serialize(ps_value)
@@ -1149,14 +1143,14 @@ def test_ps_guid(input_value, expected):
     assert actual == expected
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSGuid)
+    assert isinstance(actual, primitive.PSGuid)
     assert isinstance(actual, uuid.UUID)
-    assert actual == primitive_types.PSGuid(input_value)
+    assert actual == primitive.PSGuid(input_value)
     assert actual.PSTypeNames == ["System.Guid", "System.ValueType", "System.Object"]
 
 
 def test_ps_guid_with_properties():
-    ps_value = primitive_types.PSGuid(int=1)
+    ps_value = primitive.PSGuid(int=1)
     ps_value.PSObject.extended_properties.append(PSNoteProperty("Test Property"))
     ps_value["Test Property"] = uuid.UUID(int=2)
 
@@ -1168,22 +1162,22 @@ def test_ps_guid_with_properties():
     )
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSGuid)
+    assert isinstance(actual, primitive.PSGuid)
     assert isinstance(actual, uuid.UUID)
     assert actual == uuid.UUID(int=1)
     assert actual["Test Property"] == uuid.UUID(int=2)
-    assert isinstance(actual["Test Property"], primitive_types.PSGuid)
+    assert isinstance(actual["Test Property"], primitive.PSGuid)
     assert actual.PSTypeNames == ["System.Guid", "System.ValueType", "System.Object"]
 
     # uuid.UUID uses __slots__ so setting PSObject on the actual instance is a bit tricker. This makes sure we've done
     # it correctly.
-    ps_value = primitive_types.PSGuid(int=0)
+    ps_value = primitive.PSGuid(int=0)
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
     assert actual == "<G>00000000-0000-0000-0000-000000000000</G>"
 
 
-@pytest.mark.parametrize("input_val", [primitive_types.PSNull, None])
+@pytest.mark.parametrize("input_val", [primitive.PSNull, None])
 def test_ps_null(input_val):
     element = serialize(input_val)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
@@ -1191,7 +1185,7 @@ def test_ps_null(input_val):
 
     actual = deserialize(element)
     assert actual is None
-    assert actual is primitive_types.PSNull
+    assert actual is primitive.PSNull
 
 
 @pytest.mark.parametrize(
@@ -1214,22 +1208,22 @@ def test_ps_version_invalid_strings(input_value):
     )
 
     with pytest.raises(ValueError, match=expected):
-        primitive_types.PSVersion(input_value)
+        primitive.PSVersion(input_value)
 
 
 def test_ps_version_no_major_and_minor():
     expected = "The major and minor versions must be specified"
 
     with pytest.raises(ValueError, match=expected):
-        primitive_types.PSVersion(major=1)
+        primitive.PSVersion(major=1)
 
     with pytest.raises(ValueError, match=expected):
-        primitive_types.PSVersion(minor=1)
+        primitive.PSVersion(minor=1)
 
 
 def test_ps_version_build_not_set():
     with pytest.raises(ValueError, match="The build version must be set when revision is set"):
-        primitive_types.PSVersion(major=1, minor=0, revision=0)
+        primitive.PSVersion(major=1, minor=0, revision=0)
 
 
 @pytest.mark.parametrize(
@@ -1247,15 +1241,15 @@ def test_ps_version_build_not_set():
     ],
 )
 def test_ps_version(input_value, major, minor, build, revision):
-    ps_value = primitive_types.PSVersion(input_value)
-    assert isinstance(ps_value, primitive_types.PSVersion)
+    ps_value = primitive.PSVersion(input_value)
+    assert isinstance(ps_value, primitive.PSVersion)
 
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
     assert actual == f"<Version>{input_value}</Version>"
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSVersion)
+    assert isinstance(actual, primitive.PSVersion)
     assert actual == ps_value
     assert actual.major == major
     assert actual.minor == minor
@@ -1265,23 +1259,23 @@ def test_ps_version(input_value, major, minor, build, revision):
 
 
 def test_ps_version_with_properties():
-    ps_value = primitive_types.PSVersion("1.1")
+    ps_value = primitive.PSVersion("1.1")
     ps_value.PSObject.extended_properties.append(PSNoteProperty("Test Property"))
-    ps_value["Test Property"] = primitive_types.PSVersion("0.0")
+    ps_value["Test Property"] = primitive.PSVersion("0.0")
 
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
     assert actual == f'<Obj RefId="0"><Version>1.1</Version>' f'<MS><Version N="Test Property">0.0</Version></MS></Obj>'
 
     actual = deserialize(element)
-    assert isinstance(actual, primitive_types.PSVersion)
+    assert isinstance(actual, primitive.PSVersion)
     assert actual == ps_value
     assert actual.major == 1
     assert actual.minor == 1
     assert actual.build is None
     assert actual.revision is None
     assert actual["Test Property"] == "0.0"
-    assert isinstance(actual["Test Property"], primitive_types.PSVersion)
+    assert isinstance(actual["Test Property"], primitive.PSVersion)
     assert actual.PSTypeNames == ["System.Version", "System.Object"]
 
 
@@ -1296,19 +1290,19 @@ def test_ps_version_with_properties():
     ],
 )
 def test_ps_version_str(input_value, expected_repr):
-    actual = primitive_types.PSVersion(input_value)
+    actual = primitive.PSVersion(input_value)
     assert str(actual) == input_value
-    assert repr(actual) == f"psrpcore.types._primitive_types.PSVersion({expected_repr})"
+    assert repr(actual) == f"psrpcore.types._primitive.PSVersion({expected_repr})"
 
 
 @pytest.mark.parametrize(
     "version, other, expected",
     [
-        (primitive_types.PSVersion("1.0"), primitive_types.PSVersion("1.0"), True),
-        (primitive_types.PSVersion("1.0"), "1.0", True),
-        (primitive_types.PSVersion("1.1"), primitive_types.PSVersion("1.0"), False),
-        (primitive_types.PSVersion("1.1"), "1.0", False),
-        (primitive_types.PSVersion("1.0.0"), primitive_types.PSVersion("1.0"), False),
+        (primitive.PSVersion("1.0"), primitive.PSVersion("1.0"), True),
+        (primitive.PSVersion("1.0"), "1.0", True),
+        (primitive.PSVersion("1.1"), primitive.PSVersion("1.0"), False),
+        (primitive.PSVersion("1.1"), "1.0", False),
+        (primitive.PSVersion("1.0.0"), primitive.PSVersion("1.0"), False),
     ],
 )
 def test_ps_version_equals(version, other, expected):
@@ -1333,7 +1327,7 @@ def test_ps_version_equals(version, other, expected):
     ],
 )
 def test_ps_version_greater_than(version, other, expected):
-    assert (primitive_types.PSVersion(version) > other) == expected
+    assert (primitive.PSVersion(version) > other) == expected
 
 
 @pytest.mark.parametrize(
@@ -1354,7 +1348,7 @@ def test_ps_version_greater_than(version, other, expected):
     ],
 )
 def test_ps_version_greater_or_equal(version, other, expected):
-    assert (primitive_types.PSVersion(version) >= other) == expected
+    assert (primitive.PSVersion(version) >= other) == expected
 
 
 @pytest.mark.parametrize(
@@ -1375,7 +1369,7 @@ def test_ps_version_greater_or_equal(version, other, expected):
     ],
 )
 def test_ps_version_less_than(version, other, expected):
-    assert (primitive_types.PSVersion(version) < other) == expected
+    assert (primitive.PSVersion(version) < other) == expected
 
 
 @pytest.mark.parametrize(
@@ -1396,18 +1390,18 @@ def test_ps_version_less_than(version, other, expected):
     ],
 )
 def test_ps_version_less_or_equal(version, other, expected):
-    assert (primitive_types.PSVersion(version) <= other) == expected
+    assert (primitive.PSVersion(version) <= other) == expected
 
 
 def test_ps_version_compare_invalid():
     expected = re.escape("'>=' not supported between instances of 'PSVersion' and 'int")
     with pytest.raises(TypeError, match=expected):
-        primitive_types.PSVersion("1.0") >= 1
+        primitive.PSVersion("1.0") >= 1
 
 
 def test_ps_secure_string():
     fake_cipher = FakeCryptoProvider()
-    ps_value = primitive_types.PSSecureString(COMPLEX_STRING)
+    ps_value = primitive.PSSecureString(COMPLEX_STRING)
 
     element = serialize(ps_value, cipher=fake_cipher)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
@@ -1417,7 +1411,7 @@ def test_ps_secure_string():
     )
 
     actual = deserialize(element, cipher=fake_cipher)
-    assert isinstance(actual, primitive_types.PSSecureString)
+    assert isinstance(actual, primitive.PSSecureString)
     assert isinstance(actual, str)
     assert actual == COMPLEX_STRING
     assert actual.PSTypeNames == ["System.Security.SecureString", "System.Object"]
@@ -1425,25 +1419,25 @@ def test_ps_secure_string():
 
 def test_ps_secure_string_with_properties():
     fake_cipher = FakeCryptoProvider()
-    ps_value = primitive_types.PSSecureString("abc")
+    ps_value = primitive.PSSecureString("abc")
     ps_value.PSObject.extended_properties.append(PSNoteProperty("Test Property"))
-    ps_value["Test Property"] = primitive_types.PSSecureString("abc")
+    ps_value["Test Property"] = primitive.PSSecureString("abc")
 
     element = serialize(ps_value, cipher=fake_cipher)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
     assert actual == f'<Obj RefId="0"><SS>YQBiAGMA</SS><MS><SS N="Test Property">YQBiAGMA</SS></MS></Obj>'
 
     actual = deserialize(element, cipher=fake_cipher)
-    assert isinstance(actual, primitive_types.PSSecureString)
+    assert isinstance(actual, primitive.PSSecureString)
     assert isinstance(actual, str)
     assert actual == "abc"
     assert actual["Test Property"] == "abc"
-    assert isinstance(actual["Test Property"], primitive_types.PSSecureString)
+    assert isinstance(actual["Test Property"], primitive.PSSecureString)
     assert actual.PSTypeNames == ["System.Security.SecureString", "System.Object"]
 
     # Check that we can still slice a string and the type is preserved
     sliced_actual = actual[:2]
-    assert isinstance(sliced_actual, primitive_types.PSSecureString)
+    assert isinstance(sliced_actual, primitive.PSSecureString)
     assert isinstance(sliced_actual, str)
     assert sliced_actual == "ab"
     assert sliced_actual.PSObject.extended_properties == []

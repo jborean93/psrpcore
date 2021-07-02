@@ -2,26 +2,23 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
-from logging import info
-import psrpcore
-import pytest
 import re
 import threading
+from logging import info
 
-from psrpcore.types._psrp_messages import (
-    InformationRecord,
-)
+import pytest
 
+import psrpcore
 from psrpcore.types import (
     ApartmentState,
     ConsoleColor,
     Coordinates,
-    HostMethodIdentifier,
     ErrorCategory,
     ErrorCategoryInfo,
     ErrorRecord,
     HostDefaultData,
     HostInfo,
+    HostMethodIdentifier,
     InformationalRecord,
     NETException,
     PipelineResultTypes,
@@ -33,6 +30,7 @@ from psrpcore.types import (
     RemoteStreamOptions,
     Size,
 )
+from psrpcore.types._psrp import InformationRecord
 
 from .conftest import get_runspace_pair
 
@@ -661,15 +659,6 @@ def test_command_metadata():
     assert iex.ps_object.ResolvedCommandName is None
     assert isinstance(state, psrpcore.PipelineStateEvent)
     assert state.state == PSInvocationState.Completed
-
-
-def test_init_powershell_fail():
-    expected = re.escape(
-        "Type PowerShell cannot be instantiated; it can be used only as a base class for "
-        "client/server pipeline types."
-    )
-    with pytest.raises(TypeError, match=expected):
-        psrpcore.PowerShell()
 
 
 def test_exchange_key_client():
