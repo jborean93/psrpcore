@@ -475,13 +475,16 @@ class _Serializer:
         value: typing.Any,
     ) -> ElementTree.Element:
         """Serialize a Python object to a XML element based on the CLIXML value."""
-        # If the value type has a ToPSObjectForRemoting class method we use that to build our true PSObject that will
-        # be serialized.
+        # It is important we do this before ToPSObjectForRemoting is called as the generated object might create a
+        # duplicate id because the original object will be lost before the next one is generated.
+        obj_id = id(value)
         value_type = type(value)
         ps_object = getattr(value, "PSObject", None)
         ps_type: typing.Type[PSObject]  # To satisfy mypy
         is_enum = isinstance(value, enum.Enum)
 
+        # If the value type has a ToPSObjectForRemoting class method we use that to build our true PSObject that will
+        # be serialized.
         if hasattr(value_type, "ToPSObjectForRemoting"):
             value = value_type.ToPSObjectForRemoting(value, **self._kwargs)
 
@@ -601,7 +604,6 @@ class _Serializer:
         if element is not None and not is_extended_primitive and not is_enum:
             return element
 
-        obj_id = id(value)
         if obj_id in self._obj_ref_list:
             ref_id = self._obj_ref_list.index(obj_id)
             return ElementTree.Element("Ref", RefId=str(ref_id))

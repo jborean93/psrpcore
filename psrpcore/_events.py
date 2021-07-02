@@ -43,7 +43,7 @@ from psrpcore.types import (
     WarningRecordMsg,
 )
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from psrpcore._server import ServerGetCommandMetadata, ServerPowerShell
 
 T1 = typing.TypeVar("T1")
@@ -226,7 +226,7 @@ class RunspaceAvailabilityEvent(PSRPEvent[RunspaceAvailability, None]):
     def __new__(
         cls,
         message_type: PSRPMessageType,
-        ps_object: PSObject,
+        ps_object: RunspaceAvailability,
         runspace_pool_id: uuid.UUID,
         pipeline_id: None = None,
     ) -> "RunspaceAvailabilityEvent":

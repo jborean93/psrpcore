@@ -2,6 +2,10 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+import re
+
+import pytest
+
 import psrpcore
 from psrpcore.types import (
     ApartmentState,
@@ -9,7 +13,6 @@ from psrpcore.types import (
     ErrorRecord,
     HostMethodIdentifier,
     NETException,
-    PSGuid,
     PSThreadOptions,
     RunspacePoolState,
 )
@@ -310,3 +313,75 @@ def test_runspace_user_event():
     assert event.ps_object["PSEventArgs.SourceArgs"] == []
     assert event.ps_object["PSEventArgs.SourceIdentifier"] == "source id"
     assert event.ps_object["PSEventArgs.TimeGenerated"] is not None
+
+
+def test_runspace_too_little_fragment_length():
+    client = psrpcore.ClientRunspacePool()
+    client.open()
+
+    with pytest.raises(ValueError, match="amount must be 22 or larger to fit a PSRP fragment"):
+        client.data_to_send(21)
+
+    actual = client.data_to_send(22)
+    assert isinstance(actual, psrpcore.PSRPPayload)
+    assert len(actual.data) == 22
+
+
+def test_receive_fragment_out_of_order():
+    client = psrpcore.ClientRunspacePool()
+    client.open()
+    first = client.data_to_send(120)
+    second = client.data_to_send(120)
+    third = client.data_to_send()
+
+    server = psrpcore.ServerRunspacePool()
+    server.receive_data(first)
+    server.receive_data(third)
+    server.receive_data(second)
+
+    with pytest.raises(psrpcore.PSRPCoreError, match="Expecting fragment with a fragment id of 1 not 2"):
+        server.next_event()
+
+    # Verify we can recover
+    server.receive_data(second)
+    server.receive_data(third)
+
+    server = psrpcore.ServerRunspacePool()
+    server.receive_data(second)
+
+    with pytest.raises(psrpcore.PSRPCoreError, match="Expecting fragment with a fragment id of 0 not 1"):
+        server.next_event()
+
+
+def test_reset_invalid_state():
+    client = psrpcore.ClientRunspacePool()
+    pipe = psrpcore.ClientPowerShell(client)
+    pipe.add_command("test")
+
+    expected = re.escape(
+        "Runspace Pool state must be one of 'RunspacePoolState.Connecting, RunspacePoolState.Opened, "
+        "RunspacePoolState.Opening, RunspacePoolState.NegotiationSent, RunspacePoolState.NegotiationSucceeded' "
+        "to send PSRP message, current state is RunspacePoolState.BeforeOpen"
+    )
+    with pytest.raises(psrpcore.InvalidRunspacePoolState, match=expected):
+        pipe.invoke()
+
+
+def test_prepare_message_with_invalid_type():
+    client = get_runspace_pair()[0]
+
+    with pytest.raises(ValueError, match="message_type must be specified when the message is not a PSRP message"):
+        client.prepare_message(ApartmentState.STA)
+
+
+def test_unhandled_message_received(caplog):
+    client = psrpcore.ClientRunspacePool()
+    client.open()
+    client.receive_data(client.data_to_send())
+
+    cap_event = client.next_event()
+    init_event = client.next_event()
+    assert isinstance(cap_event, psrpcore.SessionCapabilityEvent)
+    assert isinstance(init_event, psrpcore.InitRunspacePoolEvent)
+
+    assert re.match(r"WARNING.*Received PSRPMessageType\.InitRunspacePool but could not process it", caplog.text)

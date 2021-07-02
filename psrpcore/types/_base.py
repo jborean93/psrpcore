@@ -17,6 +17,8 @@ import inspect
 import types
 import typing
 
+T = typing.TypeVar("T", bound=typing.Type["PSObject"])
+
 
 class _UnsetValue(object):
     """Used to mark a property with an unset value."""
@@ -724,8 +726,8 @@ class PSType:
 
     def __call__(
         self,
-        cls: typing.Type[PSObject],
-    ) -> typing.Type[PSObject]:
+        cls: T,
+    ) -> T:
         if not issubclass(cls, PSObject):
             raise TypeError(f"PSType class {cls.__module__}.{cls.__qualname__} must be a subclass of PSObject")
 

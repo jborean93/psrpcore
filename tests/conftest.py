@@ -2,6 +2,8 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+import typing
+
 from xmldiff import main as _xmldiff
 
 import psrpcore
@@ -11,7 +13,9 @@ COMPLEX_STRING = "treble clef\n _x0000_ _X0000_ %s café" % b"\xF0\x9D\x84\x9E".
 COMPLEX_ENCODED_STRING = "treble clef_x000A_ _x005F_x0000_ _x005F_X0000_ _xD834__xDD1E_ café"
 
 
-def get_runspace_pair(min_runspaces: int = 1, max_runspaces: int = 1):
+def get_runspace_pair(
+    min_runspaces: int = 1, max_runspaces: int = 1
+) -> typing.Tuple[psrpcore.ClientRunspacePool, psrpcore.ServerRunspacePool]:
     client = psrpcore.ClientRunspacePool(min_runspaces=min_runspaces, max_runspaces=max_runspaces)
     server = psrpcore.ServerRunspacePool()
 
