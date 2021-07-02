@@ -611,12 +611,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
         process_id = os.getpid() if process_id is None else process_id
 
         # get_native_id isn't available until 3.8, default to 0.
-        if native_thread_id is None:
-            if hasattr(threading, "get_native_id"):
-                native_thread_id = threading.get_native_id()
-            else:
-                native_thread_id = 0
-        native_thread_id = native_thread_id
+        native_thread_id = getattr(threading, "get_native_id", lambda: 0)()
 
         value = InformationRecordMsg(
             MessageData=message_data,

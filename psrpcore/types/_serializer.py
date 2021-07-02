@@ -271,7 +271,7 @@ def _deserialize_string(
         (str): The Python str value that represents the actual string represented by the CLIXML.
     """
 
-    def rplcr(matchobj: "re.Match[bytes]") -> bytes:
+    def rplcr(matchobj: typing.Any) -> bytes:
         # The matched object is the UTF-16 byte representation of the UTF-8 hex string value. We need to decode the
         # byte str to unicode and then unhexlify that hex string to get the actual bytes of the _x****_ value, e.g.
         # group(0) == b'\x00_\x00x\x000\x000\x000\x00A\x00_'
@@ -421,7 +421,7 @@ def _serialize_string(
         str: The string value as a valid CLIXML escaped string.
     """
 
-    def rplcr(matchobj: "re.Match[str]") -> str:
+    def rplcr(matchobj: typing.Any) -> str:
         surrogate_char = matchobj.group(0)
         byte_char = surrogate_char.encode("utf-16-be")
         hex_char = binascii.hexlify(byte_char).decode().upper()
