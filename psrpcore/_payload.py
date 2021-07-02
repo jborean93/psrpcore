@@ -282,7 +282,7 @@ def ps_data_packet(
     """
     ps_guid = ps_guid or EMPTY_UUID
     stream_name = b"Default" if stream_type == StreamType.default else b"PromptResponse"
-    return b"<Data Stream='%s' PSGuid='%s'>%s</Data>\n" % (stream_name, str(ps_guid).encode(), base64.b64encode(data))
+    return b"<Data Stream='%s' PSGuid='%s'>%s</Data>" % (stream_name, str(ps_guid).encode(), base64.b64encode(data))
 
 
 def ps_guid_packet(
@@ -305,12 +305,13 @@ def ps_guid_packet(
         bytes: The encoded PSGuid packet.
     """
     ps_guid = ps_guid or EMPTY_UUID
-    return b"<%s PSGuid='%s' />\n" % (element.encode(), str(ps_guid).encode())
+    return b"<%s PSGuid='%s' />" % (element.encode(), str(ps_guid).encode())
 
 
 def dict_to_psobject(**kwargs: typing.Any) -> PSObject:
     """Builds a PSObject with note properties set by the kwargs."""
     obj = PSObject()
+    obj.PSObject.type_names = []
     for key, value in kwargs.items():
         add_note_property(obj, key, value)
 

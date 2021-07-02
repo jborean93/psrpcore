@@ -5,9 +5,10 @@
 import typing
 
 from psrpcore._payload import dict_to_psobject
-from psrpcore.types import PipelineResultTypes, PSObject, PSVersion
+from psrpcore.types import PipelineResultTypes, PSObject, PSType, PSVersion
 
 
+@PSType(skip_inheritance=True, rehydrate=False)
 class Command(PSObject):
     def __init__(
         self,
@@ -68,14 +69,33 @@ class Command(PSObject):
     def merge_information(self) -> PipelineResultTypes:
         return self._merge_information
 
+    def add_argument(
+        self,
+        value: typing.Any,
+    ) -> "Command":
+        return self.add_parameter(None, value)
+
+    def add_parameter(
+        self,
+        name: typing.Optional[str],
+        value: typing.Any = None,
+    ) -> "Command":
+        self.parameters.append((name, value))
+        return self
+
+    def add_parameters(
+        self,
+        **parameters: typing.Any,
+    ) -> "Command":
+        for name, value in parameters.items():
+            self.add_parameter(name, value)
+
+        return self
+
     def redirect_all(
         self,
         stream: PipelineResultTypes = PipelineResultTypes.Output,
     ) -> None:
-        if stream == PipelineResultTypes.none:
-            self._merge_my = stream
-            self._merge_to = stream
-
         self.redirect_error(stream)
         self.redirect_warning(stream)
         self.redirect_verbose(stream)
@@ -171,7 +191,7 @@ class Command(PSObject):
             protocol_version = getattr(kwargs["their_capability"], "protocolversion", None)
 
         if not protocol_version:
-            protocol_version = PSVersion("2.2")
+            protocol_version = PSVersion("2.1")
 
         merge_previous = (
             PipelineResultTypes.Output | PipelineResultTypes.Error

@@ -484,14 +484,14 @@ class ClientPowerShell(PowerShellPipeline, _ClientPipeline):
     def add_argument(
         self,
         value: typing.Any,
-    ) -> None:
-        self.add_parameter(None, value)
+    ) -> "ClientPowerShell":
+        return self.add_parameter(None, value)
 
     def add_command(
         self,
         cmdlet: typing.Union[str, Command],
         use_local_scope: typing.Optional[bool] = None,
-    ) -> None:
+    ) -> "ClientPowerShell":
         if isinstance(cmdlet, str):
             cmdlet = Command(cmdlet, use_local_scope=use_local_scope)
 
@@ -499,39 +499,43 @@ class ClientPowerShell(PowerShellPipeline, _ClientPipeline):
             raise TypeError("Cannot set use_local_scope with Command")
 
         self.commands.append(cmdlet)
+        return self
 
     def add_parameter(
         self,
         name: typing.Optional[str],
         value: typing.Any = None,
-    ) -> None:
+    ) -> "ClientPowerShell":
         if not self.commands:
             raise ValueError(
                 "A command is required to add a parameter/argument. A command must be added to the "
                 "PowerShell instance first."
             )
 
-        self.commands[-1].parameters.append((name, value))
+        self.commands[-1].add_parameter(name, value)
+        return self
 
     def add_parameters(
         self,
         parameters: typing.Dict[str, typing.Any],
-    ) -> None:
+    ) -> "ClientPowerShell":
         for name, value in parameters.items():
             self.add_parameter(name, value)
+
+        return self
 
     def add_script(
         self,
         script: str,
         use_local_scope: typing.Optional[bool] = None,
-    ) -> None:
-        self.add_command(Command(script, True, use_local_scope=use_local_scope))
+    ) -> "ClientPowerShell":
+        return self.add_command(Command(script, True, use_local_scope=use_local_scope))
 
-    def add_statement(self) -> None:
-        if not self.commands:
-            return
+    def add_statement(self) -> "ClientPowerShell":
+        if self.commands:
+            self.commands[-1].end_of_statement = True
 
-        self.commands[-1].end_of_statement = True
+        return self
 
 
 class ClientGetCommandMetadata(GetCommandMetadataPipeline, _ClientPipeline):

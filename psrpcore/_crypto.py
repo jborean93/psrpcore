@@ -73,7 +73,7 @@ def encrypt_session_key(
         session_key,
         padding.PKCS1v15(),
     )[::-1]
-    encrypted_key_bytes = b"\x01\x02\x00\x00\x10\x66\x00\x00" b"\x00\xa4\x00\x00" + encrypted_key
+    encrypted_key_bytes = b"\x01\x02\x00\x00\x10\x66\x00\x00\x00\xa4\x00\x00" + encrypted_key
 
     return encrypted_key_bytes
 

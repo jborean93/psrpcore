@@ -4,7 +4,6 @@
 
 import re
 import threading
-from logging import info
 
 import pytest
 

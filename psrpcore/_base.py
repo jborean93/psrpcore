@@ -2,6 +2,7 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+import logging
 import typing
 import uuid
 from xml.etree import ElementTree
@@ -36,6 +37,8 @@ from psrpcore.types import (
     deserialize,
     serialize,
 )
+
+log = logging.getLogger(__name__)
 
 T = typing.TypeVar("T", bound="RunspacePool")
 
@@ -359,8 +362,7 @@ class RunspacePool:
             process_func(event)
 
         else:
-            # FIXME: Convert to a warning
-            print(f"Received unknown message {message.message_type!s}")
+            log.warning(f"Received {message.message_type!s} but could not process it")
 
         return event
 
