@@ -41,7 +41,7 @@ from psrpcore._exceptions import (
     InvalidRunspacePoolState,
     PSRPCoreError,
 )
-from psrpcore._payload import EMPTY_UUID, StreamType
+from psrpcore._payload import EMPTY_UUID, ProtocolVersion, PSRPPayload, StreamType
 from psrpcore.types import (
     ApplicationPrivateData,
     CommandTypes,
@@ -62,26 +62,15 @@ from psrpcore.types import (
     ProgressRecordType,
     PSCustomObject,
     PSDateTime,
-    PSInt,
     PSInvocationState,
-    PSList,
     PSRPMessageType,
-    PSString,
-    PSVersion,
     PublicKeyRequest,
     RunspaceAvailability,
     RunspacePoolHostCall,
     RunspacePoolInitData,
     RunspacePoolState,
     RunspacePoolStateMsg,
-    SessionCapability,
     UserEvent,
-)
-
-_DEFAULT_CAPABILITY = SessionCapability(
-    PSVersion=PSVersion("2.0"),
-    protocolversion=PSVersion("2.3"),
-    SerializationVersion=PSVersion("1.1.0.1"),
 )
 
 
@@ -92,7 +81,7 @@ class ServerRunspacePool(RunspacePool):
     ) -> None:
         super().__init__(
             EMPTY_UUID,
-            capability=_DEFAULT_CAPABILITY,
+            capability=None,
             application_arguments={},
             application_private_data=application_private_data or {},
         )
@@ -106,10 +95,10 @@ class ServerRunspacePool(RunspacePool):
             )
 
         # The incoming messages will be from a blank runspace pool so start back at 0
-        # TODO: Should I also reset ci count.
         # TODO: Verify there are no incoming fragments/messages not processed.
-        self._fragment_count = 0
-        self.state = RunspacePoolState.Connecting
+        self._ci_count = 1
+        self._fragment_count = 1
+        self._change_state(RunspacePoolState.Connecting)
 
     def send_event(
         self,
@@ -146,8 +135,8 @@ class ServerRunspacePool(RunspacePool):
 
         self.prepare_message(
             UserEvent(
-                EventIdentifier=PSInt(event_identifier),
-                SourceIdentifier=PSString(source_identifier),
+                EventIdentifier=event_identifier,
+                SourceIdentifier=source_identifier,
                 TimeGenerated=time_generated,
                 Sender=sender,
                 SourceArgs=source_args or [],
@@ -156,6 +145,16 @@ class ServerRunspacePool(RunspacePool):
                 RunspaceId=self.runspace_pool_id,
             )
         )
+
+    def set_broken(
+        self,
+        error: ErrorRecord,
+    ) -> None:
+        valid_states = [RunspacePoolState.Broken, RunspacePoolState.Opened]
+        if self.state not in valid_states:
+            raise InvalidRunspacePoolState("set as broken", self.state, valid_states)
+
+        self._change_state(RunspacePoolState.Broken, error)
 
     def host_call(
         self,
@@ -187,6 +186,36 @@ class ServerRunspacePool(RunspacePool):
 
         self.prepare_message(PublicKeyRequest())
 
+    def receive_data(
+        self,
+        data: PSRPPayload,
+    ) -> None:
+        if self.state == RunspacePoolState.BeforeOpen:
+            self._change_state(RunspacePoolState.Opening, emit=False)
+
+        super().receive_data(data)
+
+    def _change_state(
+        self,
+        state: RunspacePoolState,
+        error: typing.Optional[ErrorRecord] = None,
+        emit: bool = True,
+    ) -> None:
+        super()._change_state(state, error)
+
+        # (Dis)connection states aren't sent to the client
+        if emit and state not in [
+            RunspacePoolState.Disconnected,
+            RunspacePoolState.Disconnecting,
+            RunspacePoolState.Connecting,
+        ]:
+            state_kwargs = {
+                "RunspaceState": state.value,
+            }
+            if error:
+                state_kwargs["ExceptionAsErrorRecord"] = error
+            self.prepare_message(RunspacePoolStateMsg(**state_kwargs))
+
     def _process_ConnectRunspacePool(
         self,
         event: ConnectRunspacePoolEvent,
@@ -203,7 +232,7 @@ class ServerRunspacePool(RunspacePool):
         )
 
         self.prepare_message(ApplicationPrivateData(ApplicationPrivateData=self.application_private_data))
-        self.state = RunspacePoolState.Opened
+        self._change_state(RunspacePoolState.Opened)
 
     def _process_CreatePipeline(
         self,
@@ -281,8 +310,7 @@ class ServerRunspacePool(RunspacePool):
         self._min_runspaces = event.ps_object.MinRunspaces
 
         self.prepare_message(ApplicationPrivateData(ApplicationPrivateData=self.application_private_data))
-        self.state = RunspacePoolState.Opened
-        self.prepare_message(RunspacePoolStateMsg(RunspaceState=int(self.state)))
+        self._change_state(RunspacePoolState.Opened)
 
     def _process_PipelineHostResponse(
         self,
@@ -327,10 +355,9 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: SessionCapabilityEvent,
     ) -> None:
-        pre_state = self.state
         super()._process_SessionCapability(event)
 
-        if pre_state == RunspacePoolState.Connecting:
+        if self.state == RunspacePoolState.Connecting:
             if self.runspace_pool_id != event.runspace_pool_id:
                 raise PSRPCoreError("Incoming connection is targeted towards a different Runspace Pool")
 
@@ -578,7 +605,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
         message_data: typing.Any,
         source: str,
         time_generated: typing.Optional[datetime.datetime] = None,
-        tags: typing.Optional[PSList] = None,
+        tags: typing.Optional[typing.List[str]] = None,
         user: typing.Optional[str] = None,
         computer: typing.Optional[str] = None,
         process_id: typing.Optional[int] = None,
@@ -610,8 +637,8 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
             managed_thread_id: The managed thread that generated the record,
                 defaults to 0.
         """
-        their_version = getattr(self.runspace_pool.their_capability, "protocolversion", PSVersion("0.0"))
-        required_version = PSVersion("2.3")
+        their_version = getattr(self.runspace_pool.their_capability, "protocolversion", ProtocolVersion.Win7RC.value)
+        required_version = ProtocolVersion.Pwsh5.value
         if their_version < required_version:
             raise InvalidProtocolVersion("writing information record", their_version, required_version)
 
@@ -620,7 +647,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
 
         time_generated = PSDateTime.now() if time_generated is None else time_generated
         if not tags:
-            tags = PSList()
+            tags = []
 
         if user is None:
             try:
@@ -697,11 +724,11 @@ class ServerGetCommandMetadata(GetCommandMetadataPipeline, _ServerPipeline):
 
     def write_cmdlet_info(
         self,
-        name: typing.Union[PSString, str],
-        namespace: typing.Union[PSString, str],
-        help_uri: typing.Union[PSString, str] = "",
-        output_type: typing.Optional[typing.List[typing.Union[PSString, str]]] = None,
-        parameters: typing.Optional[typing.Dict[typing.Union[PSString, str], typing.Any]] = None,
+        name: str,
+        namespace: str,
+        help_uri: str = "",
+        output_type: typing.Optional[typing.List[str]] = None,
+        parameters: typing.Optional[typing.Dict[str, typing.Any]] = None,
     ) -> None:
 
         self.write_output(

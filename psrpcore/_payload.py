@@ -9,7 +9,7 @@ import struct
 import typing
 import uuid
 
-from psrpcore.types import PSObject, PSRPMessageType, add_note_property
+from psrpcore.types import PSObject, PSRPMessageType, PSVersion, add_note_property
 
 EMPTY_UUID = uuid.UUID(bytes=b"\x00" * 16)
 
@@ -50,6 +50,46 @@ Attributes:
     pipeline_id (typing.Optional[uuid.UUID]): The pipeline id if the data
         related to a Pipeline or `None if it's for the Runspace Pool.
 """
+
+
+class ProtocolVersion(enum.Enum):
+    """PSRP Protocol versions
+
+    This lists the known PSRP protocol versions. The psrpcore library
+    understands the 2.3 version and thus supports anything the PowerShell side
+    does.
+
+    These are the known differences between the protocol versions.
+
+    Win7RC:
+        * No native support for GetCommandMetadata
+        * Client instead should send a CreatePipeline that calls `Get-Command`
+
+    Pwsh2:
+        * First official release that was shipped with PowerShell v2.
+
+    Pwsh3:
+        * Shipped with PowerShell v3
+        * Support merging warning, verbose, debug to output or null when
+            creating a command to run on a pipeline
+        * Supports batch invocations on 1 pipeline using mutliple statements
+            # TODO Verify
+        * Server stopped sending the PublicKeyRequest message, must be done by
+            the client # TODO Verify whether the private key is still valid
+        * WSMan stack added Support for disconnect operations
+        * On the WSMan stack the default envelope size increased from 150KiB to
+            500KiB
+
+    Pwsh5:
+        * Shipped with PowerShell v5
+        * Information stream
+        * Reset Runspace Pool
+    """
+
+    Win7RC = PSVersion("2.0")  #: Win7RC - pwsh v2 but for the Windows 7 Beta
+    Pwsh2 = PSVersion("2.1")  #: Win7RTM - pwsh v2
+    Pwsh3 = PSVersion("2.2")  #: Win8RTM - pwsh v3
+    Pwsh5 = PSVersion("2.3")  #: Win10RTM - pwsh v5
 
 
 class StreamType(enum.Enum):

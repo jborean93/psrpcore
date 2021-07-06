@@ -12,6 +12,7 @@ from psrpcore._crypto import PSRemotingCrypto, rsa
 from psrpcore._events import PSRPEvent, SessionCapabilityEvent
 from psrpcore._exceptions import InvalidRunspacePoolState, PSRPCoreError
 from psrpcore._payload import (
+    ProtocolVersion,
     PSRPMessage,
     PSRPPayload,
     StreamType,
@@ -25,12 +26,14 @@ from psrpcore.types import (
     CommandTypes,
     CreatePipeline,
     EndOfPipelineInput,
+    ErrorRecord,
     GetCommandMetadata,
     HostInfo,
     PSInvocationState,
     PSObject,
     PSRPMessageType,
     PSThreadOptions,
+    PSVersion,
     RemoteStreamOptions,
     RunspacePoolState,
     SessionCapability,
@@ -41,6 +44,13 @@ from psrpcore.types import (
 log = logging.getLogger(__name__)
 
 T = typing.TypeVar("T", bound="RunspacePool")
+
+
+_DEFAULT_CAPABILITY = SessionCapability(
+    PSVersion=PSVersion("2.0"),
+    protocolversion=ProtocolVersion.Pwsh5.value,
+    SerializationVersion=PSVersion("1.1.0.1"),
+)
 
 
 class RunspacePool:
@@ -95,12 +105,12 @@ class RunspacePool:
     def __init__(
         self,
         runspace_pool_id: uuid.UUID,
-        capability: SessionCapability,
+        capability: typing.Optional[SessionCapability],
         application_arguments: typing.Dict[str, typing.Any],
         application_private_data: typing.Dict[str, typing.Any],
     ) -> None:
         self.runspace_pool_id = runspace_pool_id
-        self.our_capability = capability
+        self.our_capability: SessionCapability = capability or _DEFAULT_CAPABILITY
         self.their_capability: typing.Optional[SessionCapability] = None
         self.application_arguments = application_arguments
         self.application_private_data = application_private_data
@@ -112,7 +122,7 @@ class RunspacePool:
 
         self._ci_handlers: typing.Dict[int, typing.Optional[typing.Callable[[PSRPEvent], None]]] = {}
         self._ci_events: typing.Dict[int, PSRPEvent] = {}
-        self.__ci_counter = 1
+        self._ci_count = 1
         self._fragment_count = 1
         self._cipher: typing.Optional[PSRemotingCrypto] = None
         self._exchange_key: typing.Optional[rsa.RSAPrivateKey] = None
@@ -148,8 +158,8 @@ class RunspacePool:
         self,
     ) -> int:
         """Counter used for ci calls."""
-        ci = self.__ci_counter
-        self.__ci_counter += 1
+        ci = self._ci_count
+        self._ci_count += 1
         return ci
 
     @property
@@ -161,23 +171,43 @@ class RunspacePool:
         self._fragment_count += 1
         return count
 
-    def disconnect(self) -> None:
-        if self.state == RunspacePoolState.Opened:
-            self.state = RunspacePoolState.Disconnected
+    def begin_close(self) -> None:
+        """Marks the Runspace Pool to be in the closing phase."""
+        self._change_state(RunspacePoolState.Closing)
 
-        if self.state != RunspacePoolState.Disconnected:
-            raise InvalidRunspacePoolState("disconnect a Runspace Pool", self.state, [RunspacePoolState.Opened])
+    def close(self) -> None:
+        """Marks the Runspace Pool as closed.
+
+        This closes the RunspacePool on the peer. Closing the Runspace Pool is
+        done through a connection specific process. This method just verifies
+        the Runspace Pool is in a state that can be closed and that no
+        pipelines are still running.
+        """
+        if self.pipeline_table:
+            raise PSRPCoreError("Must close existing pipelines before closing the pool")
+
+        valid_states = [RunspacePoolState.Closed, RunspacePoolState.Closing, RunspacePoolState.Opened]
+        if self.state not in valid_states:
+            raise InvalidRunspacePoolState("close Runspace Pool", self.state, valid_states)
+
+        self._change_state(RunspacePoolState.Closed)
+
+    def begin_disconnect(self) -> None:
+        self._change_state(RunspacePoolState.Disconnecting)
+
+    def disconnect(self) -> None:
+        valid_states = [RunspacePoolState.Opened, RunspacePoolState.Disconnecting, RunspacePoolState.Disconnected]
+        if self.state not in valid_states:
+            raise InvalidRunspacePoolState("disconnect a Runspace Pool", self.state, valid_states)
+
+        self._change_state(RunspacePoolState.Disconnected)
 
     def reconnect(self) -> None:
-        if self.state == RunspacePoolState.Opened:
-            return
+        valid_states = [RunspacePoolState.Disconnected, RunspacePoolState.Opened]
+        if self.state not in valid_states:
+            raise InvalidRunspacePoolState("reconnect to a Runspace Pool", self.state, valid_states)
 
-        if self.state != RunspacePoolState.Disconnected:
-            raise InvalidRunspacePoolState(
-                "reconnecting to Runspace Pool", self.state, [RunspacePoolState.Disconnected]
-            )
-
-        self.state = RunspacePoolState.Opened
+        self._change_state(RunspacePoolState.Opened)
 
     def data_to_send(
         self,
@@ -228,14 +258,6 @@ class RunspacePool:
             current_buffer += message.fragment(allowed_length)
             if len(message) == 0:
                 self._send_buffer.remove(message)
-
-                # Special edge case where we need to change the RunspacePool state when the last SessionCapability
-                # fragment was sent.
-                if (
-                    self.state == RunspacePoolState.Opening
-                    and message.message_type == PSRPMessageType.SessionCapability
-                ):
-                    self.state = RunspacePoolState.NegotiationSent
 
         return PSRPPayload(bytes(current_buffer), stream_type, pipeline_id) if current_buffer else None
 
@@ -318,16 +340,6 @@ class RunspacePool:
                 targets the runspace pool.
             stream_type: The stream type the message is for.
         """
-        required_states = [
-            RunspacePoolState.Connecting,
-            RunspacePoolState.Opened,
-            RunspacePoolState.Opening,
-            RunspacePoolState.NegotiationSent,
-            RunspacePoolState.NegotiationSucceeded,
-        ]
-        if self.state not in required_states:
-            raise InvalidRunspacePoolState("send PSRP message", self.state, required_states)
-
         if isinstance(message, EndOfPipelineInput):
             b_data = b""  # Special edge case for this particular message type
         else:
@@ -354,6 +366,13 @@ class RunspacePool:
             message_type, bytearray(b_msg), self.runspace_pool_id, pipeline_id, object_id, stream_type
         )
         self._send_buffer.append(psrp_message)
+
+    def _change_state(
+        self,
+        state: RunspacePoolState,
+        error: typing.Optional[ErrorRecord] = None,
+    ) -> None:
+        self.state = state
 
     def _process_message(
         self,
@@ -391,7 +410,6 @@ class RunspacePool:
     ) -> None:
         # This is the only common message that is processed the same by clients and servers.
         self.their_capability = event.ps_object
-        self.state = RunspacePoolState.NegotiationSucceeded
 
 
 class Pipeline(typing.Generic[T]):

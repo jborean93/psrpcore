@@ -37,9 +37,8 @@ from psrpcore._exceptions import (
     InvalidPipelineState,
     InvalidProtocolVersion,
     InvalidRunspacePoolState,
-    PSRPCoreError,
 )
-from psrpcore._payload import EMPTY_UUID, StreamType
+from psrpcore._payload import EMPTY_UUID, ProtocolVersion, StreamType
 from psrpcore.types import (
     ApartmentState,
     ConnectRunspacePool,
@@ -50,23 +49,14 @@ from psrpcore.types import (
     InitRunspacePool,
     PipelineHostResponse,
     PSInvocationState,
-    PSObject,
     PSRPMessageType,
     PSThreadOptions,
-    PSVersion,
     PublicKey,
     ResetRunspaceState,
     RunspacePoolHostResponse,
     RunspacePoolState,
-    SessionCapability,
     SetMaxRunspaces,
     SetMinRunspaces,
-)
-
-_DEFAULT_CAPABILITY = SessionCapability(
-    PSVersion=PSVersion("2.0"),
-    protocolversion=PSVersion("2.3"),
-    SerializationVersion=PSVersion("1.1.0.1"),
 )
 
 
@@ -115,7 +105,7 @@ class ClientRunspacePool(RunspacePool):
     ) -> None:
         super().__init__(
             runspace_pool_id or uuid.uuid4(),
-            capability=_DEFAULT_CAPABILITY,
+            capability=None,
             application_arguments=application_arguments or {},
             application_private_data={},
         )
@@ -125,31 +115,40 @@ class ClientRunspacePool(RunspacePool):
         self._min_runspaces = min_runspaces
         self._max_runspaces = max_runspaces
 
+    def open(self) -> None:
+        """Opens the RunspacePool.
+
+        This opens the RunspacePool on the peer.
+        """
+        if self.state == RunspacePoolState.Opened:
+            return
+        if self.state != RunspacePoolState.BeforeOpen:
+            raise InvalidRunspacePoolState("open a Runspace Pool", self.state, [RunspacePoolState.BeforeOpen])
+
+        host = self.host or HostInfo()
+        self._change_state(RunspacePoolState.Opening)
+
+        self.prepare_message(self.our_capability)
+        self.prepare_message(
+            InitRunspacePool(
+                MinRunspaces=self._min_runspaces,
+                MaxRunspaces=self._max_runspaces,
+                PSThreadOptions=self.thread_options,
+                ApartmentState=self.apartment_state,
+                HostInfo=host,
+                ApplicationArguments=self.application_arguments,
+            )
+        )
+
     def connect(self) -> None:
         if self.state == RunspacePoolState.Opened:
             return
         if self.state != RunspacePoolState.BeforeOpen:
             raise InvalidRunspacePoolState("connect to Runspace Pool", self.state, [RunspacePoolState.BeforeOpen])
 
-        self.state = RunspacePoolState.Connecting
-
+        self._change_state(RunspacePoolState.Connecting)
         self.prepare_message(self.our_capability)
         self.prepare_message(ConnectRunspacePool())
-
-    def close(self) -> None:
-        """Closes the RunspacePool.
-
-        This closes the RunspacePool on the peer. Closing the Runspace Pool is
-        done through a connection specific process. This method just verifies
-        the Runspace Pool is in a state that can be closed and that no
-        pipelines are still running.
-        """
-        if self.state in [RunspacePoolState.Closed, RunspacePoolState.Closing, RunspacePoolState.Broken]:
-            return
-        if self.pipeline_table:
-            raise PSRPCoreError("Must close these pipelines first")
-
-        self.state = RunspacePoolState.Closing
 
     def get_available_runspaces(self) -> int:
         """Get the number of Runspaces available.
@@ -167,31 +166,6 @@ class ClientRunspacePool(RunspacePool):
         self.prepare_message(GetAvailableRunspaces(ci=ci))
 
         return ci
-
-    def open(self) -> None:
-        """Opens the RunspacePool.
-
-        This opens the RunspacePool on the peer.
-        """
-        if self.state == RunspacePoolState.Opened:
-            return
-        if self.state != RunspacePoolState.BeforeOpen:
-            raise InvalidRunspacePoolState("open Runspace Pool", self.state, [RunspacePoolState.BeforeOpen])
-
-        host = self.host or HostInfo()
-        self.state = RunspacePoolState.Opening
-
-        self.prepare_message(self.our_capability)
-
-        init_runspace_pool = InitRunspacePool(
-            MinRunspaces=self._min_runspaces,
-            MaxRunspaces=self._max_runspaces,
-            PSThreadOptions=self.thread_options,
-            ApartmentState=self.apartment_state,
-            HostInfo=host,
-            ApplicationArguments=self.application_arguments,
-        )
-        self.prepare_message(init_runspace_pool)
 
     def exchange_key(self) -> None:
         """Exchange session specific key.
@@ -227,7 +201,7 @@ class ClientRunspacePool(RunspacePool):
                 host call.
         """
         if self.state != RunspacePoolState.Opened:
-            raise InvalidRunspacePoolState("response to host call", self.state, [RunspacePoolState.Opened])
+            raise InvalidRunspacePoolState("respond to host call", self.state, [RunspacePoolState.Opened])
 
         call_event = self._ci_events.pop(ci)
 
@@ -245,18 +219,17 @@ class ClientRunspacePool(RunspacePool):
 
         self.prepare_message(host_call, pipeline_id=pipeline_id, stream_type=StreamType.prompt_response)
 
-    def reset_runspace_state(self) -> typing.Optional[int]:
+    def reset_runspace_state(self) -> int:
         """Reset the Runspace Pool state.
 
         Resets the variable table for the Runspace Pool back to the default
         state.
         """
-        their_version = getattr(self.their_capability, "protocolversion", PSVersion("2.0"))
-        required_version = PSVersion("2.3")
+        their_version = getattr(self.their_capability, "protocolversion", ProtocolVersion.Win7RC.value)
+        required_version = ProtocolVersion.Pwsh5.value
         if their_version < required_version:
             raise InvalidProtocolVersion("reset Runspace Pool state", their_version, required_version)
-        if self.state == RunspacePoolState.BeforeOpen:
-            return None
+
         if self.state != RunspacePoolState.Opened:
             raise InvalidRunspacePoolState("reset Runspace Pool state", self.state, [RunspacePoolState.Opened])
 
@@ -318,7 +291,7 @@ class ClientRunspacePool(RunspacePool):
     ) -> None:
         self.application_private_data = event.ps_object.ApplicationPrivateData
         if self.state == RunspacePoolState.Connecting:
-            self.state = RunspacePoolState.Opened
+            self._change_state(RunspacePoolState.Opened)
 
     def _process_DebugRecord(
         self,
@@ -366,7 +339,6 @@ class ClientRunspacePool(RunspacePool):
         self,
         event: PipelineStateEvent,
     ) -> None:
-        # We can ensure a PipelineState will have a pipeline_id
         pipeline_id = event.pipeline_id
         pipeline = self.pipeline_table[pipeline_id]
         pipeline.state = event.state
@@ -412,7 +384,7 @@ class ClientRunspacePool(RunspacePool):
         self,
         event: RunspacePoolStateEvent,
     ) -> None:
-        self.state = event.state
+        self._change_state(event.state)
 
     def _process_UserEvent(
         self,

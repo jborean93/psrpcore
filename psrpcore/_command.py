@@ -4,7 +4,7 @@
 
 import typing
 
-from psrpcore._payload import dict_to_psobject
+from psrpcore._payload import ProtocolVersion, dict_to_psobject
 from psrpcore.types import PipelineResultTypes, PSObject, PSType, PSVersion
 
 
@@ -191,7 +191,7 @@ class Command(PSObject):
             protocol_version = getattr(kwargs["their_capability"], "protocolversion", None)
 
         if not protocol_version:
-            protocol_version = PSVersion("2.1")
+            protocol_version = ProtocolVersion.Win7RC.value
 
         merge_previous = (
             PipelineResultTypes.Output | PipelineResultTypes.Error
@@ -210,13 +210,13 @@ class Command(PSObject):
         }
 
         # For backwards compatibility we need to optional set these values based on the peer's protocol version.
-        if protocol_version >= PSVersion("2.2"):
+        if protocol_version >= ProtocolVersion.Pwsh3.value:
             command_kwargs["MergeError"] = instance.merge_error
             command_kwargs["MergeWarning"] = instance.merge_warning
             command_kwargs["MergeVerbose"] = instance.merge_verbose
             command_kwargs["MergeDebug"] = instance.merge_debug
 
-        if protocol_version >= PSVersion("2.3"):
+        if protocol_version >= ProtocolVersion.Pwsh5.value:
             command_kwargs["MergeInformation"] = instance.merge_information
 
         return dict_to_psobject(**command_kwargs)
