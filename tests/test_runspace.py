@@ -33,7 +33,7 @@ def test_open_runspacepool():
     assert len(first.data) > 0
     assert first.stream_type == psrpcore.StreamType.default
     assert first.pipeline_id is None
-    assert client.state == RunspacePoolState.NegotiationSent
+    assert client.state == RunspacePoolState.Opening
 
     assert client.data_to_send() is None
 
@@ -43,8 +43,8 @@ def test_open_runspacepool():
     assert session_cap.ps_object.PSVersion == server.their_capability.PSVersion
     assert session_cap.ps_object.SerializationVersion == server.their_capability.SerializationVersion
     assert session_cap.ps_object.protocolversion == server.their_capability.protocolversion
-    assert client.state == RunspacePoolState.NegotiationSent
-    assert server.state == RunspacePoolState.NegotiationSucceeded
+    assert client.state == RunspacePoolState.Opening
+    assert server.state == RunspacePoolState.Opening
     assert server.runspace_pool_id == client.runspace_pool_id
 
     second = server.data_to_send()
@@ -58,8 +58,8 @@ def test_open_runspacepool():
     assert session_cap.ps_object.PSVersion == client.their_capability.PSVersion
     assert session_cap.ps_object.SerializationVersion == client.their_capability.SerializationVersion
     assert session_cap.ps_object.protocolversion == client.their_capability.protocolversion
-    assert client.state == RunspacePoolState.NegotiationSucceeded
-    assert server.state == RunspacePoolState.NegotiationSucceeded
+    assert client.state == RunspacePoolState.Opening
+    assert server.state == RunspacePoolState.Opening
 
     init_runspace_pool = server.next_event()
     assert isinstance(init_runspace_pool, psrpcore.InitRunspacePoolEvent)
@@ -72,7 +72,7 @@ def test_open_runspacepool():
     assert init_runspace_pool.ps_object.MaxRunspaces == 1
     assert init_runspace_pool.ps_object.MinRunspaces == 1
     assert init_runspace_pool.ps_object.PSThreadOptions == PSThreadOptions.Default
-    assert client.state == RunspacePoolState.NegotiationSucceeded
+    assert client.state == RunspacePoolState.Opening
     assert server.state == RunspacePoolState.Opened
 
     assert server.next_event() is None
@@ -89,7 +89,7 @@ def test_open_runspacepool():
     assert isinstance(private_data, psrpcore.ApplicationPrivateDataEvent)
     assert private_data.ps_object.ApplicationPrivateData == {}
     assert client.application_private_data == {}
-    assert client.state == RunspacePoolState.NegotiationSucceeded
+    assert client.state == RunspacePoolState.Opening
     assert server.state == RunspacePoolState.Opened
 
     runspace_state = client.next_event()
@@ -120,54 +120,54 @@ def test_open_runspacepool_small():
     server.receive_data(first)
     assert server.next_event() is None
     assert client.state == RunspacePoolState.Opening
-    assert server.state == RunspacePoolState.BeforeOpen
+    assert server.state == RunspacePoolState.Opening
 
     server.receive_data(client.data_to_send(60))
     assert server.next_event() is None
     assert client.state == RunspacePoolState.Opening
-    assert server.state == RunspacePoolState.BeforeOpen
+    assert server.state == RunspacePoolState.Opening
 
     server.receive_data(client.data_to_send(60))
     assert server.next_event() is None
     assert client.state == RunspacePoolState.Opening
-    assert server.state == RunspacePoolState.BeforeOpen
+    assert server.state == RunspacePoolState.Opening
 
     server.receive_data(client.data_to_send(60))
     assert server.next_event() is None
     assert client.state == RunspacePoolState.Opening
-    assert server.state == RunspacePoolState.BeforeOpen
+    assert server.state == RunspacePoolState.Opening
 
     server.receive_data(client.data_to_send(60))
     assert server.next_event() is None
     assert client.state == RunspacePoolState.Opening
-    assert server.state == RunspacePoolState.BeforeOpen
+    assert server.state == RunspacePoolState.Opening
 
     server.receive_data(client.data_to_send(60))
     session_cap = server.next_event()
     assert isinstance(session_cap, psrpcore.SessionCapabilityEvent)
-    assert client.state == RunspacePoolState.NegotiationSent
-    assert server.state == RunspacePoolState.NegotiationSucceeded
+    assert client.state == RunspacePoolState.Opening
+    assert server.state == RunspacePoolState.Opening
     assert server.next_event() is None
 
     client.receive_data(server.data_to_send())
     assert server.data_to_send() is None
     session_cap = client.next_event()
     assert isinstance(session_cap, psrpcore.SessionCapabilityEvent)
-    assert client.state == RunspacePoolState.NegotiationSucceeded
-    assert server.state == RunspacePoolState.NegotiationSucceeded
+    assert client.state == RunspacePoolState.Opening
+    assert server.state == RunspacePoolState.Opening
     assert client.next_event() is None
 
     server.receive_data(client.data_to_send())
     init_runspace = server.next_event()
     assert isinstance(init_runspace, psrpcore.InitRunspacePoolEvent)
-    assert client.state == RunspacePoolState.NegotiationSucceeded
+    assert client.state == RunspacePoolState.Opening
     assert server.state == RunspacePoolState.Opened
 
     client.receive_data(server.data_to_send())
     assert server.data_to_send() is None
     private_data = client.next_event()
     assert isinstance(private_data, psrpcore.ApplicationPrivateDataEvent)
-    assert client.state == RunspacePoolState.NegotiationSucceeded
+    assert client.state == RunspacePoolState.Opening
     assert server.state == RunspacePoolState.Opened
 
     runspace_state = client.next_event()
@@ -351,20 +351,6 @@ def test_receive_fragment_out_of_order():
 
     with pytest.raises(psrpcore.PSRPCoreError, match="Expecting fragment with a fragment id of 0 not 1"):
         server.next_event()
-
-
-def test_reset_invalid_state():
-    client = psrpcore.ClientRunspacePool()
-    pipe = psrpcore.ClientPowerShell(client)
-    pipe.add_command("test")
-
-    expected = re.escape(
-        "Runspace Pool state must be one of 'RunspacePoolState.Connecting, RunspacePoolState.Opened, "
-        "RunspacePoolState.Opening, RunspacePoolState.NegotiationSent, RunspacePoolState.NegotiationSucceeded' "
-        "to send PSRP message, current state is RunspacePoolState.BeforeOpen"
-    )
-    with pytest.raises(psrpcore.InvalidRunspacePoolState, match=expected):
-        pipe.invoke()
 
 
 def test_prepare_message_with_invalid_type():

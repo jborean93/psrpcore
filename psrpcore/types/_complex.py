@@ -207,8 +207,8 @@ class RunspacePoolState(PSEnumBase):
     under `[MS-PSRP] 2.2.3.4 RunspacePoolState`_ and while it shares the same
     name as the .NET type
     `System.Management.Automation.Runspaces.RunspacePoolState`_ it has a few
-    values that do not match. The .NET values are favoured here and any ones
-    that are in the PSRP docs and not in the enum have been manually defined.
+    extra names and some values that do not match. The .NET enum is used here
+    as that's what PowerShell uses internally.
 
     .. _[MS-PSRP] 2.2.3.4 RunspacePoolState:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/b05495bc-a9b2-4794-9f43-4bf1f3633900
@@ -224,12 +224,8 @@ class RunspacePoolState(PSEnumBase):
     Closing = 4  #: The RunspacePool is being closed.
     Broken = 5  #: The RunspacePool has been disconnected abnormally.
     Disconnecting = 6  #: The RunspacePool is being disconnected.
-    # 9 in PSRP
     Disconnected = 7  #: The RunspacePool has been disconnected.
     Connecting = 8  #: The RunspacePool is being connected.
-    # Referenced as 6 and 7 in MS-PSRP but are internal only so just use a random value
-    NegotiationSent = 100  #: :class:`psrp.dotnet.psrp_messages.SessionCapability` sent to peer.
-    NegotiationSucceeded = 101  #: :class:`psrp.dotnet.psrp_messages.SessionCapability` received from peer.
 
 
 @PSType(["System.Management.Automation.PSInvocationState"])
