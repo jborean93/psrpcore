@@ -91,7 +91,7 @@ class ServerRunspacePool(RunspacePool):
             return
         if self.state != RunspacePoolState.Disconnected:
             raise InvalidRunspacePoolState(
-                "accept Runspace Pool connections", self.state, [RunspacePoolState.BeforeOpen]
+                "accept Runspace Pool connections", self.state, [RunspacePoolState.Disconnected]
             )
 
         # The incoming messages will be from a blank runspace pool so start back at 0
@@ -128,7 +128,7 @@ class ServerRunspacePool(RunspacePool):
                 generated, defaults to the current computer.
         """
         if self.state != RunspacePoolState.Opened:
-            raise InvalidRunspacePoolState("generate Runspace Pool event", self.state, [RunspacePoolState.Opened])
+            raise InvalidRunspacePoolState("generate a Runspace Pool event", self.state, [RunspacePoolState.Opened])
 
         time_generated = PSDateTime.now() if time_generated is None else time_generated
         computer = platform.node() if computer is None else computer
@@ -396,7 +396,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
             return
 
         if self.state != PSInvocationState.NotStarted:
-            raise InvalidPipelineState("starting pipeline", self.state, [PSInvocationState.NotStarted])
+            raise InvalidPipelineState("start a pipeline", self.state, [PSInvocationState.NotStarted])
 
         self.state = PSInvocationState.Running
 
@@ -413,7 +413,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
             return
 
         if self.state != PSInvocationState.Running:
-            raise InvalidPipelineState("closing pipeline", self.state, [PSInvocationState.Running])
+            raise InvalidPipelineState("stop a pipeline", self.state, [PSInvocationState.Running])
 
         self.state = PSInvocationState.Stopped
 
@@ -446,7 +446,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
         parameters: typing.Optional[typing.List] = None,
     ) -> int:
         if self.state != PSInvocationState.Running:
-            raise InvalidPipelineState("making pipeline host call", self.state, [PSInvocationState.Running])
+            raise InvalidPipelineState("make a pipeline host call", self.state, [PSInvocationState.Running])
 
         return self.runspace_pool.host_call(method, parameters, self.pipeline_id)
 
@@ -462,7 +462,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
             value: The object to write.
         """
         if self.state != PSInvocationState.Running:
-            raise InvalidPipelineState("writing output record", self.state, [PSInvocationState.Running])
+            raise InvalidPipelineState("write pipeline output", self.state, [PSInvocationState.Running])
 
         self.prepare_message(value, message_type=PSRPMessageType.PipelineOutput)
 
@@ -479,7 +479,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
         serialize_extended_info: bool = False,
     ) -> None:
         if self.state != PSInvocationState.Running:
-            raise InvalidPipelineState("writing error record", self.state, [PSInvocationState.Running])
+            raise InvalidPipelineState("write pipeline error", self.state, [PSInvocationState.Running])
 
         category_info = category_info or ErrorCategoryInfo()
 
@@ -498,13 +498,13 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
 
     def write_debug(
         self,
-        message: typing.Union[str],
+        message: str,
         invocation_info: typing.Optional[InvocationInfo] = None,
         pipeline_iteration_info: typing.Optional[typing.List[int]] = None,
         serialize_extended_info: bool = False,
     ) -> None:
         if self.state != PSInvocationState.Running:
-            raise InvalidPipelineState("writing debug record", self.state, [PSInvocationState.Running])
+            raise InvalidPipelineState("write pipeline debug", self.state, [PSInvocationState.Running])
 
         value = InformationalRecord(
             Message=message,
@@ -516,13 +516,13 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
 
     def write_verbose(
         self,
-        message: typing.Union[str],
+        message: str,
         invocation_info: typing.Optional[InvocationInfo] = None,
         pipeline_iteration_info: typing.Optional[typing.List[int]] = None,
         serialize_extended_info: bool = False,
     ) -> None:
         if self.state != PSInvocationState.Running:
-            raise InvalidPipelineState("writing verbose record", self.state, [PSInvocationState.Running])
+            raise InvalidPipelineState("write pipeline verbose", self.state, [PSInvocationState.Running])
 
         value = InformationalRecord(
             Message=message,
@@ -534,13 +534,13 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
 
     def write_warning(
         self,
-        message: typing.Union[str],
+        message: str,
         invocation_info: typing.Optional[InvocationInfo] = None,
         pipeline_iteration_info: typing.Optional[typing.List[int]] = None,
         serialize_extended_info: bool = False,
     ) -> None:
         if self.state != PSInvocationState.Running:
-            raise InvalidPipelineState("writing warning record", self.state, [PSInvocationState.Running])
+            raise InvalidPipelineState("write pipeline warning", self.state, [PSInvocationState.Running])
 
         value = InformationalRecord(
             Message=message,
@@ -586,7 +586,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
                 the seconds remaining should not be displayed.
         """
         if self.state != PSInvocationState.Running:
-            raise InvalidPipelineState("writing progress record", self.state, [PSInvocationState.Running])
+            raise InvalidPipelineState("write pipeline progress", self.state, [PSInvocationState.Running])
 
         value = ProgressRecord(
             Activity=activity,
@@ -643,7 +643,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
             raise InvalidProtocolVersion("writing information record", their_version, required_version)
 
         if self.state != PSInvocationState.Running:
-            raise InvalidPipelineState("writing information record", self.state, [PSInvocationState.Running])
+            raise InvalidPipelineState("write pipeline information", self.state, [PSInvocationState.Running])
 
         time_generated = PSDateTime.now() if time_generated is None else time_generated
         if not tags:
@@ -654,7 +654,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
                 # getuser on Windows relies on env vars that may not may not be set. Just fallback gracefully.
                 user = getpass.getuser()
 
-            except ModuleNotFoundError:
+            except ModuleNotFoundError:  # pragma: no cover
                 user = "Unknown"
 
         computer = platform.node() if computer is None else computer
