@@ -362,6 +362,7 @@ class ClientRunspacePool(RunspacePool):
         self,
         event: RunspaceAvailabilityEvent,
     ) -> None:
+        # FIXME: Check event success
         handler = self._ci_handlers.pop(int(event.ps_object.ci))
         if handler is not None:
             handler(event)

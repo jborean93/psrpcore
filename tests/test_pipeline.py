@@ -50,7 +50,7 @@ def test_create_pipeline():
     c_command = client.data_to_send()
     server.receive_data(c_command)
     create_pipeline = server.next_event()
-    s_pipeline = create_pipeline.pipeline
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
     assert isinstance(create_pipeline, psrpcore.CreatePipelineEvent)
     assert isinstance(s_pipeline, psrpcore.ServerPowerShell)
     assert s_pipeline.add_to_history is False
@@ -63,11 +63,11 @@ def test_create_pipeline():
     assert s_pipeline.commands[0].use_local_scope is None
     assert s_pipeline.history is None
     assert isinstance(s_pipeline.host, HostInfo)
-    assert s_pipeline.host.host_default_data is None
-    assert s_pipeline.host.is_host_null is True
-    assert s_pipeline.host.is_host_raw_ui_null is True
-    assert s_pipeline.host.is_host_ui_null is True
-    assert s_pipeline.host.use_runspace_host is True
+    assert s_pipeline.host.HostDefaultData is None
+    assert s_pipeline.host.IsHostNull is True
+    assert s_pipeline.host.IsHostRawUINull is True
+    assert s_pipeline.host.IsHostUINull is True
+    assert s_pipeline.host.UseRunspaceHost is True
     assert s_pipeline.is_nested is False
     assert s_pipeline.no_input is True
     assert s_pipeline.pipeline_id == c_pipeline.pipeline_id
@@ -110,11 +110,11 @@ def test_create_pipeline_host_data():
         window_title="Test Title",
     )
     c_host = HostInfo(
-        use_runspace_host=False,
-        is_host_null=False,
-        is_host_ui_null=False,
-        is_host_raw_ui_null=False,
-        host_default_data=c_host_data,
+        UseRunspaceHost=False,
+        IsHostNull=False,
+        IsHostUINull=False,
+        IsHostRawUINull=False,
+        HostDefaultData=c_host_data,
     )
 
     c_pipeline = psrpcore.ClientPowerShell(client, host=c_host)
@@ -123,31 +123,31 @@ def test_create_pipeline_host_data():
 
     server.receive_data(client.data_to_send())
     create_pipeline = server.next_event()
-    s_pipeline = create_pipeline.pipeline
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
     s_host = s_pipeline.host
 
     assert isinstance(s_host, HostInfo)
-    assert s_host.is_host_null is False
-    assert s_host.is_host_ui_null is False
-    assert s_host.is_host_raw_ui_null is False
-    assert s_host.use_runspace_host is False
-    assert isinstance(s_host.host_default_data, HostDefaultData)
-    assert s_host.host_default_data.foreground_color == ConsoleColor.Red
-    assert s_host.host_default_data.background_color == ConsoleColor.White
-    assert s_host.host_default_data.cursor_position.X == 1
-    assert s_host.host_default_data.cursor_position.Y == 2
-    assert s_host.host_default_data.window_position.X == 3
-    assert s_host.host_default_data.window_position.Y == 4
-    assert s_host.host_default_data.cursor_size == 5
-    assert s_host.host_default_data.buffer_size.Width == 6
-    assert s_host.host_default_data.buffer_size.Height == 7
-    assert s_host.host_default_data.window_size.Width == 8
-    assert s_host.host_default_data.window_size.Height == 9
-    assert s_host.host_default_data.max_window_size.Width == 10
-    assert s_host.host_default_data.max_window_size.Height == 11
-    assert s_host.host_default_data.max_physical_window_size.Width == 12
-    assert s_host.host_default_data.max_physical_window_size.Height == 13
-    assert s_host.host_default_data.window_title == "Test Title"
+    assert s_host.IsHostNull is False
+    assert s_host.IsHostUINull is False
+    assert s_host.IsHostRawUINull is False
+    assert s_host.UseRunspaceHost is False
+    assert isinstance(s_host.HostDefaultData, HostDefaultData)
+    assert s_host.HostDefaultData.foreground_color == ConsoleColor.Red
+    assert s_host.HostDefaultData.background_color == ConsoleColor.White
+    assert s_host.HostDefaultData.cursor_position.X == 1
+    assert s_host.HostDefaultData.cursor_position.Y == 2
+    assert s_host.HostDefaultData.window_position.X == 3
+    assert s_host.HostDefaultData.window_position.Y == 4
+    assert s_host.HostDefaultData.cursor_size == 5
+    assert s_host.HostDefaultData.buffer_size.Width == 6
+    assert s_host.HostDefaultData.buffer_size.Height == 7
+    assert s_host.HostDefaultData.window_size.Width == 8
+    assert s_host.HostDefaultData.window_size.Height == 9
+    assert s_host.HostDefaultData.max_window_size.Width == 10
+    assert s_host.HostDefaultData.max_window_size.Height == 11
+    assert s_host.HostDefaultData.max_physical_window_size.Width == 12
+    assert s_host.HostDefaultData.max_physical_window_size.Height == 13
+    assert s_host.HostDefaultData.window_title == "Test Title"
 
 
 def test_pipeline_multiple_commands():
@@ -167,7 +167,7 @@ def test_pipeline_multiple_commands():
 
     server.receive_data(client.data_to_send())
     create_pipe = server.next_event()
-    s_pipeline = create_pipe.pipeline
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
 
     assert len(s_pipeline.commands) == 3
     assert str(s_pipeline.commands[0]) == "Get-ChildItem"
@@ -211,7 +211,7 @@ def test_pipeline_multiple_statements():
     c_pipeline.invoke()
     server.receive_data(client.data_to_send())
     create_pipe = server.next_event()
-    s_pipeline = create_pipe.pipeline
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
 
     assert len(s_pipeline.commands) == 5
     assert s_pipeline.commands[0].command_text == "Get-ChildItem"
@@ -270,7 +270,7 @@ def test_pipeline_parameters():
     a = client.data_to_send()
     server.receive_data(a)
     create_pipe = server.next_event()
-    s_pipeline = create_pipe.pipeline
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
 
     assert s_pipeline.commands[0].parameters == [(None, "/tmp"), (None, True)]
     assert s_pipeline.commands[1].parameters == [("Path", "/tmp"), ("Force", None)]
@@ -334,7 +334,7 @@ def test_pipeline_redirection():
     c_pipeline.invoke()
     server.receive_data(client.data_to_send())
     create_pipe = server.next_event()
-    s_pipeline = create_pipe.pipeline
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
 
     assert s_pipeline.commands[0].command_text == "My-Cmdlet"
     assert s_pipeline.commands[0].merge_debug == PipelineResultTypes.none
@@ -420,7 +420,7 @@ def test_pipeline_input_output():
     c_command = client.data_to_send()
     server.receive_data(c_command)
     create_pipeline = server.next_event()
-    s_pipeline = create_pipeline.pipeline
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
     assert isinstance(create_pipeline, psrpcore.CreatePipelineEvent)
     assert isinstance(s_pipeline, psrpcore.ServerPowerShell)
     assert len(s_pipeline.commands) == 1
@@ -557,7 +557,7 @@ def test_pipeline_stop():
     c_command = client.data_to_send()
     server.receive_data(c_command)
     create_pipeline = server.next_event()
-    s_pipeline = create_pipeline.pipeline
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
     s_pipeline.start()
 
     s_pipeline.stop()
@@ -596,7 +596,8 @@ def test_pipeline_host_call():
     c_pipeline.invoke()
 
     server.receive_data(client.data_to_send())
-    s_pipeline = server.next_event().pipeline
+    server.next_event()
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
     s_pipeline.start()
     s_pipeline.host_call(HostMethodIdentifier.PromptForCredential1, ["caption", "message", "username", "targetname"])
 
@@ -625,8 +626,7 @@ def test_command_metadata():
     server.receive_data(client.data_to_send())
     command_meta = server.next_event()
     assert isinstance(command_meta, psrpcore.GetCommandMetadataEvent)
-    assert isinstance(command_meta.pipeline, psrpcore.ServerGetCommandMetadata)
-    s_pipeline = command_meta.pipeline
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
     s_pipeline.start()
 
     with pytest.raises(ValueError, match="write_count must be called before writing to the command metadata pipeline"):
@@ -684,7 +684,7 @@ def test_exchange_key_client():
     create_pipeline = server.next_event()
     assert isinstance(create_pipeline, psrpcore.CreatePipelineEvent)
 
-    s_pipeline = create_pipeline.pipeline
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
     assert len(s_pipeline.commands) == 1
     assert s_pipeline.commands[0].command_text == "command"
     assert s_pipeline.commands[0].parameters == [(None, "my secret")]
@@ -719,7 +719,8 @@ def test_exchange_key_request():
     c_pipeline.add_script("command")
     c_pipeline.invoke()
     server.receive_data(client.data_to_send())
-    s_pipeline = server.next_event().pipeline
+    server.next_event()
+    s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
     s_pipeline.start()
 
     with pytest.raises(psrpcore.MissingCipherError):

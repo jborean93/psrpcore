@@ -99,11 +99,11 @@ def test_init_runspace_pool():
     assert ps_value.PSThreadOptions == PSThreadOptions.UseNewThread
     assert ps_value.ApartmentState == ApartmentState.STA
     assert isinstance(ps_value.HostInfo, HostInfo)
-    assert ps_value.HostInfo.is_host_null
-    assert ps_value.HostInfo.is_host_ui_null
-    assert ps_value.HostInfo.is_host_raw_ui_null
-    assert ps_value.HostInfo.use_runspace_host
-    assert ps_value.HostInfo.host_default_data is None
+    assert ps_value.HostInfo.IsHostNull
+    assert ps_value.HostInfo.IsHostUINull
+    assert ps_value.HostInfo.IsHostRawUINull
+    assert ps_value.HostInfo.UseRunspaceHost
+    assert ps_value.HostInfo.HostDefaultData is None
     assert ps_value.ApplicationArguments == {"key": "value"}
 
     element = serialize(ps_value)

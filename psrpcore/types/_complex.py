@@ -784,11 +784,11 @@ class HostDefaultData(PSObject):
 
 @PSType(
     extended_properties=[
-        PSAliasProperty("_isHostNull", "is_host_null", ps_type=PSBool),
-        PSAliasProperty("_isHostUINull", "is_host_ui_null", ps_type=PSBool),
-        PSAliasProperty("_isHostRawUINull", "is_host_raw_ui_null", ps_type=PSBool),
-        PSAliasProperty("_useRunspaceHost", "use_runspace_host", ps_type=PSBool),
-        PSAliasProperty("_hostDefaultData", "host_default_data", optional=True, ps_type=HostDefaultData),
+        PSNoteProperty("IsHostNull", value=True, ps_type=PSBool),
+        PSNoteProperty("IsHostUINull", value=True, ps_type=PSBool),
+        PSNoteProperty("IsHostRawUINull", value=True, ps_type=PSBool),
+        PSNoteProperty("UseRunspaceHost", value=True, ps_type=PSBool),
+        PSNoteProperty("HostDefaultData", ps_type=HostDefaultData),
     ],
     skip_inheritance=True,
 )
@@ -799,37 +799,21 @@ class HostInfo(PSObject):
     `[MS-PSRP] 2.2.3.14 HostInfo`_.
 
     Args:
-        is_host_null (:class:`PSBool`): Whether there is a PSHost ``False`` or
+        IsHostNull (:class:`PSBool`): Whether there is a PSHost ``False`` or
             not ``True``.
-        is_host_ui_null (:class:`PSBool`): Whether the PSHost implements the `UI`
+        IsHostUINull (:class:`PSBool`): Whether the PSHost implements the `UI`
             implementation methods ``False`` or not ``True``.
-        is_host_raw_ui_null (:class:`PSBool`): Whether the PSHost UI implements
+        IsHostRawUINull (:class:`PSBool`): Whether the PSHost UI implements
             the ``RawUI`` implementation methods ``False`` or not ``True``.
-        use_runspace_host (:class:`PSBool`): When creating a pipeline, set this
+        UseRunspaceHost (:class:`PSBool`): When creating a pipeline, set this
             to ``True`` to get it to use the associated RunspacePool host.
-        host_default_data (:class:`HostDefaultData`): Host default data
+        HostDefaultData (:class:`HostDefaultData`): Host default data
             associated with the :class:`psrp.host.PSHostRawUI` implementation.
             Can be ``None`` if not implemented.
 
     .. _[MS-PSRP] 2.2.3.14 HostInfo:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6
     """
-
-    def __init__(
-        self,
-        is_host_null: bool = True,
-        is_host_ui_null: bool = True,
-        is_host_raw_ui_null: bool = True,
-        use_runspace_host: bool = True,
-        host_default_data: typing.Optional[HostDefaultData] = None,
-    ):
-        super().__init__()
-
-        self.is_host_null = is_host_null
-        self.is_host_ui_null = is_host_ui_null
-        self.is_host_raw_ui_null = is_host_raw_ui_null
-        self.use_runspace_host = use_runspace_host
-        self.host_default_data = host_default_data
 
     @classmethod
     def FromPSObjectForRemoting(
@@ -843,12 +827,29 @@ class HostInfo(PSObject):
             host_data = HostDefaultData.FromPSObjectForRemoting(host_data)
 
         return HostInfo(
-            is_host_null=obj._isHostNull,
-            is_host_ui_null=obj._isHostUINull,
-            is_host_raw_ui_null=obj._isHostRawUINull,
-            use_runspace_host=obj._useRunspaceHost,
-            host_default_data=host_data,
+            IsHostNull=obj._isHostNull,
+            IsHostUINull=obj._isHostUINull,
+            IsHostRawUINull=obj._isHostRawUINull,
+            UseRunspaceHost=obj._useRunspaceHost,
+            HostDefaultData=host_data,
         )
+
+    @classmethod
+    def ToPSObjectForRemoting(
+        cls,
+        instance: "HostInfo",
+        **kwargs: typing.Any,
+    ) -> PSObject:
+        obj = PSObject()
+        add_note_property(obj, "_isHostNull", instance.IsHostNull)
+        add_note_property(obj, "_isHostUINull", instance.IsHostUINull)
+        add_note_property(obj, "_isHostRawUINull", instance.IsHostRawUINull)
+        add_note_property(obj, "_useRunspaceHost", instance.UseRunspaceHost)
+
+        if instance.HostDefaultData:
+            add_note_property(obj, "_hostDefaultData", instance.HostDefaultData)
+
+        return obj
 
 
 @PSType(

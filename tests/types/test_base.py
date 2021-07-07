@@ -164,7 +164,6 @@ def test_ps_object_with_script_property():
             ),
             ps_base.PSNoteProperty("NoteProperty", value="note value"),
             ps_base.PSScriptProperty("ScriptProperty", lambda s: s.test, ps_type=PSInt),
-            ps_base.PSScriptProperty("ScriptOptional", lambda s: None, optional=True),
             ps_base.PSScriptProperty(
                 "ScriptToNote", lambda s: s.NoteProperty, lambda s, v: setattr(s, "NoteProperty", v)
             ),
@@ -210,24 +209,18 @@ def test_ps_object_with_script_property():
     assert isinstance(obj.PSObject.extended_properties[0], ps_base.PSNoteProperty)
     assert isinstance(obj.PSObject.extended_properties[1], ps_base.PSNoteProperty)
     assert isinstance(obj.PSObject.extended_properties[2], ps_base.PSNoteProperty)
-    # Not in the CLIXML so the original type was preserved
-    assert isinstance(obj.PSObject.extended_properties[3], ps_base.PSScriptProperty)
-    assert isinstance(obj.PSObject.extended_properties[4], ps_base.PSNoteProperty)
+    # Not in the CLIXML so the original type was preservedy)
+    assert isinstance(obj.PSObject.extended_properties[3], ps_base.PSNoteProperty)
 
     assert obj.world is None
     assert obj.ScriptMandatory == "hello"
     assert obj.NoteProperty == "note value"
     assert obj.ScriptProperty == 1
     assert isinstance(obj.ScriptProperty, PSInt)
-    assert obj.ScriptOptional is None
     assert obj.ScriptToNote == "note value"
 
     obj = ScriptablePSObject("hello", ScriptToNote="other note")
     obj.world = None
-
-    expected = re.escape("Cannot set value for a getter property 'ScriptOptional' without a setter callable")
-    with pytest.raises(ValueError, match=expected):
-        obj.ScriptOptional = "abc"
 
     element = serialize(obj)
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
@@ -252,7 +245,6 @@ def test_ps_object_with_aliases():
             ps_base.PSAliasProperty("AliasToNote", "NoteProperty"),
             ps_base.PSAliasProperty("AliasWithType", "NoteProperty", ps_type=PSInt),
             ps_base.PSAliasProperty("AliasToAttr", "test"),
-            ps_base.PSAliasProperty("AliasOptional", "none", optional=True),
         ],
     )
     class AliasPSObject(ps_base.PSObject):
@@ -276,7 +268,6 @@ def test_ps_object_with_aliases():
     assert obj.AliasWithType == 1
     assert isinstance(obj.AliasWithType, PSInt)
     assert obj.AliasToAttr == "abc"
-    assert obj.AliasOptional is None
 
     element = serialize(obj)
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
@@ -299,16 +290,11 @@ def test_ps_object_with_aliases():
     assert isinstance(obj.PSObject.extended_properties[1], ps_base.PSNoteProperty)
     assert isinstance(obj.PSObject.extended_properties[2], ps_base.PSNoteProperty)
     assert isinstance(obj.PSObject.extended_properties[3], ps_base.PSNoteProperty)
-    # Not in the serialized input so this stayed an PSAliasProperty
-    assert isinstance(obj.PSObject.extended_properties[4], ps_base.PSAliasProperty)
     assert obj.NoteProperty == "1"
     assert obj.AliasToNote == "1"
     assert obj.AliasWithType == 1
     assert isinstance(obj.AliasWithType, PSInt)
     assert obj.AliasToAttr == "abc"
-    assert obj.AliasOptional is None
-    obj.none = "test"
-    assert obj.AliasOptional == "test"
 
 
 def test_ps_object_invalid_init_args():
@@ -378,44 +364,6 @@ def test_ps_object_shadowed_property():
     assert obj.Property == "kwarg"
     assert obj.PSObject.adapted_properties[0].get_value(None) is None
     assert obj.PSObject.extended_properties[0].get_value(None) == "kwarg"
-
-
-def test_ps_object_optional():
-    @ps_base.PSType(
-        type_names=["OptionalPSObject"],
-        extended_properties=[
-            ps_base.PSNoteProperty("Optional", optional=True),
-            ps_base.PSNoteProperty("NoDefault"),
-            ps_base.PSNoteProperty("OptionalSet", optional=True),
-        ],
-    )
-    class OptionalPSObject(ps_base.PSObject):
-        def __str__(self):
-            return "mock"
-
-    obj = OptionalPSObject(OptionalSet="abc")
-    assert obj.Optional is None
-    assert obj.NoDefault is None
-    assert obj.OptionalSet == "abc"
-
-    element = serialize(obj)
-    actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0"><TN RefId="0"><T>OptionalPSObject</T><T>System.Object</T></TN>'
-        "<MS>"
-        '<Nil N="NoDefault" />'
-        '<S N="OptionalSet">abc</S>'
-        "</MS>"
-        "<ToString>mock</ToString></Obj>"
-    )
-
-    obj = deserialize(element)
-    assert isinstance(obj, ps_base.PSObject)
-    assert isinstance(obj, OptionalPSObject)
-    assert obj.Optional is None
-    assert obj.NoDefault is None
-    assert obj.OptionalSet == "abc"
-    assert obj.PSTypeNames == ["OptionalPSObject", "System.Object"]
 
 
 def test_ps_object_mandatory():
@@ -492,9 +440,7 @@ def test_ps_object_with_init():
     # If __init__ is defined on the type then automatic validation and setting of props during init is not done.
     obj = ObjectWithInit("value")
     assert not obj.PSObject.extended_properties[0].mandatory
-    assert not obj.PSObject.extended_properties[0].optional
     assert obj.PSObject.extended_properties[1].mandatory
-    assert not obj.PSObject.extended_properties[1].optional
     assert obj.value == "value"
     assert obj.Property is None
     assert obj.Mandatory is None
@@ -525,9 +471,7 @@ def test_ps_object_with_multi_inheritance():
     assert obj.Mandatory == "value"
     assert obj.Property is None
     assert obj.PSObject.extended_properties[0].mandatory
-    assert not obj.PSObject.extended_properties[0].optional
     assert not obj.PSObject.extended_properties[1].mandatory
-    assert not obj.PSObject.extended_properties[1].optional
     assert obj.value == "other"
 
 
@@ -588,7 +532,6 @@ def test_ps_object_init_properties_nested():
         type_names=["Nested2"],
         extended_properties=[
             ps_base.PSNoteProperty("Extended2", mandatory=True),
-            ps_base.PSNoteProperty("Extended2Optional", optional=True),
         ],
     )
     class Nested2(Nested1):
@@ -613,13 +556,12 @@ def test_ps_object_init_properties_nested():
 
     assert Nested2.PSObject.type_names == ["Nested2", "Nested1", "System.Object"]
     assert len(Nested2.PSObject.adapted_properties) == 2
-    assert len(Nested2.PSObject.extended_properties) == 3
+    assert len(Nested2.PSObject.extended_properties) == 2
     assert Nested2.PSObject.extended_properties[0].name == "Extended2"
-    assert Nested2.PSObject.extended_properties[1].name == "Extended2Optional"
 
     assert Nested3.PSObject.type_names == ["Nested3", "Nested2", "Nested1", "System.Object"]
     assert len(Nested3.PSObject.adapted_properties) == 2
-    assert len(Nested3.PSObject.extended_properties) == 4
+    assert len(Nested3.PSObject.extended_properties) == 3
     assert Nested3.PSObject.extended_properties[0].name == "Extended3"
 
     expected = re.escape("missing 2 required arguments: 'Adapted1Mandatory', 'Extended2'")
@@ -634,7 +576,6 @@ def test_ps_object_init_properties_nested():
     assert obj.Adapted1 is None
     assert obj.Extended1 == 1
     assert obj.Extended2 == "extended 2"
-    assert obj.Extended2Optional is None
     assert obj.Extended3 is None
     assert str(obj) == "adapted"
 
@@ -666,7 +607,6 @@ def test_ps_object_init_properties_nested():
     assert obj.Adapted1 is None
     assert obj.Extended1 == 1
     assert obj.Extended2 == "extended 2"
-    assert obj.Extended2Optional is None
     assert obj.Extended3 is None
 
 
@@ -692,9 +632,7 @@ def test_ps_object_init_with_parent_init_inheritance():
 
     obj = GrandPSObject("other")
     assert not obj.PSObject.extended_properties[0].mandatory
-    assert not obj.PSObject.extended_properties[0].optional
     assert obj.PSObject.extended_properties[1].mandatory
-    assert not obj.PSObject.extended_properties[1].optional
     assert obj.value == "other"
     assert obj.Property is None
     assert obj.Mandatory is None

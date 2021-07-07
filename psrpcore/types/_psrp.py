@@ -121,8 +121,9 @@ class PSMessageType(PSType):
         PSNoteProperty("PSVersion", mandatory=True, ps_type=PSVersion),
         PSNoteProperty("protocolversion", mandatory=True, ps_type=PSVersion),
         PSNoteProperty("SerializationVersion", mandatory=True, ps_type=PSVersion),
-        PSNoteProperty("TimeZone", optional=True, ps_type=PSByteArray),
+        PSNoteProperty("TimeZone", ps_type=PSByteArray),
     ],
+    skip_inheritance=True,
 )
 class SessionCapability(PSObject):
     """SESSION_CAPABILITY Message.
@@ -144,6 +145,22 @@ class SessionCapability(PSObject):
     .. _MS-PSRP 2.2.3.10.1 CurrentSystemTimeZone:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/5e6263c5-358a-459b-a49e-0707e383eb55
     """
+
+    @classmethod
+    def ToPSObjectForRemoting(
+        cls,
+        instance: "SessionCapability",
+        **kwargs: typing.Any,
+    ) -> PSObject:
+        obj = PSObject()
+        add_note_property(obj, "PSVersion", instance.PSVersion)
+        add_note_property(obj, "protocolversion", instance.protocolversion)
+        add_note_property(obj, "SerializationVersion", instance.SerializationVersion)
+
+        if instance.TimeZone:
+            add_note_property(obj, "TimeZone", instance.TimeZone)
+
+        return obj
 
 
 @PSMessageType(
@@ -313,8 +330,9 @@ class RunspaceAvailability(PSObject):
     PSRPMessageType.RunspacePoolState,
     extended_properties=[
         PSNoteProperty("RunspaceState", mandatory=True, ps_type=PSInt),
-        PSNoteProperty("ExceptionAsErrorRecord", optional=True, ps_type=ErrorRecord),
+        PSNoteProperty("ExceptionAsErrorRecord", ps_type=ErrorRecord),
     ],
+    skip_inheritance=True,
 )
 class RunspacePoolStateMsg(PSObject):
     """RUNSPACEPOOL_STATE Message.
@@ -335,6 +353,19 @@ class RunspacePoolStateMsg(PSObject):
     .. _MS-PSRP 2.2.3.4 RunspacePoolState:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/b05495bc-a9b2-4794-9f43-4bf1f3633900
     """
+
+    @classmethod
+    def ToPSObjectForRemoting(
+        cls,
+        instance: "RunspacePoolStateMsg",
+        **kwargs: typing.Any,
+    ) -> PSObject:
+        obj = PSObject()
+        add_note_property(obj, "RunspaceState", instance.RunspaceState)
+        if instance.ExceptionAsErrorRecord:
+            add_note_property(obj, "ExceptionAsErrorRecord", instance.ExceptionAsErrorRecord)
+
+        return obj
 
 
 @PSMessageType(
@@ -526,9 +557,10 @@ class RunspacePoolHostCall(PSObject):
     extended_properties=[
         PSNoteProperty("ci", mandatory=True, ps_type=PSInt64),
         PSNoteProperty("mi", mandatory=True, ps_type=HostMethodIdentifier),
-        PSNoteProperty("mr", optional=True),
-        PSNoteProperty("me", optional=True, ps_type=ErrorRecord),
+        PSNoteProperty("mr"),
+        PSNoteProperty("me", ps_type=ErrorRecord),
     ],
+    skip_inheritance=True,
 )
 class RunspacePoolHostResponse(PSObject):
     """RUNSPACEPOOL_HOST_RESPONSE Message.
@@ -545,6 +577,24 @@ class RunspacePoolHostResponse(PSObject):
     .. _MS-PSRP 2.2.2.16 RUNSPACEPOOL_HOST_RESPONSE:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/9bcdf122-ad6b-45c3-9960-68d22627cdb5
     """
+
+    @classmethod
+    def ToPSObjectForRemoting(
+        cls,
+        instance: "RunspacePoolHostResponse",
+        **kwargs: typing.Any,
+    ) -> PSObject:
+        obj = PSObject()
+        add_note_property(obj, "ci", instance.ci)
+        add_note_property(obj, "mi", instance.mi)
+
+        if instance.mr:
+            add_note_property(obj, "mr", instance.mr)
+
+        if instance.me:
+            add_note_property(obj, "me", instance.me)
+
+        return obj
 
 
 @PSMessageType(PSRPMessageType.PipelineInput)
@@ -601,8 +651,9 @@ class ErrorRecordMsg(ErrorRecord):
     PSRPMessageType.PipelineState,
     extended_properties=[
         PSNoteProperty("PipelineState", mandatory=True, ps_type=PSInt),
-        PSNoteProperty("ExceptionAsErrorRecord", optional=True, ps_type=ErrorRecord),
+        PSNoteProperty("ExceptionAsErrorRecord", ps_type=ErrorRecord),
     ],
+    skip_inheritance=True,
 )
 class PipelineState(PSObject):
     """PIPELINE_STATE Message.
@@ -624,6 +675,19 @@ class PipelineState(PSObject):
     .. _MS-PSRP 2.2.3.5 PSInvocationState:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/acaa253a-29be-45fd-911c-6715515a28b9
     """
+
+    @classmethod
+    def ToPSObjectForRemoting(
+        cls,
+        instance: "PipelineState",
+        **kwargs: typing.Any,
+    ) -> PSObject:
+        obj = PSObject()
+        add_note_property(obj, "PipelineState", instance.PipelineState)
+        if instance.ExceptionAsErrorRecord:
+            add_note_property(obj, "ExceptionAsErrorRecord", instance.ExceptionAsErrorRecord)
+
+        return obj
 
 
 @PSMessageType(PSRPMessageType.DebugRecord, skip_inheritance=False)

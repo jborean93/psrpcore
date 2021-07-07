@@ -191,23 +191,23 @@ class PSObjectMeta:
 
 
 class PSPropertyInfo(metaclass=abc.ABCMeta):
-    """Base Property metadata for an object's properties.
+    """Base metadata for an object property.
 
-    This is an abstract class that defines most of the behaviour when it comes to getting and setting a property. The
-    three types of properties that are implemented are:
+    This is an abstract class that defines the property behaviour when it comes
+    to getting and setting a property. There are three types of properties that
+    have been implemented:
 
-        PSAliasProperty:
-            A property that points to another property, or Python attribute. This essentially creates a getter that
-            calls ps_object['alias'].
+        :class:`PSAliasProperty`:
+            A property that points to another property, or Python attribute.
+            This essentially creates a getter that calls `ps_object['target']`.
 
-        PSNoteProperty:
-            A property that contains it's own value like a normal attribute/property in Python.
+        :class:`PSNoteProperty`:
+            A property that contains it's own value like a normal
+            attribute/property in Python.
 
-        PSScriptProperty:
-            A property that uses a callable to get and optionally set a value from the ps_object.
-
-    The `optional` kwarg controls the behaviour when serializing the object to CLIXML. If `True` and the property value
-    is `None` then the element will be omitted from the CLIXML.
+        :class:`PSScriptProperty`:
+            A property that uses a callable to get and optionally set a value
+            on the ps_object.
 
     The `mandatory` kwarg controls whether the default `__init__()` function added to PSObjects without their own
     `__init__()` will validate that property was specified by the caller. This has no control over the serialization
@@ -215,7 +215,6 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
 
     Args:
         name: The name of the property.
-        optional: The property will be omitted in the CLIXML output when serializing the object and the value is None.
         mandatory: The property must be defined when creating a PSObject.
         ps_type: If set, the property value will be casted to this PSObject type.
         value: The default value to set for the property.
@@ -225,14 +224,12 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
     Attributes:
         name (str): See args.
         ps_type (type): See args.
-        optional (bool): See args.
         mandatory (bool): See args.
     """
 
     def __init__(
         self,
         name: str,
-        optional: bool = False,
         mandatory: bool = False,
         ps_type: typing.Optional[type] = None,
         value: typing.Optional[typing.Any] = _UnsetValue,
@@ -241,7 +238,6 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
     ):
         self.name = name
         self.ps_type = ps_type
-        self.optional = optional
         self.mandatory = mandatory
 
         self._value: typing.Union[typing.Type[_UnsetValue], PSObject] = _UnsetValue
@@ -428,7 +424,6 @@ class PSAliasProperty(PSPropertyInfo):
     Args:
         name: The name of the property.
         alias: The name of the property or attribute to point to.
-        optional: The property will be omitted in the CLIXML output when serializing the object and the value is None.
         ps_type: If set, the property value will be casted to this PSObject type.
 
     Attributes:
@@ -442,14 +437,13 @@ class PSAliasProperty(PSPropertyInfo):
         self,
         name: str,
         alias: str,
-        optional: bool = False,
         ps_type: typing.Optional[type] = None,
     ):
         self.alias = alias
-        super().__init__(name, optional=optional, ps_type=ps_type, getter=lambda s: s[alias])
+        super().__init__(name, ps_type=ps_type, getter=lambda s: s[alias])
 
     def copy(self) -> "PSAliasProperty":
-        return PSAliasProperty(self.name, self.alias, self.optional, self.ps_type)
+        return PSAliasProperty(self.name, self.alias, self.ps_type)
 
 
 class PSNoteProperty(PSPropertyInfo):
@@ -464,7 +458,6 @@ class PSNoteProperty(PSPropertyInfo):
     Args:
         name: The name of the property.
         value: The property value to set, if omitted the default is `None`.
-        optional: The property will be omitted in the CLIXML output when serializing the object and the value is None.
         mandatory: The property must be defined when creating a PSObject.
         ps_type: If set, the property value will be casted to this PSObject type.
 
@@ -476,14 +469,13 @@ class PSNoteProperty(PSPropertyInfo):
         self,
         name: str,
         value: typing.Optional[typing.Any] = _UnsetValue,
-        optional: bool = False,
         mandatory: bool = False,
         ps_type: typing.Optional[type] = None,
     ):
-        super().__init__(name, optional=optional, mandatory=mandatory, ps_type=ps_type, value=value)
+        super().__init__(name, mandatory=mandatory, ps_type=ps_type, value=value)
 
     def copy(self) -> "PSNoteProperty":
-        return PSNoteProperty(self.name, self._value, self.optional, self.mandatory, self.ps_type)
+        return PSNoteProperty(self.name, self._value, self.mandatory, self.ps_type)
 
 
 class PSScriptProperty(PSPropertyInfo):
@@ -503,7 +495,6 @@ class PSScriptProperty(PSPropertyInfo):
         name: The name of the property.
         getter: The callable to run when getting a value for this property.
         setter: The callable to run when setting a value for this property.
-        optional: The property will be omitted in the CLIXML output when serializing the object and the value is None.
         mandatory: The property must be defined when creating a PSObject.
         ps_type: If set, the property value will be casted to this PSObject type.
 
@@ -516,7 +507,6 @@ class PSScriptProperty(PSPropertyInfo):
         name: str,
         getter: typing.Callable[["PSObject"], typing.Any],
         setter: typing.Optional[typing.Callable[["PSObject", typing.Any], None]] = None,
-        optional: bool = False,
         mandatory: bool = False,
         ps_type: typing.Optional[type] = None,
     ):
@@ -528,14 +518,13 @@ class PSScriptProperty(PSPropertyInfo):
                 f"Cannot create mandatory {self.__class__.__qualname__} property '{name}' without a " f"setter callable"
             )
 
-        super().__init__(name, optional=optional, mandatory=mandatory, ps_type=ps_type, getter=getter, setter=setter)
+        super().__init__(name, mandatory=mandatory, ps_type=ps_type, getter=getter, setter=setter)
 
     def copy(self) -> "PSScriptProperty":
         return PSScriptProperty(
             self.name,
             self.getter,  # type: ignore[arg-type] # The class does not allow self.getter to be None
             self.setter,
-            self.optional,
             self.mandatory,
             self.ps_type,
         )

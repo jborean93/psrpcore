@@ -667,10 +667,6 @@ class _Serializer:
             for prop in properties:
                 prop_value = prop.get_value(value)
 
-                # If it's an optional property and the value is not set, omit it from the CLIXML.
-                if prop_value is None and prop.optional:
-                    continue
-
                 prop_element = self.serialize(prop_value)
                 prop_element.attrib["N"] = _serialize_string(prop.name)
                 prop_elements.append(prop_element)

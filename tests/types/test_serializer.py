@@ -42,7 +42,7 @@ from psrpcore.types import (
     PSXml,
 )
 
-from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING
+from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING, assert_xml_diff
 
 # A lot of the serializer tests are done in the tests for each object, these are just for extra edge cases we want to
 # validate
@@ -333,7 +333,7 @@ def test_serialize_circular_reference():
 
     element = serializer.serialize(obj)
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert actual == (
+    expected = (
         '<Obj RefId="0">'
         '<TN RefId="0">'
         "<T>System.Management.Automation.PSCustomObject</T>"
@@ -365,6 +365,7 @@ def test_serialize_circular_reference():
         "</MS>"
         "</Obj>"
     )
+    assert_xml_diff(actual, expected)
 
     obj = serializer.deserialize(element)
     assert isinstance(obj, PSCustomObject)

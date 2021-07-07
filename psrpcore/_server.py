@@ -178,6 +178,7 @@ class ServerRunspacePool(RunspacePool):
         return ci
 
     def request_key(self) -> None:
+        # FIXME: Check if PowerShell does this or just generates the session key.
         if self._cipher:
             return
 
@@ -220,7 +221,7 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: ConnectRunspacePoolEvent,
     ) -> None:
-        # TODO: Verify this behaviour when the props aren't set
+        # FIXME: Verify this behaviour when the props aren't set or when invalid ones are
         self._max_runspaces = getattr(event.ps_object, "MaxRunspaces", self.max_runspaces)
         self._min_runspaces = getattr(event.ps_object, "MinRunspaces", self.min_runspaces)
 
@@ -238,6 +239,7 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: CreatePipelineEvent,
     ) -> None:
+        # FIXME: Validate pipelien_id is in pipeline table
         create_pipeline = event.ps_object
         powershell = create_pipeline.PowerShell
 
@@ -263,8 +265,6 @@ class ServerRunspacePool(RunspacePool):
 
             pipeline.commands[-1].end_of_statement = True
 
-        event.pipeline = pipeline
-
     def _process_EndOfPipelineInput(
         self,
         event: EndOfPipelineInputEvent,
@@ -275,7 +275,7 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: GetAvailableRunspacesEvent,
     ) -> None:
-        # TODO: This should reflect the available runspaces and not the max.
+        # FIXME: This should reflect the available runspaces and not the max.
         self.prepare_message(
             RunspaceAvailability(
                 SetMinMaxRunspacesResponse=self.max_runspaces,
@@ -287,8 +287,9 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: GetCommandMetadataEvent,
     ) -> None:
+        # FIXME: Validate pipelien_id is in pipeline table
         get_meta = event.ps_object
-        pipeline = ServerGetCommandMetadata(
+        ServerGetCommandMetadata(
             runspace_pool=self,
             pipeline_id=event.pipeline_id,
             name=get_meta.Name,
@@ -296,7 +297,6 @@ class ServerRunspacePool(RunspacePool):
             namespace=get_meta.Namespace,
             arguments=get_meta.ArgumentList,
         )
-        event.pipeline = pipeline
 
     def _process_InitRunspacePool(
         self,
@@ -343,6 +343,7 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: ResetRunspaceStateEvent,
     ) -> None:
+        # FIXME: Determine if there should be something here.
         pass
 
     def _process_RunspacePoolHostResponse(
@@ -369,6 +370,7 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: SetMaxRunspacesEvent,
     ) -> None:
+        # FIXME: Check invalid values
         self._max_runspaces = event.ps_object.MaxRunspaces
         self.prepare_message(
             RunspaceAvailability(
@@ -381,6 +383,7 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: SetMinRunspacesEvent,
     ) -> None:
+        # FIXME: Check invalid values
         self._min_runspaces = event.ps_object.MinRunspaces
         self.prepare_message(
             RunspaceAvailability(

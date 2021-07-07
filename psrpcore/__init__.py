@@ -2,6 +2,12 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+"""PSRP Runspace and Pipeline objects.
+
+Contains the Runspace and Pipeline objects used for the PowerShell Remoting
+Protocol.
+"""
+
 from psrpcore._base import (
     GetCommandMetadataPipeline,
     Pipeline,
@@ -37,7 +43,6 @@ from psrpcore._events import (
     PublicKeyEvent,
     PublicKeyRequestEvent,
     ResetRunspaceStateEvent,
-    RunspaceAvailabilityEvent,
     RunspacePoolHostCallEvent,
     RunspacePoolHostResponseEvent,
     RunspacePoolInitDataEvent,
@@ -100,7 +105,6 @@ __all__ = [
     "PublicKeyEvent",
     "PublicKeyRequestEvent",
     "ResetRunspaceStateEvent",
-    "RunspaceAvailabilityEvent",
     "RunspacePool",
     "RunspacePoolHostCallEvent",
     "RunspacePoolHostResponseEvent",
