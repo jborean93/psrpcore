@@ -24,6 +24,28 @@ on:
   - cron: 0 9 * * *
 
 jobs:
+  docs:
+   name: docs
+   runs-on: ubuntu-latest
+
+   steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+
+    - name: Install
+      run: |
+        echo "Installing baseline pip packages"
+        python -m pip install --upgrade pip poetry tox
+
+        poetry install
+        poetry update
+
+    - name: Build docs
+      working-directory: ./docs
+      run: make htlm-strict
+
   test:
     name: test
     runs-on: ${{ matrix.os }}
@@ -97,6 +119,7 @@ jobs:
   publish:
     name: publish
     needs:
+    - docs
     - test
     runs-on: ubuntu-latest
     steps:

@@ -1448,7 +1448,7 @@ class VerboseRecord(InformationalRecord):
     A verbose record in the PSInformationalBuffers. This represents the
     `System.Management.Automation.VerboseRecord`_ .NET type.
 
-    .. _System.Management.Automation.DebugRecord:
+    .. _System.Management.Automation.VerboseRecord:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.verboserecord?view=powershellsdk-7.0.0
     """
 

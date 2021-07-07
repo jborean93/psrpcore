@@ -267,7 +267,8 @@ def test_pipeline_parameters():
     c_pipeline.add_parameters({"Path": "/tmp", "Force": True})
 
     c_pipeline.invoke()
-    server.receive_data(client.data_to_send())
+    a = client.data_to_send()
+    server.receive_data(a)
     create_pipe = server.next_event()
     s_pipeline = create_pipe.pipeline
 

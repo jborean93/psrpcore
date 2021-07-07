@@ -15,6 +15,7 @@ import enum
 import typing
 
 from psrpcore.types._base import PSNoteProperty, PSObject, PSType, T, add_note_property
+from psrpcore.types._collection import PSList
 from psrpcore.types._complex import (
     ApartmentState,
     CommandTypes,
@@ -24,7 +25,6 @@ from psrpcore.types._complex import (
     HostMethodIdentifier,
     InformationRecord,
     ProgressRecordType,
-    PSList,
     PSPrimitiveDictionary,
     PSThreadOptions,
     RemoteStreamOptions,

@@ -2,13 +2,15 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
-"""Defines the base objects used to manage the various PSObject.
+"""Defines the base objects used for PSObjects.
 
-This file contains the base classes and the various metadata/glue that is used to represent a PSObject as a PowerShell
-class. It also contains some of the more fundamental base types like PSIntegerBase/PSGenericBase/PSEnumBase/PSFlagBase
-that are inherited by multiple primitive and complex objects for unifying common code.
+This file contains the base classes and the various metadata/glue that is used
+to represent a PSObject as a PowerShell class. It also contains the code
+required to define a custom .NET type and add properties to those types that
+is known by the serializer.
 
-Also define some helper functions to replicate functionality in PowerShell/.NET like `-is`, `Add-Member` and so on.
+Also define some helper functions to replicate functionality in PowerShell/.NET
+like `-is`, `Add-Member` and so on.
 """
 
 import abc
@@ -46,8 +48,9 @@ class _Singleton(type):
 class TypeRegistry(metaclass=_Singleton):
     """Registry of all the Python classes that implement PSObject.
 
-    This singleton is used to store all the classes that implement PSObject and the .NET type it implements. This is
-    used for deserialization to provide a dynamic list of Python classes that can be dehydrated.
+    This singleton is used to store all the classes that implement PSObject
+    and the .NET type it implements. This is used for deserialization to
+    provide a dynamic list of Python classes that can be dehydrated.
     """
 
     def __init__(self) -> None:
@@ -84,22 +87,30 @@ class TypeRegistry(metaclass=_Singleton):
 class PSObjectMeta:
     """The PowerShell PSObject metadata.
 
-    This describes the metadata around the PSObject such as the properties and ETS info. This information is used by
-    Python to (de)serialize the Python class to a .NET type through CLIXML. This should be assigned as the `PSObject`
-    class attribute for any type that inherits from `PSObject`.
+    This describes the metadata around the PSObject such as the properties and
+    ETS info. This information is used by Python to (de)serialize the Python
+    class to a .NET type through CLIXML. This is typically assigned internally
+    by the `:class:PSType` class decorator and shouldn't be
+    assigned directly.
 
-    Using `rehydrate=True` (default) will register the type_name of the class so the deserializer will return an
-    instance of that class when it comes to deserializing that type. A rehydrated object is created without calling
-    __init__() so any validation or set up that occurs in that function when normally creating the class instance will
-    not occur during deserialization and only the properties in CLIXML will be set on the class instance. When
-    `rehydrate=False` then the deserialized object will be an instance of `class:PSObject` with the type names
-    containing the `Deserialized.` prefix.
+    Using `rehydrate=True` (default) will register the type_name of the class
+    so the deserializer will return an instance of that class when it comes to
+    deserializing that type. A rehydrated object is created without calling
+    __init__() so any validation or set up that occurs in that function when
+    normally creating the class instance will not occur during deserialization
+    and only the properties in CLIXML will be set on the class instance. When
+    `rehydrate=False` then the deserialized object will be an instance of
+    `class:PSObject` with the type names containing the `Deserialized.` prefix.
 
     Args:
-        type_names: List of .NET type names that the type implements, this should contain at least 1 type.
-        adapted_properties: List of adapted properties, these are native to the .NET type.
-        extended_properties: List of extended properties, these are added to the .NET type by PowerShell.
-        rehydrate: Whether the type should be registered as rehydratable or not.
+        type_names: List of .NET type names that the type implements, this
+            should contain at least 1 type.
+        adapted_properties: List of adapted properties, these are native to
+            the .NET type.
+        extended_properties: List of extended properties, these are added to
+            the .NET type by PowerShell.
+        rehydrate: Whether the type should be registered as rehydratable or
+            not.
 
     Attributes:
         type_names (List[str]): See args.
@@ -128,8 +139,9 @@ class PSObjectMeta:
     def to_string(self) -> typing.Optional[str]:
         """The string representation of the object.
 
-        The value to use for the `<ToString>` element of the serialized object. Will favour an explicit `to_string`
-        value if set otherwise it will fall back to the value of `str(instance)` that the meta is for.
+        The value to use for the `<ToString>` element of the serialized object.
+        Will favour an explicit `to_string` value if set otherwise it will fall
+        back to the value of `str(instance)` that the meta is for.
         """
         if self._instance is None or self._to_string is not None:
             return self._to_string
@@ -159,16 +171,6 @@ class PSObjectMeta:
         instance: typing.Union["PSObject", typing.Type["PSObject"]],
     ) -> None:
         """Creates a copy of the existing meta and assign to the class instance."""
-        meta_kwargs = self._copy_kwargs()
-        copy = type(self)(**meta_kwargs)
-
-        if isinstance(instance, PSObject):
-            copy._instance = instance  # Assign a reference to the instance the PSObject is for.
-
-        setattr(instance, "PSObject", copy)
-
-    def _copy_kwargs(self) -> typing.Dict[str, typing.Any]:
-        """Generate the kwargs used for copying the instance."""
         kwargs: typing.Dict[str, typing.Any] = {
             "adapted_properties": [],
             "extended_properties": [],
@@ -179,8 +181,13 @@ class PSObjectMeta:
 
         kwargs["type_names"] = list(self.type_names)
         kwargs["rehydrate"] = self.rehydrate
+        copy = type(self)(**kwargs)
 
-        return kwargs
+        # If setting on an instance fo a PSObject, assign the instance to the copy.
+        if isinstance(instance, PSObject):
+            copy._instance = instance
+
+        setattr(instance, "PSObject", copy)
 
 
 class PSPropertyInfo(metaclass=abc.ABCMeta):

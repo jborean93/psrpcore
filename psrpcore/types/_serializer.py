@@ -12,6 +12,7 @@ import queue
 import re
 import typing
 import uuid
+import weakref
 from xml.etree import ElementTree
 
 from psrpcore._crypto import PSRemotingCrypto
@@ -457,8 +458,10 @@ class _Serializer:
         self._cipher = cipher
         self._kwargs = kwargs
 
-        # Used for serialization to store the id() of each object against a unique identifier.
-        self._obj_ref_list: typing.List[int] = []
+        # Used for serialization to determine fi an object is already serialized or not.
+        self._obj_ref: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+        self._obj_ref_enum: typing.Dict[int, int] = {}
+        self._obj_ref_id = 0
         self._tn_ref_list: typing.List[str] = []
 
         # Used for deserialization
@@ -475,9 +478,6 @@ class _Serializer:
         value: typing.Any,
     ) -> ElementTree.Element:
         """Serialize a Python object to a XML element based on the CLIXML value."""
-        # It is important we do this before ToPSObjectForRemoting is called as the generated object might create a
-        # duplicate id because the original object will be lost before the next one is generated.
-        obj_id = id(value)
         value_type = type(value)
         ps_object = getattr(value, "PSObject", None)
         ps_type: typing.Type[PSObject]  # To satisfy mypy
@@ -604,12 +604,9 @@ class _Serializer:
         if element is not None and not is_extended_primitive and not is_enum:
             return element
 
-        if obj_id in self._obj_ref_list:
-            ref_id = self._obj_ref_list.index(obj_id)
+        ref_id, use_ref = self._get_ref_id(value)
+        if use_ref:
             return ElementTree.Element("Ref", RefId=str(ref_id))
-
-        self._obj_ref_list.append(obj_id)
-        ref_id = self._obj_ref_list.index(obj_id)
 
         if element is None:
             is_complex = True
@@ -955,3 +952,27 @@ class _Serializer:
             value = from_override(value, **self._kwargs)
 
         return value
+
+    def _get_ref_id(
+        self,
+        value: typing.Any,
+    ) -> typing.Tuple[int, bool]:
+        """Determine the object reference id for serialization."""
+        next_ref_id = self._obj_ref_id
+
+        try:
+            ref_id = self._obj_ref.setdefault(value, next_ref_id)
+        except TypeError as e:
+            # Some objects cannot have a weakref, try id() only when dealing with known workable types.
+            if isinstance(value, (dict, enum.Enum, list)):
+                ref_id = self._obj_ref_enum.setdefault(id(value), next_ref_id)
+
+            else:
+                ref_id = next_ref_id
+
+        existing_ref = True
+        if next_ref_id == ref_id:
+            existing_ref = False
+            self._obj_ref_id += 1
+
+        return ref_id, existing_ref
