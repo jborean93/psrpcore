@@ -832,9 +832,10 @@ class _Serializer:
         rehydrated_value = TypeRegistry().rehydrate(type_names)
         value: PSObject
         original_type_names: typing.List[str] = []
+        ref_id = element.attrib.get("RefId", None)
 
         if isinstance(rehydrated_value, PSObject):
-            value = rehydrated_value
+            value = self._update_value_ref(rehydrated_value, ref_id)
             original_type_names = rehydrated_value.PSObject.type_names
 
         elif issubclass(rehydrated_value, (PSEnumBase, PSFlagBase)):
@@ -856,7 +857,12 @@ class _Serializer:
                 to_string = self.deserialize(obj_entry)
 
             elif obj_entry.tag == self._type_to_element[PSDict]:
-                raw_dict = {}
+                dict_type: typing.Type[PSDictBase] = PSDict
+                if isinstance(value, PSDictBase):
+                    dict_type = type(value)
+
+                value = self._update_value_ref(dict_type(), ref_id)
+
                 for dict_entry in obj_entry:
                     dict_key = dict_entry.find('*/[@N="Key"]')
                     dict_value = dict_entry.find('*/[@N="Value"]')
@@ -866,28 +872,21 @@ class _Serializer:
                     if dict_value is None:
                         raise ValueError("Failed to find dict Value attribute")
 
-                    raw_dict[self.deserialize(dict_key)] = self.deserialize(dict_value)
-
-                dict_type: typing.Type[PSDictBase] = PSDict
-                if isinstance(value, PSDictBase):
-                    dict_type = type(value)
-
-                value = dict_type(raw_dict)
+                    value[self.deserialize(dict_key)] = self.deserialize(dict_value)
 
             elif obj_entry.tag == self._type_to_element[PSStack]:
-                raw_stack = [
-                    self.deserialize(stack_entry) for stack_entry in obj_entry
-                ]  # type ignore # This shouldn't be None ever
-
                 stack_type: typing.Type[PSStackBase] = PSStack
                 if isinstance(value, PSStackBase):
                     stack_type = type(value)
 
-                value = stack_type(raw_stack)
+                value = self._update_value_ref(stack_type(), ref_id)
+
+                for stack_entry in obj_entry:
+                    value.append(self.deserialize(stack_entry))
 
             elif obj_entry.tag == self._type_to_element[PSQueue]:
                 if not isinstance(value, PSQueueBase):
-                    value = PSQueue()
+                    value = self._update_value_ref(PSQueue(), ref_id)
 
                 for queue_entry in obj_entry:
                     value.put(self.deserialize(queue_entry))
@@ -896,29 +895,27 @@ class _Serializer:
                 self._type_to_element[PSList],
                 "IE",
             ]:  # IE isn't used by us but the docs refer to it.
-                raw_list = [
-                    self.deserialize(list_entry) for list_entry in obj_entry
-                ]  # type ignore # This shouldn't be None ever
-
                 list_type: typing.Type[PSListBase] = PSList
                 if isinstance(value, PSListBase):
                     list_type = type(value)
+                value = self._update_value_ref(list_type(), ref_id)
 
-                value = list_type(raw_list)
+                for list_entry in obj_entry:
+                    value.append(self.deserialize(list_entry))
 
             elif obj_entry.tag not in ["TN", "TNRef"]:
                 # Extended primitive types and enums store the value as a sub element of the Obj.
                 new_value = self.deserialize(obj_entry)
 
                 if isinstance(rehydrated_value, type) and issubclass(rehydrated_value, (PSEnumBase, PSFlagBase)):
-                    value = rehydrated_value(new_value)
+                    value = self._update_value_ref(rehydrated_value(new_value), ref_id)
 
                 else:
                     # If the TypeRegister returned any types, set them on the new object name.
                     if value.PSTypeNames:
                         new_value.PSObject.type_names = value.PSTypeNames
 
-                    value = new_value
+                    value = self._update_value_ref(new_value, ref_id)
 
         if to_string is not None:
             value.PSObject.to_string = to_string
@@ -941,15 +938,11 @@ class _Serializer:
                     prop_value = self.deserialize(obj_property)
                     add_note_property(scratch_obj, prop_name, prop_value, force=True)
 
-        ref_id = element.attrib.get("RefId", None)
-        if ref_id is not None:
-            self._obj_ref_map[ref_id] = value
-
         # Final override that allows classes to transform the raw CLIXML deserialized object to something more human
         # friendly.
         from_override = getattr(type(value), "FromPSObjectForRemoting", None)
         if from_override:
-            value = from_override(value, **self._kwargs)
+            value = self._update_value_ref(from_override(value, **self._kwargs), ref_id)
 
         return value
 
@@ -976,3 +969,13 @@ class _Serializer:
             self._obj_ref_id += 1
 
         return ref_id, existing_ref
+
+    def _update_value_ref(
+        self,
+        value: typing.Any,
+        ref_id: typing.Optional[str] = None,
+    ) -> typing.Any:
+        if ref_id is not None and value is not None:
+            self._obj_ref_map[ref_id] = value
+
+        return value
