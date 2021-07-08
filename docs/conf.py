@@ -171,7 +171,7 @@ def autodoc_process_signature(
             ps_type_str = ps_type.__name__
 
         else:
-            ps_type_str = f"{ps_type.__module__}.{ps_type.__name__}"
+            ps_type_str = ps_type.__name__
 
         if prop.mandatory:
             entry = f"{prop.name}: {ps_type_str}"
@@ -198,22 +198,27 @@ def autodoc_skip_member_handler(
     skip: bool,
     options: typing.Dict[str, typing.Any],
 ) -> bool:
-    # We don't want to document the PSObject class attribute for our types.
-    return skip or name in [
+    a = ""
+    return (
+        skip
         # This is a metadata class for all PSObject types, end users don't need
         # to know about this for every single class in the codebase.
-        "PSObject",
-        # These 2 methods are used to customize the (de)serialization process
-        # for a specific class. They are not for public use and should not be
-        # documented.
-        "FromPSObjectForRemoting",
-        "ToPSObjectForRemoting",
-    ]
+        or (name == "PSObject" and (obj != PSObject and obj != PSObject.PSObject))
+        or name
+        in [
+            # These 2 methods are used to customize the (de)serialization process
+            # for a specific class. They are not for public use and should not be
+            # documented.
+            "FromPSObjectForRemoting",
+            "ToPSObjectForRemoting",
+        ]
+    )
 
 
 def setup(
     app: Sphinx,
 ) -> None:
+
     app.connect("autodoc-process-docstring", autodoc_process_docstring)
     app.connect("autodoc-process-signature", autodoc_process_signature)
     app.connect("autodoc-skip-member", autodoc_skip_member_handler)

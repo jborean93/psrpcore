@@ -98,16 +98,16 @@ def test_create_pipeline_host_data():
     client, server = get_runspace_pair()
 
     c_host_data = HostDefaultData(
-        foreground_color=ConsoleColor.Red,
-        background_color=ConsoleColor.White,
-        cursor_position=Coordinates(1, 2),
-        window_position=Coordinates(3, 4),
-        cursor_size=5,
-        buffer_size=Size(6, 7),
-        window_size=Size(8, 9),
-        max_window_size=Size(10, 11),
-        max_physical_window_size=Size(12, 13),
-        window_title="Test Title",
+        ForegroundColor=ConsoleColor.Red,
+        BackgroundColor=ConsoleColor.White,
+        CursorPosition=Coordinates(1, 2),
+        WindowPosition=Coordinates(3, 4),
+        CursorSize=5,
+        BufferSize=Size(6, 7),
+        WindowSize=Size(8, 9),
+        MaxWindowSize=Size(10, 11),
+        MaxPhysicalWindowSize=Size(12, 13),
+        WindowTitle="Test Title",
     )
     c_host = HostInfo(
         UseRunspaceHost=False,
@@ -132,22 +132,22 @@ def test_create_pipeline_host_data():
     assert s_host.IsHostRawUINull is False
     assert s_host.UseRunspaceHost is False
     assert isinstance(s_host.HostDefaultData, HostDefaultData)
-    assert s_host.HostDefaultData.foreground_color == ConsoleColor.Red
-    assert s_host.HostDefaultData.background_color == ConsoleColor.White
-    assert s_host.HostDefaultData.cursor_position.X == 1
-    assert s_host.HostDefaultData.cursor_position.Y == 2
-    assert s_host.HostDefaultData.window_position.X == 3
-    assert s_host.HostDefaultData.window_position.Y == 4
-    assert s_host.HostDefaultData.cursor_size == 5
-    assert s_host.HostDefaultData.buffer_size.Width == 6
-    assert s_host.HostDefaultData.buffer_size.Height == 7
-    assert s_host.HostDefaultData.window_size.Width == 8
-    assert s_host.HostDefaultData.window_size.Height == 9
-    assert s_host.HostDefaultData.max_window_size.Width == 10
-    assert s_host.HostDefaultData.max_window_size.Height == 11
-    assert s_host.HostDefaultData.max_physical_window_size.Width == 12
-    assert s_host.HostDefaultData.max_physical_window_size.Height == 13
-    assert s_host.HostDefaultData.window_title == "Test Title"
+    assert s_host.HostDefaultData.ForegroundColor == ConsoleColor.Red
+    assert s_host.HostDefaultData.BackgroundColor == ConsoleColor.White
+    assert s_host.HostDefaultData.CursorPosition.X == 1
+    assert s_host.HostDefaultData.CursorPosition.Y == 2
+    assert s_host.HostDefaultData.WindowPosition.X == 3
+    assert s_host.HostDefaultData.WindowPosition.Y == 4
+    assert s_host.HostDefaultData.CursorSize == 5
+    assert s_host.HostDefaultData.BufferSize.Width == 6
+    assert s_host.HostDefaultData.BufferSize.Height == 7
+    assert s_host.HostDefaultData.WindowSize.Width == 8
+    assert s_host.HostDefaultData.WindowSize.Height == 9
+    assert s_host.HostDefaultData.MaxWindowSize.Width == 10
+    assert s_host.HostDefaultData.MaxWindowSize.Height == 11
+    assert s_host.HostDefaultData.MaxPhysicalWindowSize.Width == 12
+    assert s_host.HostDefaultData.MaxPhysicalWindowSize.Height == 13
+    assert s_host.HostDefaultData.WindowTitle == "Test Title"
 
 
 def test_pipeline_multiple_commands():

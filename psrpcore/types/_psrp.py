@@ -51,37 +51,37 @@ class PSRPMessageType(enum.IntEnum):
     corresponds to a PSRP message type and the unique identifier for that type.
     """
 
-    SessionCapability = 0x00010002  #: :class:`psrpcore.types._psrp.SessionCapability`
-    InitRunspacePool = 0x00010004  #: :class:`psrpcore.types._psrp.InitRunspacePool`
-    PublicKey = 0x00010005  #: :class:`psrpcore.types._psrp.PublicKey`
-    EncryptedSessionKey = 0x00010006  #: :class:`psrpcore.types._psrp.EncryptedSessionKey`
-    PublicKeyRequest = 0x00010007  #: :class:`psrpcore.types._psrp.PublicKeyRequest`
-    SetMaxRunspaces = 0x00021002  #: :class:`psrpcore.types._psrp.SetMaxRunspaces`
-    SetMinRunspaces = 0x00021003  #: :class:`psrpcore.types._psrp.SetMinRunspaces`
-    RunspaceAvailability = 0x00021004  #: :class:`psrpcore.types._psrp.RunspaceAvailability`
-    RunspacePoolState = 0x00021005  #: :class:`psrpcore.types._psrp.RunspacePoolState`
-    CreatePipeline = 0x00021006  #: :class:`psrpcore.types._psrp.CreatePipeline`
-    GetAvailableRunspaces = 0x00021007  #: :class:`psrpcore.types._psrp.GetAvailableRunspaces`
-    UserEvent = 0x00021008  #: :class:`psrpcore.types._psrp.UserEvent`
-    ApplicationPrivateData = 0x00021009  #: :class:`psrpcore.types._psrp.ApplicationPrivateData`
-    GetCommandMetadata = 0x0002100A  #: :class:`psrpcore.types._psrp.GetCommandMetadata`
-    RunspacePoolHostCall = 0x00021100  #: :class:`psrpcore.types._psrp.RunspacePoolHostCall`
-    RunspacePoolHostResponse = 0x00021101  #: :class:`psrpcore.types._psrp.RunspacePoolHostResponse`
-    PipelineInput = 0x00041002  #: :class:`psrpcore.types._psrp.PipelineInput`
-    EndOfPipelineInput = 0x00041003  #: :class:`psrpcore.types._psrp.EndOfPipelineInput`
-    PipelineOutput = 0x00041004  #: :class:`psrpcore.types._psrp.PipelineOutput`
-    ErrorRecord = 0x00041005  #: :class:`psrpcore.types._psrp.ErrorRecordMsg`
-    PipelineState = 0x00041006  #: :class:`psrpcore.types._psrp.PipelineState`
-    DebugRecord = 0x00041007  #: :class:`psrpcore.types._psrp.DebugRecord`
-    VerboseRecord = 0x00041008  #: :class:`psrpcore.types._psrp.VerboseRecord`
-    WarningRecord = 0x00041009  #: :class:`psrpcore.types._psrp.WarningRecord`
-    ProgressRecord = 0x00041010  #: :class:`psrpcore.types._psrp.ProgressRecord`
-    InformationRecord = 0x00041011  #: :class:`psrpcore.types._psrp.InformationRecord`
-    PipelineHostCall = 0x00041100  #: :class:`psrpcore.types._psrp.PipelineHostCall`
-    PipelineHostResponse = 0x00041101  #: :class:`psrpcore.types._psrp.PipelineHostResponse`
-    ConnectRunspacePool = 0x00010008  #: :class:`psrpcore.types._psrp.ConnectRunspacePool`
-    RunspacePoolInitData = 0x0002100B  #: :class:`psrpcore.types._psrp.RunspacePoolInitData`
-    ResetRunspaceState = 0x0002100C  #: :class:`psrpcore.types._psrp.ResetRunspaceState`
+    SessionCapability = 0x00010002  #: :class:`SessionCapability`
+    InitRunspacePool = 0x00010004  #: :class:`InitRunspacePool`
+    PublicKey = 0x00010005  #: :class:`PublicKey`
+    EncryptedSessionKey = 0x00010006  #: :class:`EncryptedSessionKey`
+    PublicKeyRequest = 0x00010007  #: :class:`PublicKeyRequest`
+    SetMaxRunspaces = 0x00021002  #: :class:`SetMaxRunspaces`
+    SetMinRunspaces = 0x00021003  #: :class:`SetMinRunspaces`
+    RunspaceAvailability = 0x00021004  #: :class:`RunspaceAvailability`
+    RunspacePoolState = 0x00021005  #: :class:`RunspacePoolState`
+    CreatePipeline = 0x00021006  #: :class:`CreatePipeline`
+    GetAvailableRunspaces = 0x00021007  #: :class:`GetAvailableRunspaces`
+    UserEvent = 0x00021008  #: :class:`UserEvent`
+    ApplicationPrivateData = 0x00021009  #: :class:`ApplicationPrivateData`
+    GetCommandMetadata = 0x0002100A  #: :class:`GetCommandMetadata`
+    RunspacePoolHostCall = 0x00021100  #: :class:`RunspacePoolHostCall`
+    RunspacePoolHostResponse = 0x00021101  #: :class:`RunspacePoolHostResponse`
+    PipelineInput = 0x00041002  #: :class:`PipelineInput`
+    EndOfPipelineInput = 0x00041003  #: :class:`EndOfPipelineInput`
+    PipelineOutput = 0x00041004  #: :class:`PipelineOutput`
+    ErrorRecord = 0x00041005  #: :class:`ErrorRecordMsg`
+    PipelineState = 0x00041006  #: :class:`PipelineState`
+    DebugRecord = 0x00041007  #: :class:`DebugRecord`
+    VerboseRecord = 0x00041008  #: :class:`VerboseRecord`
+    WarningRecord = 0x00041009  #: :class:`WarningRecord`
+    ProgressRecord = 0x00041010  #: :class:`ProgressRecord`
+    InformationRecord = 0x00041011  #: :class:`InformationRecord`
+    PipelineHostCall = 0x00041100  #: :class:`PipelineHostCall`
+    PipelineHostResponse = 0x00041101  #: :class:`PipelineHostResponse`
+    ConnectRunspacePool = 0x00010008  #: :class:`ConnectRunspacePool`
+    RunspacePoolInitData = 0x0002100B  #: :class:`RunspacePoolInitData`
+    ResetRunspaceState = 0x0002100C  #: :class:`ResetRunspaceState`
 
     @classmethod
     def get_message_id(cls, msg: typing.Type[PSObject]) -> "PSRPMessageType":
@@ -314,11 +314,8 @@ class RunspaceAvailability(PSObject):
     is defined in `MS-PSRP 2.2.2.8 - RUNSPACE_AVAILABILITY`_.
 
     Args:
-        SetMinMaxRunspacesResponse: A
-            :class:`PSBool <psrp.dotnet.primitive_types.PSBool>` for a set
-            min/max response or a
-            :class:`PSInt64 <psrp.dotnet.primitive_types.PSInt64>` for a get
-            available response.
+        SetMinMaxRunspacesResponse: A :class:`PSBool` for a set min/max response
+            or a :class:`PSInt64` for a get available response.
         ci: The Call ID the message is related to.
 
     .. _MS-PSRP 2.2.2.8 - RUNSPACE_AVAILABILITY:
@@ -339,8 +336,7 @@ class RunspacePoolStateMsg(PSObject):
 
     Defines the state of the RunspacePool. Message is defined in
     `MS-PSRP 2.2.2.9 RUNSPACEPOOL_STATE`_. The raw RunspaceState values
-    correlate to `MS-PSRP 2.2.3.4 RunspacePoolState`_ defined at
-    :class:`RunspacePoolState <psrp.dotnet.complex_types.RunspacePoolState>`.
+    correlate to :class:`RunspacePoolState`.
 
     Args:
         RunspaceState: The RunspacePool state information as an integer.
@@ -349,9 +345,6 @@ class RunspacePoolStateMsg(PSObject):
 
     .. _MS-PSRP 2.2.2.9 RUNSPACEPOOL_STATE:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/0a5d8ef3-3b2c-4e16-9f2c-16efdaf16925
-
-    .. _MS-PSRP 2.2.3.4 RunspacePoolState:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/b05495bc-a9b2-4794-9f43-4bf1f3633900
     """
 
     @classmethod
@@ -659,10 +652,8 @@ class PipelineState(PSObject):
     """PIPELINE_STATE Message.
 
     State information of a command pipeline on the server. Message is defined
-    in `MS-PSRP 2.2.2.21 PIPELINE_STATE`_.
-    The raw PipelineState values correlate to
-    `MS-PSRP 2.2.3.5 PSInvocationState`_ defined at
-    :class:`PSInvocationState <psrp.dotnet.complex_types.PSInvocationState>`.
+    in `MS-PSRP 2.2.2.21 PIPELINE_STATE`_. The raw PipelineState values
+    correlate to :class:`PSInvocationState`.
 
     Args:
         PipelineState: State information of the command pipeline.
@@ -671,9 +662,6 @@ class PipelineState(PSObject):
 
     .. _MS-PSRP 2.2.2.21 PIPELINE_STATE:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/932f0c9d-845a-4883-8efd-b49a593578b8
-
-    .. _MS-PSRP 2.2.3.5 PSInvocationState:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/acaa253a-29be-45fd-911c-6715515a28b9
     """
 
     @classmethod

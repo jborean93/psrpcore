@@ -143,9 +143,11 @@ def _deserialize_datetime(
 ) -> PSDateTime:
     """Deserializes a CLIXML DateTime string.
 
-    DateTime values from PowerShell are in the format 'YYYY-MM-DDTHH:MM-SS[.100's of nanoseconds]Z'. Unfortunately
-    Python's datetime type only supports up to a microsecond precision so we need to extract the fractional seconds
-    and then parse as a string while calculating the nanoseconds ourselves.
+    DateTime values from PowerShell are in the format
+    'YYYY-MM-DDTHH:MM-SS[.100's of nanoseconds]Z'. Unfortunately Python's
+    datetime type only supports up to a microsecond precision so we need to
+    extract the fractional seconds and then parse as a string while calculating
+    the nanoseconds ourselves.
 
     Args:
         value: The CLIXML datetime string value to deserialize.
@@ -262,14 +264,16 @@ def _deserialize_string(
 ) -> str:
     """Deserializes a CLIXML string value.
 
-    String values in CLIXML have escaped values for control chars and characters that are represented as surrogate
-    pairs in UTF-16. This converts the raw CLIXML string value into a Python string.
+    String values in CLIXML have escaped values for control chars and
+    characters that are represented as surrogate pairs in UTF-16. This converts
+    the raw CLIXML string value into a Python string.
 
     Args:
         value: The CLIXML string element to deserialize.
 
     Returns:
-        (str): The Python str value that represents the actual string represented by the CLIXML.
+        (str): The Python str value that represents the actual string
+            represented by the CLIXML.
     """
 
     def rplcr(matchobj: typing.Any) -> bytes:
@@ -296,11 +300,12 @@ def _serialize_datetime(
 ) -> str:
     """Serializes a datetime to a .NET DateTime CLIXML value.
 
-    .NET supports DateTime to a 100 nanosecond precision so we need to manually massage the data from Python to suit
-    that precision if it is set.
+    .NET supports DateTime to a 100 nanosecond precision so we need to manually
+    massage the data from Python to suit that precision if it is set.
 
     Args:
-        value: The PSDateTime or datetime.datetime object to serialize as a .NET DateTime CLIXML string.
+        value: The PSDateTime or datetime.datetime object to serialize as a
+            .NET DateTime CLIXML string.
 
     Returns:
         str: The .NET DateTime CLIXML string value.
@@ -329,11 +334,13 @@ def _serialize_duration(
 ) -> str:
     """Serialzies a duration to a .NET TimeSpan CLIXML value.
 
-    .NET TimeSpans supports a precision to 100 nanoseconds so we need to manually massage the timedelta object from
-    Python to suit that precision if it is available.
+    .NET TimeSpans supports a precision to 100 nanoseconds so we need to
+    manually massage the timedelta object from Python to suit that precision if
+    it is available.
 
     Args:
-        value: The PSDuration or datetime.timedelta object to serialize as a .NET TimeSpan CLIXML string.
+        value: The PSDuration or datetime.timedelta object to serialize as a
+            .NET TimeSpan CLIXML string.
 
     Returns:
         str: The .NET TimeSpan CLIXML string value.
@@ -412,8 +419,9 @@ def _serialize_string(
 ) -> str:
     """Serializes a string like value to a .NET String CLIXML value.
 
-    There are certain rules when it comes to escaping certain codepoints and chars that are surrogate pairs when
-    UTF-16 encoded. This method escapes the string value and turns it into a valid CLIXML string value.
+    There are certain rules when it comes to escaping certain codepoints and
+    chars that are surrogate pairs when UTF-16 encoded. This method escapes the
+    string value and turns it into a valid CLIXML string value.
 
     Args:
         value: The string value to serialize to CLIXML.
@@ -442,12 +450,15 @@ def _serialize_string(
 class _Serializer:
     """The Python object serializer.
 
-    This is used to encapsulate the (de)serialization of Python objects to and from CLIXML. An instance of this class
-    should only be used once as it contains a reference map to objects that are serialized in that message. Use the
-    `func:serialize` and `func:deserialize` functions instead of calling this directly.
+    This is used to encapsulate the (de)serialization of Python objects to and
+    from CLIXML. An instance of this class should only be used once as it
+    contains a reference map to objects that are serialized in that message.
+    Use the :meth:`serialize` and :meth:`deserialize` instead of calling this
+    directly.
 
     Args:
-        cipher: The CryptoProvider that is used when serializing/deserializing SecureStrings.
+        cipher: The CryptoProvider that is used when serializing/deserializing
+            SecureStrings.
     """
 
     def __init__(
@@ -971,6 +982,7 @@ class _Serializer:
         value: typing.Any,
         ref_id: typing.Optional[str] = None,
     ) -> typing.Any:
+        """Updates the value ref table if the ref id and value is specified."""
         if ref_id is not None and value is not None:
             self._obj_ref_map[ref_id] = value
 

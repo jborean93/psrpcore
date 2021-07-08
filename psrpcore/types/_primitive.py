@@ -95,9 +95,10 @@ def _timedelta_total_nanoseconds(
 class PSIntegerBase(PSObject, int):
     """Base class for integer based primitive types.
 
-    This is the base class to use for primitive integer types. It defines common functions required to seamlessly use
-    numerical operators like `|`, `<`, `&`, etc while preserving the type. It should not be initialised directly but is
-    inherited by the various primitive integer types.
+    This is the base class to use for primitive integer types. It defines
+    common functions required to seamlessly use numerical operators like
+    `|`, `<`, `&`, etc while preserving the type. It should not be initialised
+    directly but is inherited by the various primitive integer types.
     """
 
     MinValue = 0
