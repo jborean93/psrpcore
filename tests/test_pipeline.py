@@ -166,7 +166,7 @@ def test_pipeline_multiple_commands():
     c_pipeline.invoke()
 
     server.receive_data(client.data_to_send())
-    create_pipe = server.next_event()
+    server.next_event()
     s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
 
     assert len(s_pipeline.commands) == 3
@@ -210,7 +210,7 @@ def test_pipeline_multiple_statements():
     c_pipeline.add_command("Format-Table")
     c_pipeline.invoke()
     server.receive_data(client.data_to_send())
-    create_pipe = server.next_event()
+    server.next_event()
     s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
 
     assert len(s_pipeline.commands) == 5
@@ -251,7 +251,7 @@ def test_pipeline_parameters():
         c_pipeline.add_parameter("name", "value")
 
     with pytest.raises(ValueError, match=expected):
-        c_pipeline.add_parameters({"name": "value"})
+        c_pipeline.add_parameters(name="value")
 
     c_pipeline.add_command("Get-ChildItem")
     c_pipeline.add_argument("/tmp")
@@ -264,12 +264,12 @@ def test_pipeline_parameters():
     c_pipeline.add_statement()
 
     c_pipeline.add_command("Get-ChildItem")
-    c_pipeline.add_parameters({"Path": "/tmp", "Force": True})
+    c_pipeline.add_parameters(Path="/tmp", Force=True)
 
     c_pipeline.invoke()
     a = client.data_to_send()
     server.receive_data(a)
-    create_pipe = server.next_event()
+    server.next_event()
     s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
 
     assert s_pipeline.commands[0].parameters == [(None, "/tmp"), (None, True)]
@@ -333,7 +333,7 @@ def test_pipeline_redirection():
 
     c_pipeline.invoke()
     server.receive_data(client.data_to_send())
-    create_pipe = server.next_event()
+    server.next_event()
     s_pipeline = server.pipeline_table[c_pipeline.pipeline_id]
 
     assert s_pipeline.commands[0].command_text == "My-Cmdlet"

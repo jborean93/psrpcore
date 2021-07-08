@@ -178,10 +178,10 @@ class RunspacePool:
     def close(self) -> None:
         """Marks the Runspace Pool as closed.
 
-        This closes the RunspacePool on the peer. Closing the Runspace Pool is
-        done through a connection specific process. This method just verifies
-        the Runspace Pool is in a state that can be closed and that no
-        pipelines are still running.
+        This closes the Runspace Pool. Communicating to the peer that the pool
+        is being closed is done through a connection specific process. This
+        method just verifies the Runspace Pool is in a state that can be closed
+        and that no pipelines are still running.
         """
         if self.pipeline_table:
             raise PSRPCoreError("Must close existing pipelines before closing the pool")
@@ -193,9 +193,15 @@ class RunspacePool:
         self._change_state(RunspacePoolState.Closed)
 
     def begin_disconnect(self) -> None:
+        """Marks the Runspace Pool to be in the disconnecting phase."""
         self._change_state(RunspacePoolState.Disconnecting)
 
     def disconnect(self) -> None:
+        """Marks the Runspace Pool as disconnected.
+
+        This disconnects the Runspace Pool. COmmunicating to the peer that the
+        pool is disconnected is done through a connection specific process.
+        """
         valid_states = [RunspacePoolState.Opened, RunspacePoolState.Disconnecting, RunspacePoolState.Disconnected]
         if self.state not in valid_states:
             raise InvalidRunspacePoolState("disconnect a Runspace Pool", self.state, valid_states)
@@ -203,6 +209,7 @@ class RunspacePool:
         self._change_state(RunspacePoolState.Disconnected)
 
     def reconnect(self) -> None:
+        """Marks the Runspace Pool as reconnected and opened."""
         valid_states = [RunspacePoolState.Disconnected, RunspacePoolState.Opened]
         if self.state not in valid_states:
             raise InvalidRunspacePoolState("reconnect to a Runspace Pool", self.state, valid_states)
@@ -268,7 +275,7 @@ class RunspacePool:
         """Store any incoming data.
 
         Stores any incoming payloads in an internal buffer to be processed.
-        This buffer is read when calling `:meth:next_event()`.
+        This buffer is read when calling :meth:`next_event()`.
 
         Args:
             data: The PSRP payload data received from the transport.
@@ -413,6 +420,23 @@ class RunspacePool:
 
 
 class Pipeline(typing.Generic[T]):
+    """Pipeline base class.
+
+    This is the base class for a Pipeline. It contains the common attributes
+    and methods used by both a client and server base Pipeline.
+
+    Args:
+        runspace_pool: The Runspace Pool the pipeline is part of. When
+            initialised the pipeline will add itself to the Runspace Pool
+            pipeline table.
+        pipeline_id: The Pipeline identifier.
+
+    Attributes:
+        runspace_pool: See args.
+        pipeline_id: See args.
+        state: The pipeline state.
+    """
+
     def __new__(
         cls,
         *args: typing.Any,
@@ -437,6 +461,11 @@ class Pipeline(typing.Generic[T]):
         runspace_pool.pipeline_table[self.pipeline_id] = self
 
     def close(self) -> None:
+        """Close the Pipeline.
+
+        Closes the pipeline by removing itself from the Runspace Pool pipeline
+        table.
+        """
         self.runspace_pool.pipeline_table.pop(self.pipeline_id, None)
 
     def prepare_message(
@@ -445,23 +474,46 @@ class Pipeline(typing.Generic[T]):
         message_type: typing.Optional[PSRPMessageType] = None,
         stream_type: StreamType = StreamType.default,
     ) -> None:
+        """Adds a PSRP message to send buffer.
+
+        Adds the given PSRP message to the send buffer to be sent when the
+        caller requires it to. This just calls `prepare_message` on the
+        Runspace Pool but for this specific pipeline.
+
+        Args:
+            message: The PSObject to be send.
+            message_type: Override the message type of the PSRP messae in case
+                message is not an actual PSRP Message object.
+            stream_type: The stream type the message is for.
+        """
         self.runspace_pool.prepare_message(message, message_type, self.pipeline_id, stream_type)
 
     def to_psobject(
         self,
     ) -> PSObject:
+        """Converts the pipeline to a PSObject for serialization."""
         raise NotImplementedError()  # pragma: no cover
 
 
 class PowerShellPipeline(Pipeline):
-    """
+    """PowerShell Pipeline.
+
+    This implements the PowerShell pipeline specific methods used to invoke a
+    PowerShell pipeline.
+
     Args:
-        add_to_history: Whether to add the pipeline to the history field of the runspace.
-        apartment_state: The apartment state of the thread that executes the pipeline.
+        add_to_history: Whether to add the pipeline to the history field of the
+            runspace.
+        apartment_state: The apartment state of the thread that executes the
+            pipeline.
+        history: The value to use as a historial reference of the pipeline.
         host: The host information to use when executing the pipeline.
+        is_nested: Whether the pipeline is nested in another pipeline or not.
         no_input: Whether there is any data to be input into the pipeline.
-        remote_stream_options: Whether to add invocation info the the PowerShell streams or not.
-        redirect_shell_error_to_out: Redirects the global error output pipe to the commands error output pipe.
+        remote_stream_options: Whether to add invocation info the the PowerShell
+            streams or not.
+        redirect_shell_error_to_out: Redirects the global error output pipe to
+            the commands error output pipe.
     """
 
     def __init__(
@@ -527,12 +579,26 @@ class PowerShellPipeline(Pipeline):
 
 
 class GetCommandMetadataPipeline(Pipeline):
+    """Get Command Metadata Pipeline.
+
+    This implements the GetCommandMetadata pipeline specific methods used to get
+    command metadata information.
+
+    Args:
+        name: List of command names to get the metadata for. Uses ``*`` as a
+            wildcard.
+        command_type: The type of commands to filter by.
+        namespace: Wildcard patterns describbing the command namespace to filter
+            by.
+        arguments: Extra arguments passed to the higher-layer above PSRP.
+    """
+
     def __init__(
         self,
         name: typing.Union[str, typing.List[str]],
         command_type: CommandTypes = CommandTypes.All,
         namespace: typing.Optional[typing.List[str]] = None,
-        arguments: typing.Optional[typing.List[str]] = None,
+        arguments: typing.Optional[typing.List[typing.Any]] = None,
         *args: typing.Any,
         **kwargs: typing.Any,
     ) -> None:
