@@ -43,8 +43,10 @@ jobs:
         poetry update
 
     - name: Build docs
-      working-directory: ./docs
-      run: make htlm-strict
+      run: |
+        poetry shell
+        cd docs
+        make htlm-strict
 
   test:
     name: test
