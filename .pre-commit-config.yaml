@@ -15,4 +15,5 @@ repos:
   - id: mypy
     exclude: ^tests/
     additional_dependencies:
+    - Sphinx
     - types-cryptography

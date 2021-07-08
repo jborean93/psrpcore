@@ -13,7 +13,7 @@ def test_unpack_message_without_bom():
     assert isinstance(actual, payload.Message)
     assert actual.destination == 1
     assert actual.message_type == PSRPMessageType.SessionCapability
-    assert actual.rpid is None
+    assert actual.rpid == uuid.UUID(int=0)
     assert actual.pid is None
     assert actual.data == bytearray(b"abc")
 
@@ -25,7 +25,7 @@ def test_unpack_message_with_bom():
     assert isinstance(actual, payload.Message)
     assert actual.destination == 1
     assert actual.message_type == PSRPMessageType.SessionCapability
-    assert actual.rpid is None
+    assert actual.rpid == uuid.UUID(int=0)
     assert actual.pid is None
     assert actual.data == bytearray(b"abc")
 

@@ -4,7 +4,8 @@
 
 """PSRP/.NET Collection Types.
 
-FIXME: Document this
+Contains the base class for the various collection types, list/dict/stack/queue,
+in PowerShell as well as the default class for each of those types.
 """
 
 import queue
@@ -16,14 +17,16 @@ from psrpcore.types._base import PSObject, PSType
 class PSDictBase(PSObject, dict):
     """The base dictionary type.
 
-    This is the base dictionary PSObject type that all dictionary like objects should inherit from. It cannot be
-    instantiated directly and is meant to be used as a base class for any .NET dictionary types.
+    This is the base dictionary PSObject type that all dictionary like objects
+    should inherit from. It cannot be instantiated directly and is meant to be
+    used as a base class for any .NET dictionary types.
 
     Note:
         While you can implement your own custom dictionary .NET type like
-        `System.Collections.Generic.Dictionary<TKey, TValue>`, any dictionary based .NET types will be deserialized by
-        the remote PowerShell runspace as `System.Collections.Hashtable`_. This .NET type is represented by
-        `:class:psrp.dotnet.complex_types.PSDict`.
+        `System.Collections.Generic.Dictionary<TKey, TValue>`, any dictionary
+        based .NET types will be deserialized by the remote PowerShell runspace
+        as `System.Collections.Hashtable`_. This .NET type is represented by
+        :class:`PSDict`.
 
     .. _System.Collections.Hashtable:
         https://docs.microsoft.com/en-us/dotnet/api/system.collections.hashtable?view=net-5.0
@@ -81,13 +84,16 @@ class _PSListBase(PSObject, list):
 class PSListBase(_PSListBase):
     """The base list type.
 
-    This is the base list PSObject type that all list like objects should inherit from. It cannot be instantiated
-    directly and is meant to be used as a base class for any .NET list types.
+    This is the base list PSObject type that all list like objects should
+    inherit from. It cannot be instantiated directly and is meant to be used as
+    a base class for any .NET list types.
 
     Note:
-        While you can implement your own custom list .NET type like `System.Collections.Generic.List<T>`, any list
-        based .NET types will be deserialized by the remote PowerShell runspace as `System.Collections.ArrayList`_.
-        This .NET type is represented by `:class:psrp.dotnet.complex_types.PSList`.
+        While you can implement your own custom list .NET type like
+        `System.Collections.Generic.List<T>`, any list based .NET types will be
+        deserialized by the remote PowerShell runspace as
+        `System.Collections.ArrayList`_. This .NET type is represented by
+        :class:`PSList`.
 
     .. _System.Collections.ArrayList:
         https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=net-5.0
@@ -97,13 +103,16 @@ class PSListBase(_PSListBase):
 class PSQueueBase(PSObject, queue.Queue):
     """The base queue type.
 
-    This is the base queue PSObject type that all queue like objects should inherit from. It cannot be instantiated
-    directly and is meant to be used as a base class for any .NET queue types.
+    This is the base queue PSObject type that all queue like objects should
+    inherit from. It cannot be instantiated directly and is meant to be used as
+    a base class for any .NET queue types.
 
     Note:
-        While you can implement your own custom queue .NET type like `System.Collections.Generic.Queue<T>`, any queue
-        based .NET types will be deserialized by the remote PowerShell runspace as `System.Collections.Queue`_. This
-        .NET type is represented by `:class:psrp.dotnet.complex_types.PSQueue`.
+        While you can implement your own custom queue .NET type like
+        `System.Collections.Generic.Queue<T>`, any queue based .NET types will
+        be deserialized by the remote PowerShell runspace as
+        `System.Collections.Queue`_. This .NET type is represented by
+        :class:`PSQueue`.
 
     .. _System.Collections.Queue:
         https://docs.microsoft.com/en-us/dotnet/api/system.collections.queue?view=net-5.0
@@ -131,14 +140,18 @@ class PSQueueBase(PSObject, queue.Queue):
 class PSStackBase(_PSListBase):
     """The base stack type.
 
-    This is the base stack PSObject type that all stack like objects should inherit from. It cannot be instantiated
-    directly and is meant to be used as the base class for any .NET stack types. A stack is a last-in, first out
-    collection but Python does not have a native stack type so this just replicates the a Python list.
+    This is the base stack PSObject type that all stack like objects should
+    inherit from. It cannot be instantiated directly and is meant to be used as
+    the base class for any .NET stack types. A stack is a last-in, first out
+    collection but Python does not have a native stack type so this just
+    replicates the a Python list.
 
     Note:
-        While you can implement your own custom stack .NET type like `System.Collections.Generic.Stack<T>`, any stack
-        based .NET types will be deserialized by the remote PowerShell runspace as `System.Collections.Stack`_. This
-        .NET type is represented by `:class:psrp.dotnet.complex_types.PSStack`.
+        While you can implement your own custom stack .NET type like
+        `System.Collections.Generic.Stack<T>`, any stack based .NET types will
+        be deserialized by the remote PowerShell runspace as
+        `System.Collections.Stack`_. This .NET type is represented by
+        :class:`PSStack`.
 
     .. System.Collections.Stack:
         https://docs.microsoft.com/en-us/dotnet/api/system.collections.stack?view=net-5.0

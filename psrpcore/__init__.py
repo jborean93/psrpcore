@@ -2,6 +2,12 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+"""PSRP Runspace and Pipeline objects.
+
+Contains the Runspace and Pipeline objects used for the PowerShell Remoting
+Protocol.
+"""
+
 from psrpcore._base import (
     GetCommandMetadataPipeline,
     Pipeline,
@@ -37,7 +43,6 @@ from psrpcore._events import (
     PublicKeyEvent,
     PublicKeyRequestEvent,
     ResetRunspaceStateEvent,
-    RunspaceAvailabilityEvent,
     RunspacePoolHostCallEvent,
     RunspacePoolHostResponseEvent,
     RunspacePoolInitDataEvent,
@@ -63,3 +68,57 @@ from psrpcore._server import (
     ServerPowerShell,
     ServerRunspacePool,
 )
+
+__all__ = [
+    "ApplicationPrivateDataEvent",
+    "ClientGetCommandMetadata",
+    "ClientPowerShell",
+    "ClientRunspacePool",
+    "Command",
+    "ConnectRunspacePoolEvent",
+    "CreatePipelineEvent",
+    "DebugRecordEvent",
+    "EncryptedSessionKeyEvent",
+    "EndOfPipelineInputEvent",
+    "ErrorRecordEvent",
+    "GetAvailableRunspacesEvent",
+    "GetCommandMetadataEvent",
+    "GetCommandMetadataPipeline",
+    "GetRunspaceAvailabilityEvent",
+    "InformationRecordEvent",
+    "InitRunspacePoolEvent",
+    "InvalidPipelineState",
+    "InvalidProtocolVersion",
+    "InvalidRunspacePoolState",
+    "MissingCipherError",
+    "PSRPCoreError",
+    "PSRPEvent",
+    "PSRPPayload",
+    "Pipeline",
+    "PipelineHostCallEvent",
+    "PipelineHostResponseEvent",
+    "PipelineInputEvent",
+    "PipelineOutputEvent",
+    "PipelineStateEvent",
+    "PowerShellPipeline",
+    "ProgressRecordEvent",
+    "PublicKeyEvent",
+    "PublicKeyRequestEvent",
+    "ResetRunspaceStateEvent",
+    "RunspacePool",
+    "RunspacePoolHostCallEvent",
+    "RunspacePoolHostResponseEvent",
+    "RunspacePoolInitDataEvent",
+    "RunspacePoolStateEvent",
+    "ServerGetCommandMetadata",
+    "ServerPowerShell",
+    "ServerRunspacePool",
+    "SessionCapabilityEvent",
+    "SetMaxRunspacesEvent",
+    "SetMinRunspacesEvent",
+    "SetRunspaceAvailabilityEvent",
+    "StreamType",
+    "UserEventEvent",
+    "VerboseRecordEvent",
+    "WarningRecordEvent",
+]

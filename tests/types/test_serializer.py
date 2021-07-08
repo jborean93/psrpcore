@@ -19,6 +19,7 @@ from psrpcore.types import (
     PSByte,
     PSByteArray,
     PSChar,
+    PSCustomObject,
     PSDateTime,
     PSDecimal,
     PSDouble,
@@ -41,7 +42,7 @@ from psrpcore.types import (
     PSXml,
 )
 
-from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING
+from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING, assert_xml_diff
 
 # A lot of the serializer tests are done in the tests for each object, these are just for extra edge cases we want to
 # validate
@@ -322,3 +323,56 @@ def test_fail_deserialize_dict_no_value():
 
     with pytest.raises(ValueError, match="Failed to find dict Value attribute"):
         serializer.deserialize(ElementTree.fromstring(clixml))
+
+
+def test_serialize_circular_reference():
+    obj = PSCustomObject(MyProp=1, List=[1], Dict={"test": 1}, CircularRef=None)
+    obj.List.append(obj)
+    obj.Dict["obj"] = obj
+    obj.CircularRef = obj
+
+    element = serializer.serialize(obj)
+    actual = ElementTree.tostring(element, encoding="utf-8").decode()
+    expected = (
+        '<Obj RefId="0">'
+        '<TN RefId="0">'
+        "<T>System.Management.Automation.PSCustomObject</T>"
+        "<T>System.Object</T>"
+        "</TN>"
+        "<MS>"
+        '<I32 N="MyProp">1</I32>'
+        '<Obj RefId="1" N="List">'
+        '<TN RefId="1">'
+        "<T>System.Collections.ArrayList</T>"
+        "<T>System.Object</T>"
+        "</TN>"
+        "<LST>"
+        "<I32>1</I32>"
+        '<Ref RefId="0" />'
+        "</LST>"
+        "</Obj>"
+        '<Obj RefId="2" N="Dict">'
+        '<TN RefId="2">'
+        "<T>System.Collections.Hashtable</T>"
+        "<T>System.Object</T>"
+        "</TN>"
+        "<DCT>"
+        '<En><S N="Key">test</S><I32 N="Value">1</I32></En>'
+        '<En><S N="Key">obj</S><Ref RefId="0" N="Value" /></En>'
+        "</DCT>"
+        "</Obj>"
+        '<Ref RefId="0" N="CircularRef" />'
+        "</MS>"
+        "</Obj>"
+    )
+    assert_xml_diff(actual, expected)
+
+    obj = serializer.deserialize(element)
+    assert isinstance(obj, PSCustomObject)
+    assert obj.MyProp == 1
+    assert len(obj.List) == 2
+    assert obj.List[0] == 1
+    assert obj.List[1] == obj
+    assert obj.Dict["test"] == 1
+    assert obj.Dict["obj"] == obj
+    assert obj.CircularRef == obj

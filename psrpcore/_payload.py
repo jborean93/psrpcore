@@ -3,7 +3,6 @@
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
 import base64
-import collections
 import enum
 import struct
 import typing
@@ -13,43 +12,35 @@ from psrpcore.types import PSObject, PSRPMessageType, PSVersion, add_note_proper
 
 EMPTY_UUID = uuid.UUID(bytes=b"\x00" * 16)
 
-Fragment = collections.namedtuple("Fragment", ["object_id", "fragment_id", "start", "end", "data"])
-"""PSRP Fragment.
 
-A PSRP fragment containing all or part of a PSRP message.
+class Fragment(typing.NamedTuple):
+    """A PSRP fragment containing all or part of a PSRP message."""
 
-Attributes:
-    object_id (int): The full object the fragment is part of.
-    fragment_id (int): The number fragment that comprises the object.
-    start (bool): Whether this fragment is the start fragment.
-    end (bool): Whether this fragment is the end fragment.
-    data (bytearray): The fragment data.
-"""
+    object_id: int  #: The full object the fragment is part of.
+    fragment_id: int  #: The number fragment that comprises the object.
+    start: bool  #: Whether this fragment is the starting fragment.
+    end: bool  #: Whether this fragment is the ending fragment.
+    data: bytearray  #: The fragment data.
 
-Message = collections.namedtuple("Message", ["destination", "message_type", "rpid", "pid", "data"])
-"""PSRP Message.
 
-A PSRP message containing a PSRP payload to send.
+class Message(typing.NamedTuple):
+    """A PSRP message containing a PSRP payload to send."""
 
-Attributes:
-    destination (int): The destination identifier of the message.
-    message_type (PSRPMessageType): The type of PSRP payload.
-    rpid (typing.Optional[uuid.UUID]): The Runspace Pool ID.
-    pid (typing.Optional[uuid.UUID]): The Pipeline ID.
-    data (bytearray): The PSRP payload.
-"""
+    destination: int  #: The destination identifier of the message.
+    message_type: PSRPMessageType  #: The type of PSRP payload.
+    rpid: uuid.UUID  #: The Runspace Pool ID.
+    pid: typing.Optional[uuid.UUID]  #: The Pipeline ID.
+    data: bytearray  #: The PSRP payload.
 
-PSRPPayload = collections.namedtuple("PSRPPayload", ["data", "stream_type", "pipeline_id"])
-"""PSRP Data payload.
 
-The PSRP data payload that is exchanged between the client and server.
+class PSRPPayload(typing.NamedTuple):
+    """The PSRP data payload that is exchanged between the client and server."""
 
-Attributes:
-    data (bytes): The raw data to be exchanged with the client and server.
-    stream_type (StreamType): The type of data that is contained.
-    pipeline_id (typing.Optional[uuid.UUID]): The pipeline id if the data
-        related to a Pipeline or `None if it's for the Runspace Pool.
-"""
+    data: bytes  #: The raw data to be exchanged with the client and server.
+    stream_type: "StreamType"  #: The type of data that is contained.
+    pipeline_id: typing.Optional[
+        uuid.UUID
+    ]  #: The pipeline id if the data is related to a Pipeline or `None` for a Runspace Pool.
 
 
 class ProtocolVersion(enum.Enum):
@@ -263,11 +254,9 @@ def unpack_message(
     """
     destination = struct.unpack("<I", data[0:4])[0]
     message_type = PSRPMessageType(struct.unpack("<I", data[4:8])[0])
-    rpid: typing.Optional[uuid.UUID] = uuid.UUID(bytes_le=bytes(data[8:24]))
+    rpid: uuid.UUID = uuid.UUID(bytes_le=bytes(data[8:24]))
     pid: typing.Optional[uuid.UUID] = uuid.UUID(bytes_le=bytes(data[24:40]))
 
-    if rpid == EMPTY_UUID:
-        rpid = None
     if pid == EMPTY_UUID:
         pid = None
 

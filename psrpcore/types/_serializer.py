@@ -12,6 +12,7 @@ import queue
 import re
 import typing
 import uuid
+import weakref
 from xml.etree import ElementTree
 
 from psrpcore._crypto import PSRemotingCrypto
@@ -142,9 +143,11 @@ def _deserialize_datetime(
 ) -> PSDateTime:
     """Deserializes a CLIXML DateTime string.
 
-    DateTime values from PowerShell are in the format 'YYYY-MM-DDTHH:MM-SS[.100's of nanoseconds]Z'. Unfortunately
-    Python's datetime type only supports up to a microsecond precision so we need to extract the fractional seconds
-    and then parse as a string while calculating the nanoseconds ourselves.
+    DateTime values from PowerShell are in the format
+    'YYYY-MM-DDTHH:MM-SS[.100's of nanoseconds]Z'. Unfortunately Python's
+    datetime type only supports up to a microsecond precision so we need to
+    extract the fractional seconds and then parse as a string while calculating
+    the nanoseconds ourselves.
 
     Args:
         value: The CLIXML datetime string value to deserialize.
@@ -261,14 +264,16 @@ def _deserialize_string(
 ) -> str:
     """Deserializes a CLIXML string value.
 
-    String values in CLIXML have escaped values for control chars and characters that are represented as surrogate
-    pairs in UTF-16. This converts the raw CLIXML string value into a Python string.
+    String values in CLIXML have escaped values for control chars and
+    characters that are represented as surrogate pairs in UTF-16. This converts
+    the raw CLIXML string value into a Python string.
 
     Args:
         value: The CLIXML string element to deserialize.
 
     Returns:
-        (str): The Python str value that represents the actual string represented by the CLIXML.
+        (str): The Python str value that represents the actual string
+            represented by the CLIXML.
     """
 
     def rplcr(matchobj: typing.Any) -> bytes:
@@ -295,11 +300,12 @@ def _serialize_datetime(
 ) -> str:
     """Serializes a datetime to a .NET DateTime CLIXML value.
 
-    .NET supports DateTime to a 100 nanosecond precision so we need to manually massage the data from Python to suit
-    that precision if it is set.
+    .NET supports DateTime to a 100 nanosecond precision so we need to manually
+    massage the data from Python to suit that precision if it is set.
 
     Args:
-        value: The PSDateTime or datetime.datetime object to serialize as a .NET DateTime CLIXML string.
+        value: The PSDateTime or datetime.datetime object to serialize as a
+            .NET DateTime CLIXML string.
 
     Returns:
         str: The .NET DateTime CLIXML string value.
@@ -328,11 +334,13 @@ def _serialize_duration(
 ) -> str:
     """Serialzies a duration to a .NET TimeSpan CLIXML value.
 
-    .NET TimeSpans supports a precision to 100 nanoseconds so we need to manually massage the timedelta object from
-    Python to suit that precision if it is available.
+    .NET TimeSpans supports a precision to 100 nanoseconds so we need to
+    manually massage the timedelta object from Python to suit that precision if
+    it is available.
 
     Args:
-        value: The PSDuration or datetime.timedelta object to serialize as a .NET TimeSpan CLIXML string.
+        value: The PSDuration or datetime.timedelta object to serialize as a
+            .NET TimeSpan CLIXML string.
 
     Returns:
         str: The .NET TimeSpan CLIXML string value.
@@ -411,8 +419,9 @@ def _serialize_string(
 ) -> str:
     """Serializes a string like value to a .NET String CLIXML value.
 
-    There are certain rules when it comes to escaping certain codepoints and chars that are surrogate pairs when
-    UTF-16 encoded. This method escapes the string value and turns it into a valid CLIXML string value.
+    There are certain rules when it comes to escaping certain codepoints and
+    chars that are surrogate pairs when UTF-16 encoded. This method escapes the
+    string value and turns it into a valid CLIXML string value.
 
     Args:
         value: The string value to serialize to CLIXML.
@@ -441,12 +450,15 @@ def _serialize_string(
 class _Serializer:
     """The Python object serializer.
 
-    This is used to encapsulate the (de)serialization of Python objects to and from CLIXML. An instance of this class
-    should only be used once as it contains a reference map to objects that are serialized in that message. Use the
-    `func:serialize` and `func:deserialize` functions instead of calling this directly.
+    This is used to encapsulate the (de)serialization of Python objects to and
+    from CLIXML. An instance of this class should only be used once as it
+    contains a reference map to objects that are serialized in that message.
+    Use the :meth:`serialize` and :meth:`deserialize` instead of calling this
+    directly.
 
     Args:
-        cipher: The CryptoProvider that is used when serializing/deserializing SecureStrings.
+        cipher: The CryptoProvider that is used when serializing/deserializing
+            SecureStrings.
     """
 
     def __init__(
@@ -457,8 +469,10 @@ class _Serializer:
         self._cipher = cipher
         self._kwargs = kwargs
 
-        # Used for serialization to store the id() of each object against a unique identifier.
-        self._obj_ref_list: typing.List[int] = []
+        # Used for serialization to determine fi an object is already serialized or not.
+        self._obj_ref: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+        self._obj_ref_enum: typing.Dict[int, int] = {}
+        self._obj_ref_id = 0
         self._tn_ref_list: typing.List[str] = []
 
         # Used for deserialization
@@ -475,9 +489,6 @@ class _Serializer:
         value: typing.Any,
     ) -> ElementTree.Element:
         """Serialize a Python object to a XML element based on the CLIXML value."""
-        # It is important we do this before ToPSObjectForRemoting is called as the generated object might create a
-        # duplicate id because the original object will be lost before the next one is generated.
-        obj_id = id(value)
         value_type = type(value)
         ps_object = getattr(value, "PSObject", None)
         ps_type: typing.Type[PSObject]  # To satisfy mypy
@@ -604,12 +615,9 @@ class _Serializer:
         if element is not None and not is_extended_primitive and not is_enum:
             return element
 
-        if obj_id in self._obj_ref_list:
-            ref_id = self._obj_ref_list.index(obj_id)
+        ref_id, use_ref = self._get_ref_id(value)
+        if use_ref:
             return ElementTree.Element("Ref", RefId=str(ref_id))
-
-        self._obj_ref_list.append(obj_id)
-        ref_id = self._obj_ref_list.index(obj_id)
 
         if element is None:
             is_complex = True
@@ -669,10 +677,6 @@ class _Serializer:
             prop_elements = ElementTree.SubElement(element, xml_name)
             for prop in properties:
                 prop_value = prop.get_value(value)
-
-                # If it's an optional property and the value is not set, omit it from the CLIXML.
-                if prop_value is None and prop.optional:
-                    continue
 
                 prop_element = self.serialize(prop_value)
                 prop_element.attrib["N"] = _serialize_string(prop.name)
@@ -835,9 +839,10 @@ class _Serializer:
         rehydrated_value = TypeRegistry().rehydrate(type_names)
         value: PSObject
         original_type_names: typing.List[str] = []
+        ref_id = element.attrib.get("RefId", None)
 
         if isinstance(rehydrated_value, PSObject):
-            value = rehydrated_value
+            value = self._update_value_ref(rehydrated_value, ref_id)
             original_type_names = rehydrated_value.PSObject.type_names
 
         elif issubclass(rehydrated_value, (PSEnumBase, PSFlagBase)):
@@ -859,7 +864,12 @@ class _Serializer:
                 to_string = self.deserialize(obj_entry)
 
             elif obj_entry.tag == self._type_to_element[PSDict]:
-                raw_dict = {}
+                dict_type: typing.Type[PSDictBase] = PSDict
+                if isinstance(value, PSDictBase):
+                    dict_type = type(value)
+
+                value = self._update_value_ref(dict_type(), ref_id)
+
                 for dict_entry in obj_entry:
                     dict_key = dict_entry.find('*/[@N="Key"]')
                     dict_value = dict_entry.find('*/[@N="Value"]')
@@ -869,28 +879,21 @@ class _Serializer:
                     if dict_value is None:
                         raise ValueError("Failed to find dict Value attribute")
 
-                    raw_dict[self.deserialize(dict_key)] = self.deserialize(dict_value)
-
-                dict_type: typing.Type[PSDictBase] = PSDict
-                if isinstance(value, PSDictBase):
-                    dict_type = type(value)
-
-                value = dict_type(raw_dict)
+                    value[self.deserialize(dict_key)] = self.deserialize(dict_value)
 
             elif obj_entry.tag == self._type_to_element[PSStack]:
-                raw_stack = [
-                    self.deserialize(stack_entry) for stack_entry in obj_entry
-                ]  # type ignore # This shouldn't be None ever
-
                 stack_type: typing.Type[PSStackBase] = PSStack
                 if isinstance(value, PSStackBase):
                     stack_type = type(value)
 
-                value = stack_type(raw_stack)
+                value = self._update_value_ref(stack_type(), ref_id)
+
+                for stack_entry in obj_entry:
+                    value.append(self.deserialize(stack_entry))
 
             elif obj_entry.tag == self._type_to_element[PSQueue]:
                 if not isinstance(value, PSQueueBase):
-                    value = PSQueue()
+                    value = self._update_value_ref(PSQueue(), ref_id)
 
                 for queue_entry in obj_entry:
                     value.put(self.deserialize(queue_entry))
@@ -899,29 +902,27 @@ class _Serializer:
                 self._type_to_element[PSList],
                 "IE",
             ]:  # IE isn't used by us but the docs refer to it.
-                raw_list = [
-                    self.deserialize(list_entry) for list_entry in obj_entry
-                ]  # type ignore # This shouldn't be None ever
-
                 list_type: typing.Type[PSListBase] = PSList
                 if isinstance(value, PSListBase):
                     list_type = type(value)
+                value = self._update_value_ref(list_type(), ref_id)
 
-                value = list_type(raw_list)
+                for list_entry in obj_entry:
+                    value.append(self.deserialize(list_entry))
 
             elif obj_entry.tag not in ["TN", "TNRef"]:
                 # Extended primitive types and enums store the value as a sub element of the Obj.
                 new_value = self.deserialize(obj_entry)
 
                 if isinstance(rehydrated_value, type) and issubclass(rehydrated_value, (PSEnumBase, PSFlagBase)):
-                    value = rehydrated_value(new_value)
+                    value = self._update_value_ref(rehydrated_value(new_value), ref_id)
 
                 else:
                     # If the TypeRegister returned any types, set them on the new object name.
                     if value.PSTypeNames:
                         new_value.PSObject.type_names = value.PSTypeNames
 
-                    value = new_value
+                    value = self._update_value_ref(new_value, ref_id)
 
         if to_string is not None:
             value.PSObject.to_string = to_string
@@ -944,14 +945,45 @@ class _Serializer:
                     prop_value = self.deserialize(obj_property)
                     add_note_property(scratch_obj, prop_name, prop_value, force=True)
 
-        ref_id = element.attrib.get("RefId", None)
-        if ref_id is not None:
-            self._obj_ref_map[ref_id] = value
-
         # Final override that allows classes to transform the raw CLIXML deserialized object to something more human
         # friendly.
         from_override = getattr(type(value), "FromPSObjectForRemoting", None)
         if from_override:
-            value = from_override(value, **self._kwargs)
+            value = self._update_value_ref(from_override(value, **self._kwargs), ref_id)
+
+        return value
+
+    def _get_ref_id(
+        self,
+        value: typing.Any,
+    ) -> typing.Tuple[int, bool]:
+        """Determine the object reference id for serialization."""
+        next_ref_id = self._obj_ref_id
+
+        try:
+            ref_id = self._obj_ref.setdefault(value, next_ref_id)
+        except TypeError as e:
+            # Some objects cannot have a weakref, try id() only when dealing with known workable types.
+            if isinstance(value, (dict, enum.Enum, list)):
+                ref_id = self._obj_ref_enum.setdefault(id(value), next_ref_id)
+
+            else:
+                ref_id = next_ref_id
+
+        existing_ref = True
+        if next_ref_id == ref_id:
+            existing_ref = False
+            self._obj_ref_id += 1
+
+        return ref_id, existing_ref
+
+    def _update_value_ref(
+        self,
+        value: typing.Any,
+        ref_id: typing.Optional[str] = None,
+    ) -> typing.Any:
+        """Updates the value ref table if the ref id and value is specified."""
+        if ref_id is not None and value is not None:
+            self._obj_ref_map[ref_id] = value
 
         return value

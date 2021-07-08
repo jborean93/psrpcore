@@ -10,6 +10,26 @@ from psrpcore.types import PipelineResultTypes, PSObject, PSType, PSVersion
 
 @PSType(skip_inheritance=True, rehydrate=False)
 class Command(PSObject):
+    """Pipeline Command.
+
+    Defines a Command object which can be added to a Pipeline for invocation.
+
+    Args:
+        name: The command name or script contents.
+        is_script: If the command represents a script or command.
+        use_local_scope: The command is run in local scope or not.
+
+    Attributes:
+        command_text: The command name or script.
+        is_script: See args.
+        use_local_scope: See args.
+        parameters: List of parameters to invoke with the command.
+        end_of_statement: Whether the command is the last one in the current
+            statement or not.
+        merge_unclaimed: Set as the merge point for any error records generated
+            by previous commands in the statement.
+    """
+
     def __init__(
         self,
         name: str,
@@ -43,36 +63,44 @@ class Command(PSObject):
 
     @property
     def merge_my(self) -> PipelineResultTypes:
+        """Used for v2 compatibility to merge error to output/null."""
         return self._merge_my
 
     @property
     def merge_to(self) -> PipelineResultTypes:
+        """Used for v2 compatibility to merge error to output/null."""
         return self._merge_to
 
     @property
     def merge_error(self) -> PipelineResultTypes:
+        """What stream to send error records to."""
         return self._merge_error
 
     @property
     def merge_warning(self) -> PipelineResultTypes:
+        """What stream to send warning records to."""
         return self._merge_warning
 
     @property
     def merge_verbose(self) -> PipelineResultTypes:
+        """What stream to send verbose records to."""
         return self._merge_verbose
 
     @property
     def merge_debug(self) -> PipelineResultTypes:
+        """What stream to send debug records to."""
         return self._merge_debug
 
     @property
     def merge_information(self) -> PipelineResultTypes:
+        """What stream to send information records to."""
         return self._merge_information
 
     def add_argument(
         self,
         value: typing.Any,
     ) -> "Command":
+        """Add a positional argument to the command."""
         return self.add_parameter(None, value)
 
     def add_parameter(
@@ -80,6 +108,7 @@ class Command(PSObject):
         name: typing.Optional[str],
         value: typing.Any = None,
     ) -> "Command":
+        """Add a parameter and value to the command."""
         self.parameters.append((name, value))
         return self
 
@@ -87,6 +116,7 @@ class Command(PSObject):
         self,
         **parameters: typing.Any,
     ) -> "Command":
+        """Adds mutliple parameters to the command."""
         for name, value in parameters.items():
             self.add_parameter(name, value)
 
@@ -96,6 +126,14 @@ class Command(PSObject):
         self,
         stream: PipelineResultTypes = PipelineResultTypes.Output,
     ) -> None:
+        """Redirects all streams.
+
+        Redirects all the non-output streams to the targeted stream. The target
+        stream can only be ``none``, ``Output``, or ``Null``.
+
+        Args:
+            stream: The stream to redirect to.
+        """
         self.redirect_error(stream)
         self.redirect_warning(stream)
         self.redirect_verbose(stream)
@@ -106,6 +144,7 @@ class Command(PSObject):
         self,
         stream: PipelineResultTypes = PipelineResultTypes.Output,
     ) -> None:
+        """Redirect the error stream to this."""
         self._validate_redirection_to(stream)
         if stream == PipelineResultTypes.none:
             self._merge_my = PipelineResultTypes.none
@@ -121,6 +160,7 @@ class Command(PSObject):
         self,
         stream: PipelineResultTypes = PipelineResultTypes.Output,
     ) -> None:
+        """Redirect the warning stream to this."""
         self._validate_redirection_to(stream)
         self._merge_warning = stream
 
@@ -128,6 +168,7 @@ class Command(PSObject):
         self,
         stream: PipelineResultTypes = PipelineResultTypes.Output,
     ) -> None:
+        """Redirect the verbose stream to this."""
         self._validate_redirection_to(stream)
         self._merge_verbose = stream
 
@@ -135,6 +176,7 @@ class Command(PSObject):
         self,
         stream: PipelineResultTypes = PipelineResultTypes.Output,
     ) -> None:
+        """Redirect the debug stream to this."""
         self._validate_redirection_to(stream)
         self._merge_debug = stream
 
@@ -142,6 +184,7 @@ class Command(PSObject):
         self,
         stream: PipelineResultTypes = PipelineResultTypes.Output,
     ) -> None:
+        """Redirect the information stream to this."""
         self._validate_redirection_to(stream)
         self._merge_information = stream
 

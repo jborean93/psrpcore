@@ -2,13 +2,15 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
-"""Defines the base objects used to manage the various PSObject.
+"""Defines the base objects used for PSObjects.
 
-This file contains the base classes and the various metadata/glue that is used to represent a PSObject as a PowerShell
-class. It also contains some of the more fundamental base types like PSIntegerBase/PSGenericBase/PSEnumBase/PSFlagBase
-that are inherited by multiple primitive and complex objects for unifying common code.
+This file contains the base classes and the various metadata/glue that is used
+to represent a PSObject as a PowerShell class. It also contains the code
+required to define a custom .NET type and add properties to those types that
+is known by the serializer.
 
-Also define some helper functions to replicate functionality in PowerShell/.NET like `-is`, `Add-Member` and so on.
+Also define some helper functions to replicate functionality in PowerShell/.NET
+like `-is`, `Add-Member` and so on.
 """
 
 import abc
@@ -46,8 +48,9 @@ class _Singleton(type):
 class TypeRegistry(metaclass=_Singleton):
     """Registry of all the Python classes that implement PSObject.
 
-    This singleton is used to store all the classes that implement PSObject and the .NET type it implements. This is
-    used for deserialization to provide a dynamic list of Python classes that can be dehydrated.
+    This singleton is used to store all the classes that implement PSObject
+    and the .NET type it implements. This is used for deserialization to
+    provide a dynamic list of Python classes that can be dehydrated.
     """
 
     def __init__(self) -> None:
@@ -84,22 +87,30 @@ class TypeRegistry(metaclass=_Singleton):
 class PSObjectMeta:
     """The PowerShell PSObject metadata.
 
-    This describes the metadata around the PSObject such as the properties and ETS info. This information is used by
-    Python to (de)serialize the Python class to a .NET type through CLIXML. This should be assigned as the `PSObject`
-    class attribute for any type that inherits from `PSObject`.
+    This describes the metadata around the PSObject such as the properties and
+    ETS info. This information is used by Python to (de)serialize the Python
+    class to a .NET type through CLIXML. This is typically assigned internally
+    by the `:class:PSType` class decorator and shouldn't be
+    assigned directly.
 
-    Using `rehydrate=True` (default) will register the type_name of the class so the deserializer will return an
-    instance of that class when it comes to deserializing that type. A rehydrated object is created without calling
-    __init__() so any validation or set up that occurs in that function when normally creating the class instance will
-    not occur during deserialization and only the properties in CLIXML will be set on the class instance. When
-    `rehydrate=False` then the deserialized object will be an instance of `class:PSObject` with the type names
-    containing the `Deserialized.` prefix.
+    Using `rehydrate=True` (default) will register the type_name of the class
+    so the deserializer will return an instance of that class when it comes to
+    deserializing that type. A rehydrated object is created without calling
+    __init__() so any validation or set up that occurs in that function when
+    normally creating the class instance will not occur during deserialization
+    and only the properties in CLIXML will be set on the class instance. When
+    `rehydrate=False` then the deserialized object will be an instance of
+    `class:PSObject` with the type names containing the `Deserialized.` prefix.
 
     Args:
-        type_names: List of .NET type names that the type implements, this should contain at least 1 type.
-        adapted_properties: List of adapted properties, these are native to the .NET type.
-        extended_properties: List of extended properties, these are added to the .NET type by PowerShell.
-        rehydrate: Whether the type should be registered as rehydratable or not.
+        type_names: List of .NET type names that the type implements, this
+            should contain at least 1 type.
+        adapted_properties: List of adapted properties, these are native to
+            the .NET type.
+        extended_properties: List of extended properties, these are added to
+            the .NET type by PowerShell.
+        rehydrate: Whether the type should be registered as rehydratable or
+            not.
 
     Attributes:
         type_names (List[str]): See args.
@@ -128,8 +139,9 @@ class PSObjectMeta:
     def to_string(self) -> typing.Optional[str]:
         """The string representation of the object.
 
-        The value to use for the `<ToString>` element of the serialized object. Will favour an explicit `to_string`
-        value if set otherwise it will fall back to the value of `str(instance)` that the meta is for.
+        The value to use for the `<ToString>` element of the serialized object.
+        Will favour an explicit `to_string` value if set otherwise it will fall
+        back to the value of `str(instance)` that the meta is for.
         """
         if self._instance is None or self._to_string is not None:
             return self._to_string
@@ -158,17 +170,7 @@ class PSObjectMeta:
         self,
         instance: typing.Union["PSObject", typing.Type["PSObject"]],
     ) -> None:
-        """Creates a copy of the existing meta and assign to the class instance."""
-        meta_kwargs = self._copy_kwargs()
-        copy = type(self)(**meta_kwargs)
-
-        if isinstance(instance, PSObject):
-            copy._instance = instance  # Assign a reference to the instance the PSObject is for.
-
-        setattr(instance, "PSObject", copy)
-
-    def _copy_kwargs(self) -> typing.Dict[str, typing.Any]:
-        """Generate the kwargs used for copying the instance."""
+        """Creates a copy of meta and assign to the class or instance."""
         kwargs: typing.Dict[str, typing.Any] = {
             "adapted_properties": [],
             "extended_properties": [],
@@ -179,53 +181,60 @@ class PSObjectMeta:
 
         kwargs["type_names"] = list(self.type_names)
         kwargs["rehydrate"] = self.rehydrate
+        copy = type(self)(**kwargs)
 
-        return kwargs
+        # If setting on an instance fo a PSObject, assign the instance to the copy.
+        if isinstance(instance, PSObject):
+            copy._instance = instance
+
+        setattr(instance, "PSObject", copy)
 
 
 class PSPropertyInfo(metaclass=abc.ABCMeta):
-    """Base Property metadata for an object's properties.
+    """Base metadata for an object property.
 
-    This is an abstract class that defines most of the behaviour when it comes to getting and setting a property. The
-    three types of properties that are implemented are:
+    This is an abstract class that defines the property behaviour when it comes
+    to getting and setting a property. There are three types of properties that
+    have been implemented:
 
-        PSAliasProperty:
-            A property that points to another property, or Python attribute. This essentially creates a getter that
-            calls ps_object['alias'].
+        :class:`PSAliasProperty`:
+            A property that points to another property, or Python attribute.
+            This essentially creates a getter that calls `ps_object['target']`.
 
-        PSNoteProperty:
-            A property that contains it's own value like a normal attribute/property in Python.
+        :class:`PSNoteProperty`:
+            A property that contains it's own value like a normal
+            attribute/property in Python.
 
-        PSScriptProperty:
-            A property that uses a callable to get and optionally set a value from the ps_object.
+        :class:`PSScriptProperty`:
+            A property that uses a callable to get and optionally set a value
+            on the ps_object.
 
-    The `optional` kwarg controls the behaviour when serializing the object to CLIXML. If `True` and the property value
-    is `None` then the element will be omitted from the CLIXML.
-
-    The `mandatory` kwarg controls whether the default `__init__()` function added to PSObjects without their own
-    `__init__()` will validate that property was specified by the caller. This has no control over the serialization
-    behaviour and any classes that define their own `__init__()` need to do their own validation.
+    The `mandatory` option controls whether the default `__init__()` function
+    added to PSObjects without their own `__init__()` will validate that
+    property was specified by the caller. This has no control over the
+    serialization behaviour and any classes that define their own `__init__()`
+    need to do their own validation.
 
     Args:
         name: The name of the property.
-        optional: The property will be omitted in the CLIXML output when serializing the object and the value is None.
         mandatory: The property must be defined when creating a PSObject.
-        ps_type: If set, the property value will be casted to this PSObject type.
+        ps_type: If set, the property value will be casted to this PSObject
+            type.
         value: The default value to set for the property.
-        getter: A callable to get the property value based on the caller's desired logic. Must not be set with `value`.
-        setter: A callable to set the property value based on the caller's desired logic. Must not be set with `value`.
+        getter: A callable to get the property value based on the caller's
+            desired logic. Must not be set with `value`.
+        setter: A callable to set the property value based on the caller's
+            desired logic. Must not be set with `value`.
 
     Attributes:
         name (str): See args.
         ps_type (type): See args.
-        optional (bool): See args.
         mandatory (bool): See args.
     """
 
     def __init__(
         self,
         name: str,
-        optional: bool = False,
         mandatory: bool = False,
         ps_type: typing.Optional[type] = None,
         value: typing.Optional[typing.Any] = _UnsetValue,
@@ -234,7 +243,6 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
     ):
         self.name = name
         self.ps_type = ps_type
-        self.optional = optional
         self.mandatory = mandatory
 
         self._value: typing.Union[typing.Type[_UnsetValue], PSObject] = _UnsetValue
@@ -305,11 +313,13 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
     ) -> typing.Any:
         """Get the property value.
 
-        Gets the value of the property. If the property value is a callable then the value is invoked with the
-        ps_object as an argument and the resulting value is casted to the `ps_type` if it is set.
+        Gets the value of the property. If the property value is a callable
+        then the value is invoked with the ps_object as an argument and the
+        resulting value is casted to the `ps_type` if it is set.
 
         Args:
-            ps_object: The PSObject instance the property is on. This is used when invoking a getter callable.
+            ps_object: The PSObject instance the property is on. This is used
+                when invoking a getter callable.
 
         Returns:
             (typing.Any): The value of the property.
@@ -336,12 +346,15 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
     ) -> None:
         """Set the property value.
 
-        Sets the value of the property to the value specified. The value will be casted to the property's `ps_type` if
-        defined unless it is a callable or `None`. Trying to set `None` on a `mandatory` property will also fail.
+        Sets the value of the property to the value specified. The value will
+        be casted to the property's `ps_type` if defined unless it is a
+        callable or `None`. Trying to set `None` on a `mandatory` property will
+        also fail.
 
         Args:
             value: The value to set on the property.
-            ps_object: The PSObject instance the property is on. This is used when invoking the setter callable.
+            ps_object: The PSObject instance the property is on. This is used
+                when invoking the setter callable.
         """
         setter = self.setter
         if setter:
@@ -409,20 +422,23 @@ class PSPropertyInfo(metaclass=abc.ABCMeta):
 class PSAliasProperty(PSPropertyInfo):
     """Alias Property
 
-    This is a property that gets a value based on another property or attribute of the PSObject. It is designed to
-    replicate the functionality of `PSAliasProperty`_. During serialization the alias property will just copy the
-    target it is point to. You cannot set a value to an alias property, see `PSScriptProperty` which allows the caller
+    This is a property that gets a value based on another property or attribute
+    of the PSObject. It is designed to replicate the functionality of
+    `PSAliasProperty`_. During serialization the alias property will just copy
+    the value of the target it is pointing to. You cannot set a value to an
+    alias property, see :class:`PSScriptProperty` which allows the caller
     to define a way to get and set properties on an object dynamically.
 
     ..Note:
-        When an object that has an alias property is deserialized, the property is converted to a `PSNoteProperty` and
-        the alias will no longer exists.
+        When an object that has an alias property is deserialized, the property
+        is converted to a :class:`PSNoteProperty` and the alias will no longer
+        exist.
 
     Args:
         name: The name of the property.
         alias: The name of the property or attribute to point to.
-        optional: The property will be omitted in the CLIXML output when serializing the object and the value is None.
-        ps_type: If set, the property value will be casted to this PSObject type.
+        ps_type: If set, the property value will be casted to this PSObject
+            type.
 
     Attributes:
         alias (str): The target of the alias.
@@ -435,29 +451,29 @@ class PSAliasProperty(PSPropertyInfo):
         self,
         name: str,
         alias: str,
-        optional: bool = False,
         ps_type: typing.Optional[type] = None,
     ):
         self.alias = alias
-        super().__init__(name, optional=optional, ps_type=ps_type, getter=lambda s: s[alias])
+        super().__init__(name, ps_type=ps_type, getter=lambda s: s[alias])
 
     def copy(self) -> "PSAliasProperty":
-        return PSAliasProperty(self.name, self.alias, self.optional, self.ps_type)
+        return PSAliasProperty(self.name, self.alias, self.ps_type)
 
 
 class PSNoteProperty(PSPropertyInfo):
     """Note Property
 
-    This is a property that stores a value as a name-value pair. Is is designed to replicate the functionality of
-    `PSNoteProperty`_ and is typically the type of property to use when creating a PSObject.
+    This is a property that stores a value as a name-value pair. Is is designed
+    to replicate the functionality of `PSNoteProperty`_ and is typically the
+    type of property to use when creating a PSObject.
 
     ..Note:
-        See PSPropertyInfo for more information on the `mandatory` argument.
+        See :class:`PSPropertyInfo` for more information on the `mandatory`
+        argument.
 
     Args:
         name: The name of the property.
         value: The property value to set, if omitted the default is `None`.
-        optional: The property will be omitted in the CLIXML output when serializing the object and the value is None.
         mandatory: The property must be defined when creating a PSObject.
         ps_type: If set, the property value will be casted to this PSObject type.
 
@@ -469,36 +485,38 @@ class PSNoteProperty(PSPropertyInfo):
         self,
         name: str,
         value: typing.Optional[typing.Any] = _UnsetValue,
-        optional: bool = False,
         mandatory: bool = False,
         ps_type: typing.Optional[type] = None,
     ):
-        super().__init__(name, optional=optional, mandatory=mandatory, ps_type=ps_type, value=value)
+        super().__init__(name, mandatory=mandatory, ps_type=ps_type, value=value)
 
     def copy(self) -> "PSNoteProperty":
-        return PSNoteProperty(self.name, self._value, self.optional, self.mandatory, self.ps_type)
+        return PSNoteProperty(self.name, self._value, self.mandatory, self.ps_type)
 
 
 class PSScriptProperty(PSPropertyInfo):
     """Script Property
 
-    This is a property that can get and optionally set another property or attribute of a PSObject at runtime. It is
-    designed to replicate the functionality of `PSScriptProperty`_.
+    This is a property that can get and optionally set another property or
+    attribute of a PSObject at runtime. It is designed to replicate the
+    functionality of `PSScriptProperty`_.
 
-    The getter callable must be a callable that has only 1 argument that is the PSObject the property is a member of.
-    This allows the caller to retrieve a property of the PSObject at runtime or any other source as needed.
+    The getter callable must be a callable that has only 1 argument that is the
+    PSObject the property is a member of. This allows the caller to retrieve a
+    property of the PSObject at runtime or any other source as needed.
 
-    The setter callable must be a callable that has only 2 arguments, the first being the value that needs to be set
-    and the second is the PSObject the property is a member of. A setter must be defined on the property for a value to
-    be set.
+    The setter callable must be a callable that has only 2 arguments, the first
+    being the value that needs to be set and the second is the PSObject the
+    property is a member of. A setter must be defined on the property for a
+    value to be set.
 
     Args:
         name: The name of the property.
         getter: The callable to run when getting a value for this property.
         setter: The callable to run when setting a value for this property.
-        optional: The property will be omitted in the CLIXML output when serializing the object and the value is None.
         mandatory: The property must be defined when creating a PSObject.
-        ps_type: If set, the property value will be casted to this PSObject type.
+        ps_type: If set, the property value will be casted to this PSObjec
+             type.
 
     .. _PSScriptProperty:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.psscriptproperty
@@ -509,7 +527,6 @@ class PSScriptProperty(PSPropertyInfo):
         name: str,
         getter: typing.Callable[["PSObject"], typing.Any],
         setter: typing.Optional[typing.Callable[["PSObject", typing.Any], None]] = None,
-        optional: bool = False,
         mandatory: bool = False,
         ps_type: typing.Optional[type] = None,
     ):
@@ -521,14 +538,13 @@ class PSScriptProperty(PSPropertyInfo):
                 f"Cannot create mandatory {self.__class__.__qualname__} property '{name}' without a " f"setter callable"
             )
 
-        super().__init__(name, optional=optional, mandatory=mandatory, ps_type=ps_type, getter=getter, setter=setter)
+        super().__init__(name, mandatory=mandatory, ps_type=ps_type, getter=getter, setter=setter)
 
     def copy(self) -> "PSScriptProperty":
         return PSScriptProperty(
             self.name,
             self.getter,  # type: ignore[arg-type] # The class does not allow self.getter to be None
             self.setter,
-            self.optional,
             self.mandatory,
             self.ps_type,
         )
@@ -537,16 +553,20 @@ class PSScriptProperty(PSPropertyInfo):
 class PSObject:
     """The base PSObject type.
 
-    This is the base PSObject type that all PS object classes must inherit. It controls all the behaviour around
-    getting and setting attributes that are based on PowerShell properties in a way that is similar to PowerShell
+    This is the base PSObject type that all PS object classes must inherit. It
+    controls all the behaviour around getting and setting attributes that are
+    based on PowerShell properties in a way that is similar to PowerShell
     itself.
+
+    When initialised directly this is a plain object without any properties.
+    User :meth:`add_member` to add new properties dynamically.
     """
 
     PSObject = PSObjectMeta(
         type_names=[
             "System.Object",
         ]
-    )
+    )  #: Class and instance attribute that defines the objects ETS.
 
     def __new__(  # type: ignore[no-untyped-def]  # Trying to set PSObject here sends mypy into haywire
         cls,
@@ -680,18 +700,22 @@ class PSObject:
     def __getitem__(self, item: str) -> typing.Any:
         """Allow getting properties using the index syntax.
 
-        By overriding __getitem__ you can access properties on an object using the index syntax, i.e.
-        obj['PropertyName']. This matches the PowerShell behaviour where properties can be retrieved either by dot
-        notation or by index notation.
+        By overriding __getitem__ you can access properties on an object using
+        the index syntax, i.e. obj['PropertyName']. This matches the PowerShell
+        behaviour where properties can be retrieved either by dot notation or
+        by index notation.
 
-        It also makes it easier to get properties with a name that aren't valid attribute names in Python. By allowing
-        a string field someone can do `obj['1 Invalid Attribute$']`. An alternative option is through getattr() as
-        that accepts a string. This works because PSObject also override :func:`__getattr__` and :func:`__setattr__`
-        and it edits the `__dict__` directly.
+        It also makes it easier to get properties with a name that aren't valid
+        Python attribute names. By allowing a string field someone can do
+        `obj['1 Invalid Attribute$']`. An alternative option is through
+        getattr() as that accepts a string. This works because PSObject also
+        override :func:`__getattr__` and :func:`__setattr__` and it edits the
+        `__dict__` directly.
 
-        This is complicated by the Dict/List/Stack/Queue types as we need this to preserve the actual lookup values.
-        In those cases the __getitem__ lookup will favour the base object items before falling back to looking at the
-        attributes.
+        This is complicated by the Dict/List/Stack/Queue types as we need this
+        to preserve the actual lookup values. In those cases the __getitem__
+        lookup will favour the base object items before falling back to looking
+        at the attributes.
         """
         return getattr(self, item)
 
@@ -707,6 +731,28 @@ class PSObject:
 
 
 class PSType:
+    """PSType class decorator.
+
+    This is a class decorator that should be added to any Python class that
+    represents a .NET type. It modifies the class to use the PowerShell type
+    system like extended properties. A class that uses this decorator must
+    inherit from :class:`PSObject`.
+
+    If the class also has a base `PSType` class it will inherit all the types
+    and properties of that base class unless `skip_inheritance=True` is set.
+
+    Args:
+        type_names: A list of .NET types the class represents.
+        adapted_properties: A list of :class:`PSPropertyInfo` to denote the
+            native .NET properties the class has.
+        extended_properties: A list of :class:`PSPropertyInfo` to denote the
+            extended PowerShell properties the class has.
+        skip_inheritance: Skip inheriting the type and properties from the base
+            class.
+        rehydrate: Registers the type for deserialisation.
+        tag: Used internally to denote the CLIXML element tag value.
+    """
+
     def __init__(
         self,
         type_names: typing.List[str] = None,
@@ -756,15 +802,21 @@ def add_member(
 ) -> None:
     """Add an extended property.
 
-    This can add an extended property to a PSObject class or a specific instance of a class. This replicates some of
-    the functionality in `Update-TypeData`_ and `Add-Member`_ in PowerShell. If a property under the same name already
-    exists under that PSObject then `force=True` is required to replace it. The same applies if there is an existing
-    adapted property on the object.
+    This can add an extended property to a PSObject class or a specific
+    instance of a class. This replicates some of the functionality in
+    `Update-TypeData`_ and `Add-Member`_ in PowerShell. If a property under the
+    same name already exists under that PSObject then `force=True` is required
+    to replace it. The same applies if there is an existing adapted property on
+    the object.
+
+    See :meth:`add_alias_property`, :meth:`add_note_property`, and
+    :meth:`add_script_property` for simplified versions of this function.
 
     Args:
-        obj: The PSObject class or an instance of a PSObject class to add the extended property to.
+        obj: The PSObject class or an instance of a PSObject class to add the
+            extended property to.
         prop: The property to add to the object or class.
-        force: Overwrite the existing property (True) or fail (Fail).
+        force: Overwrite the existing property ``True`` or fail ``False``.
 
     .. _Update-TypeData:
         https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/update-typedata
@@ -801,14 +853,15 @@ def add_alias_property(
 ) -> None:
     """Add an alias property to a PSObject.
 
-    Adds an alias as an extended property to a PSObject class or a specific instance of a class.
+    Adds an alias as an extended property to a PSObject class or a specific
+    instance of a class.
 
     Args:
         obj: The PSObject to add the alias to.
         name: The name of the new alias property.
         alias: The alias target.
         ps_type: Optional PSObject type that the alias value will get casted to.
-        force: Overwrite the existing property (True) or fail (Fail).
+        force: Overwrite the existing property ``True`` or fail ``False``.
     """
     add_member(obj, PSAliasProperty(name, alias, ps_type=ps_type), force=force)
 
@@ -822,15 +875,16 @@ def add_note_property(
 ) -> None:
     """Add a note property to a PSObject.
 
-    Adds a note property as an extended property to a PSObject class or a specific instance of a class. A note property
-    is a simple key/value pair with a static value.
+    Adds a note property as an extended property to a PSObject class or a
+    specific instance of a class. A note property is a simple key/value pair
+    with a static value.
 
     Args:
         obj: The PSObject to add the note property to.
         name: The name of the new note property.
         value: The value of the new note property
         ps_type: Optional PSObject type that the value will get casted to.
-        force: Overwrite the existing property (True) or fail (Fail).
+        force: Overwrite the existing property ``True`` or fail ``False``.
     """
     add_member(obj, PSNoteProperty(name, value, ps_type=ps_type), force=force)
 
@@ -845,9 +899,10 @@ def add_script_property(
 ) -> None:
     """Add a script property to a PSObject.
 
-    Adds a script property as an extended property to a PSObject class or a specific instance of a class. A script
-    property has a callable getter and optional setter function that is run when the property's value is requested or
-    set.
+    Adds a script property as an extended property to a PSObject class or a
+    specific instance of a class. A script property has a callable getter and
+    optional setter function that is run when the property's value is requested
+    or set.
 
     Args:
         obj: The PSObject to add the alias to.
@@ -855,7 +910,7 @@ def add_script_property(
         getter: The callable to run when getting a value for this property.
         setter: The callable to run when setting a value for this property.
         ps_type: Optional PSObject type that the alias value will get casted to.
-        force: Overwrite the existing property (True) or fail (Fail).
+        force: Overwrite the existing property ``True`` or fail ``False``.
     """
     add_member(obj, PSScriptProperty(name, getter, setter=setter, ps_type=ps_type), force=force)
 
@@ -867,19 +922,23 @@ def ps_isinstance(
 ) -> bool:
     """Checks the inheritance of a PSObject.
 
-    This checks if a PSObject is an instance of another PSObject. Instead of checking based on the Python inheritance
-    rules it checks based on the .NET TypeNames set for that instance. The check will loop through the `PSTypeNames` of
-    the obj passed in and see if any of those types match the first `PSTypeName` of any of the `other` objects
-    referenced.
+    This checks if a PSObject is an instance of another PSObject. Instead of
+    checking based on the Python inheritance rules it checks based on the
+    .NET TypeNames set for that instance. The check will loop through the
+    `PSTypeNames` of the obj passed in and see if any of those types match the
+    first `PSTypeName` of any of the `other` objects referenced.
 
-    If `check_deserialized=True`, then any types starting with `Deserialized.` will also match against the
-    non-deserialized types, e.g. `Deserialized.System.Collections.Hashtable` will be an instance of
+    If `check_deserialized=True`, then any types starting with `Deserialized.`
+    will also match against the non-deserialized types, e.g.
+    `Deserialized.System.Collections.Hashtable` will be an instance of
     `System.Collections.Hashtable`.
 
     Args:
         obj: The object to check if it is inherited from the other types.
-        other: The type to check if obj is inherited from. Can also be a list of .NET types as a string.
-        ignore_deserialized: Whether to treat `Deserialized.*` instances as they would be serialized.
+        other: The type to check if obj is inherited from. Can also be a list
+            of .NET types as a string.
+        ignore_deserialized: Whether to treat `Deserialized.*` instances as
+            they would be serialized.
 
     Returns:
         bool: Whether the obj is inherited from any of the other types in .NET.

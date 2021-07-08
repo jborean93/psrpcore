@@ -171,7 +171,8 @@ def test_start_pipeline():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
     assert pipeline.state == PSInvocationState.NotStarted
     pipeline.start()
     assert pipeline.state == PSInvocationState.Running
@@ -198,7 +199,8 @@ def test_stop_pipeline():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
 
     expected = re.escape(
         "Pipeline state must be one of 'PSInvocationState.Running' to stop a pipeline, current state is "
@@ -236,7 +238,8 @@ def test_pipeline_host_call_invalid_state():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
 
     expected = re.escape(
         "Pipeline state must be one of 'PSInvocationState.Running' to make a pipeline host call, current state is "
@@ -253,7 +256,8 @@ def test_pipeline_write_output_invalid_state():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
 
     expected = re.escape(
         "Pipeline state must be one of 'PSInvocationState.Running' to write pipeline output, current state is "
@@ -270,7 +274,8 @@ def test_pipeline_write_error_invalid_state():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
 
     expected = re.escape(
         "Pipeline state must be one of 'PSInvocationState.Running' to write pipeline error, current state is "
@@ -287,7 +292,8 @@ def test_pipeline_write_debug_invalid_state():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
 
     expected = re.escape(
         "Pipeline state must be one of 'PSInvocationState.Running' to write pipeline debug, current state is "
@@ -304,7 +310,8 @@ def test_pipeline_write_verbose_invalid_state():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
 
     expected = re.escape(
         "Pipeline state must be one of 'PSInvocationState.Running' to write pipeline verbose, current state is "
@@ -321,7 +328,8 @@ def test_pipeline_write_warning_invalid_state():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
 
     expected = re.escape(
         "Pipeline state must be one of 'PSInvocationState.Running' to write pipeline warning, current state is "
@@ -338,7 +346,8 @@ def test_pipeline_write_progress_invalid_state():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
 
     expected = re.escape(
         "Pipeline state must be one of 'PSInvocationState.Running' to write pipeline progress, current state is "
@@ -355,7 +364,8 @@ def test_pipeline_information_invalid_protocol():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
 
     server.their_capability = None
     expected = re.escape("writing information record requires a protocol version of 2.3, current version is 2.0")
@@ -370,7 +380,8 @@ def test_pipeline_information_invalid_state():
     ps.invoke()
 
     server.receive_data(client.data_to_send())
-    pipeline = server.next_event().pipeline
+    server.next_event()
+    pipeline = server.pipeline_table[ps.pipeline_id]
 
     expected = re.escape(
         "Pipeline state must be one of 'PSInvocationState.Running' to write pipeline information, current state is "

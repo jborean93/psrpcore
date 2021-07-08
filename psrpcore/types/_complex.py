@@ -67,9 +67,8 @@ class PSCustomObject(PSObject):
         abc
 
     Note:
-        The property `PSTypeName` is a special property used to define a custom
-        PS type name to the instance. It will not add a property with the name
-        `PSTypeName`.
+        Using `PSTypeName` as a parameter will define a custom PS type name for
+        the instance. It will not add a property with the name `PSTypeName`.
     """
 
     def __init__(self, **kwargs: typing.Any) -> None:
@@ -144,7 +143,7 @@ class PSCredentialTypes(PSFlagBase):
     """System.Management.Automation.PSCredentialTypes enum flags.
 
     Defines the valid types of credentials. Used by
-    :meth:`psrp.host.PSHostUI.prompt_for_credential2` calls.
+    :class:`HostMethodIdentifier.PromptForCredential2` calls.
 
     Note:
         This is an auto-generated Python class for the
@@ -164,7 +163,7 @@ class PSCredentialUIOptions(PSFlagBase):
     """System.Management.Automation.PSCredentialUIOptions enum flags.
 
     Defines the options available when prompting for credentials. Used by
-    :meth:`psrp.host.PSHostUI.prompt_for_credential2` calls.
+    :class:`HostMethodIdentifier.PromptForCredential2` calls.
 
     Note:
         This is an auto-generated Python class for the
@@ -391,8 +390,9 @@ class HostMethodIdentifier(PSEnumBase):
     System.Management.Automation.Remoting.RemoteHostMethodId .NET class. It is
     documented in PSRP under `[MS-PSRP] 2.2.3.17 Host Method Identifier`_.
 
-    The values are used to reference what method to invoke on
-    :class:`psrp.host.PSHost`.
+    The values are used in :class:`psrpcore.types.RunspacePoolHostCall` and
+    :class:`psrpcore.types.PipelineHostCall` to identify what method should be
+    invoked.
 
     .. _[MS-PSRP] 2.2.3.17 Host Method Identifier:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ddd2a4d1-797d-4d73-8372-7a77a62fb204
@@ -610,7 +610,7 @@ class Coordinates(PSObject):
     Represents an x,y coordinate pair. This is the actual .NET type
     `System.Management.Automation.Host.Coordinates`_. It is documented under
     `[MS-PSRP] 2.2.3.1 Coordinates`_ but the PSRP documentation represents how
-    this value is serialized under :class:`HostDefaultData`.
+    this value is serialized under :class:`HostDefaultData` not the .NET type.
 
     Args:
         X: X coordinate (0 is the leftmost column).
@@ -640,7 +640,7 @@ class Size(PSObject):
     Represents a width and height pair. This is the actual .NET type
     `System.Management.Automation.Host.Size`_. It is documented under
     `[MS-PSRP] 2.2.3.2 Size`_ but the PSRP documentation represents how this
-    value is serialized under :class:`HostDefaultData`.
+    value is serialized under :class:`HostDefaultData` not the .NET type.
 
     Args:
         Width: The width of an area.
@@ -656,7 +656,16 @@ class Size(PSObject):
 
 @PSType(
     extended_properties=[
-        PSAliasProperty("data", "_default_data"),
+        PSNoteProperty("ForegroundColor", mandatory=True, ps_type=ConsoleColor),
+        PSNoteProperty("BackgroundColor", mandatory=True, ps_type=ConsoleColor),
+        PSNoteProperty("CursorPosition", mandatory=True, ps_type=Coordinates),
+        PSNoteProperty("WindowPosition", mandatory=True, ps_type=Coordinates),
+        PSNoteProperty("CursorSize", mandatory=True, ps_type=PSInt),
+        PSNoteProperty("BufferSize", mandatory=True, ps_type=Size),
+        PSNoteProperty("WindowSize", mandatory=True, ps_type=Size),
+        PSNoteProperty("MaxWindowSize", mandatory=True, ps_type=Size),
+        PSNoteProperty("MaxPhysicalWindowSize", mandatory=True, ps_type=Size),
+        PSNoteProperty("WindowTitle", mandatory=True, ps_type=PSString),
     ],
     skip_inheritance=True,
 )
@@ -669,92 +678,24 @@ class HostDefaultData(PSObject):
     `hostDefaultData` property documented at `[MS-PSRP] 2.2.3.14 HostInfo`_.
 
     Args:
-        foreground_color (:class:`ConsoleColor`): Color of the character on the
-            screen buffer.
-        background_color (:class:`ConsoleColor`): Color behind characters on
-            the screen buffer.
-        cursor_position (:class:`Coordinates`): Cursor position in the screen
+        ForegroundColor: Color of the character on the screen buffer.
+        BackgroundColor: Color behind characters on the screen buffer.
+        CursorPosition: Cursor position in the screen buffer.
+        WindowPosition: Position of the view window relative to the screen
             buffer.
-        window_position (:class:`Coordinates`): Position of the view window
-            relative to the screen buffer.
-        cursor_size (:class:`Union[PSInt, int]`): Cursor size as a percentage
-            0..100.
-        buffer_size (:class:`Size`): Current size of the screen buffer,
-            measured in character cells.
-        window_size (:class:`Size`): Current view window size, measured in
-            character cells.
-        max_window_size (:class:`Size`):  Size of the largest window position
-            for the current buffer.
-        max_physical_window_size (:class:`Size`): Largest window possible
-            ignoring the current buffer dimensions.
-        window_title (:class:`Union[PSString, str]`) The titlebar text of the
-            current view window.
+        CursorSize: Cursor size as a percentage 0..100.
+        BufferSize: Current size of the screen buffer, measured in character
+            cells.
+        WindowSize: Current view window size, measured in character cells.
+        MaxWindowSize:  Size of the largest window position for the current
+            buffer.
+        MaxPhysicalWindowSize: Largest window possible ignoring the current
+            buffer dimensions.
+        WindowTitle: The titlebar text of the current view window.
 
     .. _[MS-PSRP] 2.2.3.14 HostInfo:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6
     """
-
-    def __init__(
-        self,
-        foreground_color: ConsoleColor,
-        background_color: ConsoleColor,
-        cursor_position: Coordinates,
-        window_position: Coordinates,
-        cursor_size: int,
-        buffer_size: Size,
-        window_size: Size,
-        max_window_size: Size,
-        max_physical_window_size: Size,
-        window_title: str,
-    ):
-        super().__init__()
-
-        self.foreground_color = foreground_color
-        self.background_color = background_color
-        self.cursor_position = cursor_position
-        self.window_position = window_position
-        self.cursor_size = cursor_size
-        self.buffer_size = buffer_size
-        self.window_size = window_size
-        self.max_window_size = max_window_size
-        self.max_physical_window_size = max_physical_window_size
-        self.window_title = window_title
-
-    @property
-    def _default_data(self) -> typing.Dict[int, PSObject]:
-        def dict_value(value: typing.Union[int, str, PSObject], value_type: str) -> PSObject:
-            dict_obj = PSObject()
-            add_note_property(dict_obj, "T", value_type, ps_type=PSString)
-            add_note_property(dict_obj, "V", value)
-            return dict_obj
-
-        def color(value: ConsoleColor) -> PSObject:
-            return dict_value(PSInt(value), value.PSObject.type_names[0])
-
-        def coordinates(value: Coordinates) -> PSObject:
-            raw = PSObject()
-            add_note_property(raw, "x", value.X, ps_type=PSInt)
-            add_note_property(raw, "y", value.Y, ps_type=PSInt)
-            return dict_value(raw, value.PSObject.type_names[0])
-
-        def size(value: Size) -> PSObject:
-            raw = PSObject()
-            add_note_property(raw, "width", value.Width, ps_type=PSInt)
-            add_note_property(raw, "height", value.Height, ps_type=PSInt)
-            return dict_value(raw, value.PSObject.type_names[0])
-
-        return {
-            0: color(self.foreground_color),
-            1: color(self.background_color),
-            2: coordinates(self.cursor_position),
-            3: coordinates(self.window_position),
-            4: dict_value(self.cursor_size, PSInt.PSObject.type_names[0]),
-            5: size(self.buffer_size),
-            6: size(self.window_size),
-            7: size(self.max_window_size),
-            8: size(self.max_physical_window_size),
-            9: dict_value(self.window_title, PSString.PSObject.type_names[0]),
-        }
 
     @classmethod
     def FromPSObjectForRemoting(
@@ -769,26 +710,67 @@ class HostDefaultData(PSObject):
             return Size(Width=value.width, Height=value.height)
 
         return HostDefaultData(
-            foreground_color=obj.data[0].V,
-            background_color=obj.data[1].V,
-            cursor_position=coordinates(obj.data[2].V),
-            window_position=coordinates(obj.data[3].V),
-            cursor_size=obj.data[4].V,
-            buffer_size=size(obj.data[5].V),
-            window_size=size(obj.data[6].V),
-            max_window_size=size(obj.data[7].V),
-            max_physical_window_size=size(obj.data[8].V),
-            window_title=obj.data[9].V,
+            ForegroundColor=obj.data[0].V,
+            BackgroundColor=obj.data[1].V,
+            CursorPosition=coordinates(obj.data[2].V),
+            WindowPosition=coordinates(obj.data[3].V),
+            CursorSize=obj.data[4].V,
+            BufferSize=size(obj.data[5].V),
+            WindowSize=size(obj.data[6].V),
+            MaxWindowSize=size(obj.data[7].V),
+            MaxPhysicalWindowSize=size(obj.data[8].V),
+            WindowTitle=obj.data[9].V,
         )
+
+    @classmethod
+    def ToPSObjectForRemoting(
+        cls,
+        instance: "HostDefaultData",
+        **kwargs: typing.Any,
+    ) -> PSObject:
+        obj = PSObject()
+
+        def dict_value(value: typing.Union[int, str, PSObject], value_type: str) -> PSObject:
+            dict_obj = PSObject()
+            add_note_property(dict_obj, "T", value_type, ps_type=PSString)
+            add_note_property(dict_obj, "V", value)
+            return dict_obj
+
+        data = {}
+        for idx, prop in enumerate(instance.PSObject.extended_properties):
+            value = prop.get_value(instance)
+            if isinstance(value, ConsoleColor):
+                value = dict_value(PSInt(value), value.PSObject.type_names[0])
+
+            elif isinstance(value, Coordinates):
+                raw = PSObject()
+                add_note_property(raw, "x", value.X, ps_type=PSInt)
+                add_note_property(raw, "y", value.Y, ps_type=PSInt)
+                value = dict_value(raw, value.PSObject.type_names[0])
+
+            elif isinstance(value, Size):
+                raw = PSObject()
+                add_note_property(raw, "width", value.Width, ps_type=PSInt)
+                add_note_property(raw, "height", value.Height, ps_type=PSInt)
+                value = dict_value(raw, value.PSObject.type_names[0])
+
+            else:
+                value = dict_value(value, value.PSObject.type_names[0])
+
+            data[idx] = value
+
+        add_note_property(obj, "data", data)
+
+        return obj
 
 
 @PSType(
     extended_properties=[
-        PSAliasProperty("_isHostNull", "is_host_null", ps_type=PSBool),
-        PSAliasProperty("_isHostUINull", "is_host_ui_null", ps_type=PSBool),
-        PSAliasProperty("_isHostRawUINull", "is_host_raw_ui_null", ps_type=PSBool),
-        PSAliasProperty("_useRunspaceHost", "use_runspace_host", ps_type=PSBool),
-        PSAliasProperty("_hostDefaultData", "host_default_data", optional=True, ps_type=HostDefaultData),
+        PSNoteProperty("IsHostNull", value=True, ps_type=PSBool),
+        PSNoteProperty("IsHostUINull", value=True, ps_type=PSBool),
+        PSNoteProperty("IsHostRawUINull", value=True, ps_type=PSBool),
+        PSNoteProperty("UseRunspaceHost", value=True, ps_type=PSBool),
+        PSNoteProperty("HostDefaultData", ps_type=HostDefaultData),
     ],
     skip_inheritance=True,
 )
@@ -799,37 +781,19 @@ class HostInfo(PSObject):
     `[MS-PSRP] 2.2.3.14 HostInfo`_.
 
     Args:
-        is_host_null (:class:`PSBool`): Whether there is a PSHost ``False`` or
-            not ``True``.
-        is_host_ui_null (:class:`PSBool`): Whether the PSHost implements the `UI`
+        IsHostNull: Whether there is a PSHost ``False`` or not ``True``.
+        IsHostUINull: Whether the PSHost implements the `UI` implementation
+            methods ``False`` or not ``True``.
+        IsHostRawUINull: Whether the PSHost UI implements the ``RawUI``
             implementation methods ``False`` or not ``True``.
-        is_host_raw_ui_null (:class:`PSBool`): Whether the PSHost UI implements
-            the ``RawUI`` implementation methods ``False`` or not ``True``.
-        use_runspace_host (:class:`PSBool`): When creating a pipeline, set this
-            to ``True`` to get it to use the associated RunspacePool host.
-        host_default_data (:class:`HostDefaultData`): Host default data
-            associated with the :class:`psrp.host.PSHostRawUI` implementation.
-            Can be ``None`` if not implemented.
+        UseRunspaceHost: When creating a pipeline, set this to ``True`` to get
+            it to use the associated RunspacePool host.
+        HostDefaultData: Host default data associated with the PSHost
+            implementation. Can be ``None`` if not implemented.
 
     .. _[MS-PSRP] 2.2.3.14 HostInfo:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6
     """
-
-    def __init__(
-        self,
-        is_host_null: bool = True,
-        is_host_ui_null: bool = True,
-        is_host_raw_ui_null: bool = True,
-        use_runspace_host: bool = True,
-        host_default_data: typing.Optional[HostDefaultData] = None,
-    ):
-        super().__init__()
-
-        self.is_host_null = is_host_null
-        self.is_host_ui_null = is_host_ui_null
-        self.is_host_raw_ui_null = is_host_raw_ui_null
-        self.use_runspace_host = use_runspace_host
-        self.host_default_data = host_default_data
 
     @classmethod
     def FromPSObjectForRemoting(
@@ -843,12 +807,29 @@ class HostInfo(PSObject):
             host_data = HostDefaultData.FromPSObjectForRemoting(host_data)
 
         return HostInfo(
-            is_host_null=obj._isHostNull,
-            is_host_ui_null=obj._isHostUINull,
-            is_host_raw_ui_null=obj._isHostRawUINull,
-            use_runspace_host=obj._useRunspaceHost,
-            host_default_data=host_data,
+            IsHostNull=obj._isHostNull,
+            IsHostUINull=obj._isHostUINull,
+            IsHostRawUINull=obj._isHostRawUINull,
+            UseRunspaceHost=obj._useRunspaceHost,
+            HostDefaultData=host_data,
         )
+
+    @classmethod
+    def ToPSObjectForRemoting(
+        cls,
+        instance: "HostInfo",
+        **kwargs: typing.Any,
+    ) -> PSObject:
+        obj = PSObject()
+        add_note_property(obj, "_isHostNull", instance.IsHostNull)
+        add_note_property(obj, "_isHostUINull", instance.IsHostUINull)
+        add_note_property(obj, "_isHostRawUINull", instance.IsHostRawUINull)
+        add_note_property(obj, "_useRunspaceHost", instance.UseRunspaceHost)
+
+        if instance.HostDefaultData:
+            add_note_property(obj, "_hostDefaultData", instance.HostDefaultData)
+
+        return obj
 
 
 @PSType(
@@ -871,10 +852,16 @@ class ScriptPosition(PSObject):
     `System.Management.Automation.Language.ScriptPosition`_.
 
     Args:
-        File: The name of the file, or if the script did not come from a file, then null.
-        LineNumber: The line number of the position, with the value 1 being the first line.
-        ColumnNumber: The column number of the position, with the value 1 being the first column.
+        File: The name of the file, or if the script did not come from a file,
+            then null.
+        LineNumber: The line number of the position, with the value 1 being the
+            first line.
+        ColumnNumber: The column number of the position, with the value 1 being
+            the first column.
         Line: The complete text of the line that this position is included on.
+
+    Attributes:
+        Offset (:class:`PSInt`): Not used in pwsh.
 
     .. _System.Management.Automation.Language.ScriptPosition:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.language.scriptposition
@@ -1178,7 +1165,7 @@ class ErrorCategoryInfo(PSObject):
 class ErrorDetails(PSObject):
     """ErrorDetails.
 
-    ErrorDetaisl represents additional details about an :class:`ErrorRecord`,
+    ErrorDetails represents additional details about an :class:`ErrorRecord`,
     starting with a replacement Message. Clients can use ErrorDetails when they
     want to display a more specific message than the one contained in a
     particular Exception, without having to create a new Exception or define a
@@ -1448,7 +1435,7 @@ class VerboseRecord(InformationalRecord):
     A verbose record in the PSInformationalBuffers. This represents the
     `System.Management.Automation.VerboseRecord`_ .NET type.
 
-    .. _System.Management.Automation.DebugRecord:
+    .. _System.Management.Automation.VerboseRecord:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.verboserecord?view=powershellsdk-7.0.0
     """
 
@@ -1466,9 +1453,7 @@ class WarningRecord(InformationalRecord):
 
 
 @PSType(
-    [
-        "System.Management.Automation.InformationRecord",
-    ],
+    ["System.Management.Automation.InformationRecord"],
     extended_properties=[
         PSNoteProperty("MessageData"),
         PSNoteProperty("Source", ps_type=PSString),
@@ -1487,6 +1472,20 @@ class InformationRecord(PSObject):
     Defines a data structure used to represent informational context destined
     for the host or user. This represents the
     `System.Management.Automation.InformationRecord`_ .NET type.
+
+    Args:
+        MessageData: The message data for the informational record.
+        Source: The source of the information record (script path, function
+            name, etc.).
+        TimeGenerated: The time the informational record was generated.
+        Tags: The tags associated with this informational record.
+        User: THe user that generated the informational record.
+        Computer: THe computer that generated the informational record.
+        ProcessId: The process that generated the informational record.
+        NativeThreadId: The native thread that generated the informational
+            record.
+        ManagedThreadId: The managed thread that generated the informational
+            record.
 
     .. _System.Management.Automation.InformationRecord:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.informationrecord?view=powershellsdk-7.0.0
@@ -1509,9 +1508,7 @@ class PSPrimitiveDictionary(PSDict):
 
 
 @PSType(
-    type_names=[
-        "Selected.Microsoft.PowerShell.Commands.GenericMeasureInfo",
-    ],
+    type_names=["Selected.Microsoft.PowerShell.Commands.GenericMeasureInfo"],
     extended_properties=[
         PSNoteProperty("Count", mandatory=True, ps_type=PSInt),
     ],
@@ -1531,9 +1528,7 @@ class CommandMetadataCount(PSCustomObject):
 
 
 @PSType(
-    type_names=[
-        "System.Management.Automation.PSCredential",
-    ],
+    type_names=["System.Management.Automation.PSCredential"],
     adapted_properties=[
         PSNoteProperty("UserName", mandatory=True, ps_type=PSString),
         PSNoteProperty("Password", mandatory=True, ps_type=PSSecureString),
