@@ -21,9 +21,6 @@ from psrpcore.types._complex import (
     CommandTypes,
     DebugRecord,
     ErrorRecord,
-    HostInfo,
-    HostMethodIdentifier,
-    InformationRecord,
     ProgressRecordType,
     PSPrimitiveDictionary,
     PSThreadOptions,
@@ -31,6 +28,7 @@ from psrpcore.types._complex import (
     VerboseRecord,
     WarningRecord,
 )
+from psrpcore.types._host import HostInfo, HostMethodIdentifier
 from psrpcore.types._primitive import (
     PSBool,
     PSByteArray,
@@ -40,6 +38,7 @@ from psrpcore.types._primitive import (
     PSInt64,
     PSString,
     PSStringBase,
+    PSUInt,
     PSVersion,
 )
 
@@ -72,11 +71,11 @@ class PSRPMessageType(enum.IntEnum):
     PipelineOutput = 0x00041004  #: :class:`PipelineOutput`
     ErrorRecord = 0x00041005  #: :class:`ErrorRecordMsg`
     PipelineState = 0x00041006  #: :class:`PipelineState`
-    DebugRecord = 0x00041007  #: :class:`DebugRecord`
-    VerboseRecord = 0x00041008  #: :class:`VerboseRecord`
-    WarningRecord = 0x00041009  #: :class:`WarningRecord`
-    ProgressRecord = 0x00041010  #: :class:`ProgressRecord`
-    InformationRecord = 0x00041011  #: :class:`InformationRecord`
+    DebugRecord = 0x00041007  #: :class:`DebugRecordMsg`
+    VerboseRecord = 0x00041008  #: :class:`VerboseRecordMsg`
+    WarningRecord = 0x00041009  #: :class:`WarningRecordMsg`
+    ProgressRecord = 0x00041010  #: :class:`ProgressRecordMsg`
+    InformationRecord = 0x00041011  #: :class:`InformationRecordMsg`
     PipelineHostCall = 0x00041100  #: :class:`PipelineHostCall`
     PipelineHostResponse = 0x00041101  #: :class:`PipelineHostResponse`
     ConnectRunspacePool = 0x00010008  #: :class:`ConnectRunspacePool`
@@ -123,7 +122,6 @@ class PSMessageType(PSType):
         PSNoteProperty("SerializationVersion", mandatory=True, ps_type=PSVersion),
         PSNoteProperty("TimeZone", ps_type=PSByteArray),
     ],
-    skip_inheritance=True,
 )
 class SessionCapability(PSObject):
     """SESSION_CAPABILITY Message.
@@ -329,7 +327,6 @@ class RunspaceAvailability(PSObject):
         PSNoteProperty("RunspaceState", mandatory=True, ps_type=PSInt),
         PSNoteProperty("ExceptionAsErrorRecord", ps_type=ErrorRecord),
     ],
-    skip_inheritance=True,
 )
 class RunspacePoolStateMsg(PSObject):
     """RUNSPACEPOOL_STATE Message.
@@ -450,6 +447,23 @@ class UserEvent(PSObject):
     """
 
     @classmethod
+    def FromPSObjectForRemoting(
+        cls,
+        obj: PSObject,
+        **kwargs: typing.Any,
+    ) -> "UserEvent":
+        return UserEvent(
+            EventIdentifier=obj["PSEventArgs.EventIdentifier"],
+            SourceIdentifier=obj["PSEventArgs.SourceIdentifier"],
+            TimeGenerated=obj["PSEventArgs.TimeGenerated"],
+            Sender=obj["PSEventArgs.Sender"],
+            SourceArgs=obj["PSEventArgs.SourceArgs"],
+            MessageData=obj["PSEventArgs.MessageData"],
+            ComputerName=obj["PSEventArgs.ComputerName"],
+            RunspaceId=obj["PSEventArgs.RunspaceId"],
+        )
+
+    @classmethod
     def ToPSObjectForRemoting(
         cls,
         instance: "UserEvent",
@@ -553,7 +567,6 @@ class RunspacePoolHostCall(PSObject):
         PSNoteProperty("mr"),
         PSNoteProperty("me", ps_type=ErrorRecord),
     ],
-    skip_inheritance=True,
 )
 class RunspacePoolHostResponse(PSObject):
     """RUNSPACEPOOL_HOST_RESPONSE Message.
@@ -581,7 +594,7 @@ class RunspacePoolHostResponse(PSObject):
         add_note_property(obj, "ci", instance.ci)
         add_note_property(obj, "mi", instance.mi)
 
-        if instance.mr:
+        if instance.mr is not None:
             add_note_property(obj, "mr", instance.mr)
 
         if instance.me:
@@ -646,7 +659,6 @@ class ErrorRecordMsg(ErrorRecord):
         PSNoteProperty("PipelineState", mandatory=True, ps_type=PSInt),
         PSNoteProperty("ExceptionAsErrorRecord", ps_type=ErrorRecord),
     ],
-    skip_inheritance=True,
 )
 class PipelineState(PSObject):
     """PIPELINE_STATE Message.
@@ -714,6 +726,8 @@ class WarningRecordMsg(WarningRecord):
     """
 
 
+# While this looks similar to the ProgressRecord type the PSRP message is different and cannot inherit from
+# ProgressRecord.
 @PSMessageType(
     PSRPMessageType.ProgressRecord,
     extended_properties=[
@@ -727,7 +741,7 @@ class WarningRecordMsg(WarningRecord):
         PSNoteProperty("SecondsRemaining", ps_type=PSInt),
     ],
 )
-class ProgressRecord(PSObject):
+class ProgressRecordMsg(PSObject):
     """PROGRESS_RECORD Message.
 
     Progress record from a command pipeline on the server. Message is defined
@@ -753,8 +767,22 @@ class ProgressRecord(PSObject):
     """
 
 
-@PSMessageType(PSRPMessageType.InformationRecord, skip_inheritance=False)
-class InformationRecordMsg(InformationRecord):
+# While this has the same props as InformationRecord it is serialized as extended props and without types.
+@PSMessageType(
+    PSRPMessageType.InformationRecord,
+    extended_properties=[
+        PSNoteProperty("MessageData"),
+        PSNoteProperty("Source", ps_type=PSString),
+        PSNoteProperty("TimeGenerated", ps_type=PSDateTime),
+        PSNoteProperty("Tags", ps_type=PSList),
+        PSNoteProperty("User", ps_type=PSString),
+        PSNoteProperty("Computer", ps_type=PSString),
+        PSNoteProperty("ProcessId", ps_type=PSUInt),
+        PSNoteProperty("NativeThreadId", ps_type=PSUInt),
+        PSNoteProperty("ManagedThreadId", ps_type=PSUInt),
+    ],
+)
+class InformationRecordMsg(PSObject):
     """INFORMATION_RECORD Message.
 
     Information record from a command pipeline on the server. Message is

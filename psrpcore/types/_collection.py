@@ -249,3 +249,22 @@ class PSDict(PSDictBase):
     .. _System.Collections.Hashtable:
         https://docs.microsoft.com/en-us/dotnet/api/system.collections.hashtable?view=net-5.0
     """
+
+
+@PSType(["System.Collections.IEnumerable"], tag="IE")
+class PSIEnumerable(_PSListBase):
+    """The IEnumerable complex type.
+
+    This is the IEnumerable complex type which represents the following types:
+
+        Python: :class:`list`
+
+        Native Serialization: no
+
+        PSRP: N/A - Mentioned in :class:`PSList`
+
+        .NET `System.Collections.IEnumerable`_
+
+    .. _System.Collections.IEnumerable:
+        https://docs.microsoft.com/en-us/dotnet/api/system.collections.ienumerable?view=net-5.0
+    """

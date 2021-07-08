@@ -9,7 +9,8 @@ import pytest
 
 import psrpcore.types._base as ps_base
 from psrpcore.types import PSCustomObject, PSInt, PSString, PSUInt
-from psrpcore.types._serializer import deserialize, serialize
+
+from ..conftest import deserialize, serialize
 
 
 def test_ps_note_property_set_value():

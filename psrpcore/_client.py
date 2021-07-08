@@ -3,17 +3,13 @@
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
 import base64
+import functools
 import typing
 import uuid
 
-from psrpcore._base import (
-    GetCommandMetadataPipeline,
-    Pipeline,
-    PowerShellPipeline,
-    RunspacePool,
-)
+from psrpcore._base import Pipeline, RunspacePool
 from psrpcore._command import Command
-from psrpcore._crypto import PSRemotingCrypto, create_keypair, decrypt_session_key
+from psrpcore._crypto import create_keypair, decrypt_session_key, rsa
 from psrpcore._events import (
     ApplicationPrivateDataEvent,
     DebugRecordEvent,
@@ -21,14 +17,17 @@ from psrpcore._events import (
     ErrorRecordEvent,
     InformationRecordEvent,
     PipelineHostCallEvent,
+    PipelineHostResponseEvent,
     PipelineOutputEvent,
     PipelineStateEvent,
     ProgressRecordEvent,
     PublicKeyRequestEvent,
     RunspaceAvailabilityEvent,
     RunspacePoolHostCallEvent,
+    RunspacePoolHostResponseEvent,
     RunspacePoolInitDataEvent,
     RunspacePoolStateEvent,
+    SetRunspaceAvailabilityEvent,
     UserEventEvent,
     VerboseRecordEvent,
     WarningRecordEvent,
@@ -38,9 +37,11 @@ from psrpcore._exceptions import (
     InvalidProtocolVersion,
     InvalidRunspacePoolState,
 )
-from psrpcore._payload import EMPTY_UUID, ProtocolVersion, StreamType
+from psrpcore._payload import ProtocolVersion, StreamType
+from psrpcore._pipeline import GetMetadata, PowerShell
 from psrpcore.types import (
     ApartmentState,
+    CommandTypes,
     ConnectRunspacePool,
     EndOfPipelineInput,
     ErrorRecord,
@@ -52,6 +53,7 @@ from psrpcore.types import (
     PSRPMessageType,
     PSThreadOptions,
     PublicKey,
+    RemoteStreamOptions,
     ResetRunspaceState,
     RunspacePoolHostResponse,
     RunspacePoolState,
@@ -60,7 +62,7 @@ from psrpcore.types import (
 )
 
 
-class ClientRunspacePool(RunspacePool):
+class ClientRunspacePool(RunspacePool["_ClientPipeline"]):
     """Client Runspace Pool.
 
     Represents a Runspace Pool on a remote host which can contain one or more
@@ -105,7 +107,6 @@ class ClientRunspacePool(RunspacePool):
     ) -> None:
         super().__init__(
             runspace_pool_id or uuid.uuid4(),
-            capability=None,
             application_arguments=application_arguments or {},
             application_private_data={},
         )
@@ -114,6 +115,7 @@ class ClientRunspacePool(RunspacePool):
         self.thread_options = thread_options
         self._min_runspaces = min_runspaces
         self._max_runspaces = max_runspaces
+        self._exchange_key: typing.Optional[rsa.RSAPrivateKey] = None
 
     def open(self) -> None:
         """Opens the Runspace Pool.
@@ -178,7 +180,7 @@ class ClientRunspacePool(RunspacePool):
 
         Request the session key from the peer.
         """
-        if self._cipher:
+        if self._key_requested:
             return
 
         if self.state != RunspacePoolState.Opened:
@@ -188,6 +190,7 @@ class ClientRunspacePool(RunspacePool):
         b64_public_key = base64.b64encode(public_key).decode()
 
         self.prepare_message(PublicKey(PublicKey=b64_public_key))
+        self._key_requested = True
 
     def host_response(
         self,
@@ -209,9 +212,10 @@ class ClientRunspacePool(RunspacePool):
         if self.state != RunspacePoolState.Opened:
             raise InvalidRunspacePoolState("respond to host call", self.state, [RunspacePoolState.Opened])
 
-        call_event = self._ci_events.pop(ci)
-
-        method_identifier = call_event.ps_object.mi
+        call_event = typing.cast(
+            typing.Union[RunspacePoolHostResponseEvent, PipelineHostResponseEvent], self._ci_events.pop(ci)
+        )
+        method_identifier = call_event.method_identifier
         pipeline_id = call_event.pipeline_id
 
         host_call_obj = PipelineHostResponse if pipeline_id else RunspacePoolHostResponse
@@ -271,7 +275,7 @@ class ClientRunspacePool(RunspacePool):
             return None
 
         ci = self._ci_counter
-        self._ci_handlers[ci] = lambda e: setattr(self, "_max_runspaces", value)
+        self._ci_handlers[ci] = functools.partial(self._set_runspaces_handler, "max", value)
         self.prepare_message(SetMaxRunspaces(MaxRunspaces=value, ci=ci))
 
         return ci
@@ -298,7 +302,7 @@ class ClientRunspacePool(RunspacePool):
             return None
 
         ci = self._ci_counter
-        self._ci_handlers[ci] = lambda e: setattr(self, "_min_runspaces", value)
+        self._ci_handlers[ci] = functools.partial(self._set_runspaces_handler, "min", value)
         self.prepare_message(SetMinRunspaces(MinRunspaces=value, ci=ci))
 
         return ci
@@ -307,7 +311,7 @@ class ClientRunspacePool(RunspacePool):
         self,
         event: ApplicationPrivateDataEvent,
     ) -> None:
-        self.application_private_data = event.ps_object.ApplicationPrivateData
+        self.application_private_data = event.data
         if self.state == RunspacePoolState.Connecting:
             self._change_state(RunspacePoolState.Opened)
 
@@ -321,12 +325,11 @@ class ClientRunspacePool(RunspacePool):
         self,
         event: EncryptedSessionKeyEvent,
     ) -> None:
-        encrypted_session_key = base64.b64decode(event.ps_object.EncryptedSessionKey)
         session_key = decrypt_session_key(
             self._exchange_key,  # type: ignore[arg-type] # Before we get this message the exchange_key is set
-            encrypted_session_key,
+            event.key,
         )
-        self._cipher = PSRemotingCrypto(session_key)
+        self._cipher.register_key(session_key)
 
     def _process_ErrorRecord(
         self,
@@ -344,8 +347,8 @@ class ClientRunspacePool(RunspacePool):
         self,
         event: PipelineHostCallEvent,
     ) -> None:
-        # Store the event for the host response to use.
-        self._ci_events[event.ps_object.ci] = event
+        if event.ci != -100:  # Used by pwsh to indicate this is a void method
+            self._ci_events[event.ci] = event
 
     def _process_PipelineOutput(
         self,
@@ -360,9 +363,6 @@ class ClientRunspacePool(RunspacePool):
         pipeline_id = event.pipeline_id
         pipeline = self.pipeline_table[pipeline_id]
         pipeline.state = event.state
-
-        if event.state in [PSInvocationState.Completed, PSInvocationState.Stopped]:
-            del self.pipeline_table[pipeline_id]
 
     def _process_ProgressRecord(
         self,
@@ -380,8 +380,7 @@ class ClientRunspacePool(RunspacePool):
         self,
         event: RunspaceAvailabilityEvent,
     ) -> None:
-        # FIXME: Check event success
-        handler = self._ci_handlers.pop(int(event.ps_object.ci))
+        handler = self._ci_handlers.pop(event.ci)
         if handler is not None:
             handler(event)
 
@@ -389,15 +388,15 @@ class ClientRunspacePool(RunspacePool):
         self,
         event: RunspacePoolHostCallEvent,
     ) -> None:
-        # Store the event for the host response to use.
-        self._ci_events[int(event.ps_object.ci)] = event
+        if event.ci != -100:  # Used by pwsh to indicate this is a void method
+            self._ci_events[event.ci] = event
 
     def _process_RunspacePoolInitData(
         self,
         event: RunspacePoolInitDataEvent,
     ) -> None:
-        self._min_runspaces = event.ps_object.MinRunspaces
-        self._max_runspaces = event.ps_object.MaxRunspaces
+        self._min_runspaces = event.min_runspaces
+        self._max_runspaces = event.max_runspaces
 
     def _process_RunspacePoolState(
         self,
@@ -423,6 +422,16 @@ class ClientRunspacePool(RunspacePool):
     ) -> None:
         pass
 
+    def _set_runspaces_handler(
+        self,
+        field: str,
+        value: int,
+        event: SetRunspaceAvailabilityEvent,
+    ) -> None:
+        """Changes the runspace count based on the result."""
+        if event.success:
+            setattr(self, f"_{field}_runspaces", value)
+
 
 class _ClientPipeline(Pipeline["ClientRunspacePool"]):
     """Client Pipeline.
@@ -437,14 +446,19 @@ class _ClientPipeline(Pipeline["ClientRunspacePool"]):
         runspace_pool: "ClientRunspacePool",
     ) -> None:
         super().__init__(runspace_pool, uuid.uuid4())
+        self._message_type: typing.Optional[PSRPMessageType] = None
 
-    def invoke(self) -> None:
+    def start(self) -> None:
         """Invokes the pipeline.
 
-        Invokes the pipeline on the server. This creates the request to create
+        Starts the pipeline on the server. This creates the request to create
         and queue the pipeline on the server.
         """
-        self.prepare_message(self.to_psobject())
+        valid_states = [PSInvocationState.NotStarted, PSInvocationState.Stopped, PSInvocationState.Completed]
+        if self.state not in valid_states:
+            raise InvalidPipelineState("start a pipeline", self.state, valid_states)
+
+        self.prepare_message(self.metadata, message_type=self._message_type)
         self.state = PSInvocationState.Running
 
     def send(
@@ -458,14 +472,20 @@ class _ClientPipeline(Pipeline["ClientRunspacePool"]):
         Args:
             data: The data to send to the pipeline.
         """
+        if self.state != PSInvocationState.Running:
+            raise InvalidPipelineState("send pipeline input", self.state, [PSInvocationState.Running])
+
         self.prepare_message(data, message_type=PSRPMessageType.PipelineInput)
 
-    def send_end(self) -> None:
+    def send_eof(self) -> None:
         """Send EOF to the input pipe.
 
         Sends the end of input marker to the pipeline to state no more input is
         expected for the pipeline.
         """
+        if self.state != PSInvocationState.Running:
+            raise InvalidPipelineState("send pipeline input EOF", self.state, [PSInvocationState.Running])
+
         self.prepare_message(EndOfPipelineInput())
 
     def host_response(
@@ -491,7 +511,7 @@ class _ClientPipeline(Pipeline["ClientRunspacePool"]):
         self.runspace_pool.host_response(ci, return_value, error_record)
 
 
-class ClientPowerShell(PowerShellPipeline, _ClientPipeline):
+class ClientPowerShell(_ClientPipeline):
     """Client PowerShell Pipeline.
 
     A PowerShell pipeline to be used from the client. This is the main pipeline
@@ -516,10 +536,27 @@ class ClientPowerShell(PowerShellPipeline, _ClientPipeline):
     def __init__(
         self,
         runspace_pool: "ClientRunspacePool",
-        *args: typing.Any,
-        **kwargs: typing.Any,
+        add_to_history: bool = False,
+        apartment_state: ApartmentState = None,
+        history: typing.Optional[str] = None,
+        host: typing.Optional[HostInfo] = None,
+        is_nested: bool = False,
+        no_input: bool = True,
+        remote_stream_options: RemoteStreamOptions = RemoteStreamOptions.none,
+        redirect_shell_error_to_out: bool = True,
     ) -> None:
-        super().__init__(runspace_pool=runspace_pool, *args, **kwargs)
+        super().__init__(runspace_pool=runspace_pool)
+        self.metadata: PowerShell = PowerShell(
+            add_to_history=add_to_history,
+            apartment_state=apartment_state or runspace_pool.apartment_state,
+            history=history,
+            host=host,
+            is_nested=is_nested,
+            no_input=no_input,
+            remote_stream_options=remote_stream_options,
+            redirect_shell_error_to_out=redirect_shell_error_to_out,
+        )
+        self._message_type = PSRPMessageType.CreatePipeline
 
     def add_argument(
         self,
@@ -560,19 +597,19 @@ class ClientPowerShell(PowerShellPipeline, _ClientPipeline):
         elif use_local_scope is not None:
             raise TypeError("Cannot set use_local_scope with Command")
 
-        self.commands.append(cmdlet)
+        self.metadata.commands.append(cmdlet)
         return self
 
     def add_parameter(
         self,
         name: typing.Optional[str],
-        value: typing.Any = None,
+        value: typing.Any = True,
     ) -> "ClientPowerShell":
         """Adds a parameter to the last command.
 
         Adds a parameter to the last command in the pipeline. A switch parameter
         can either have ``True``, ``False``, or ``None`` as the value with
-        ``None`` being equivalent to ``True``.
+        ``None`` being equivalent to ``False``.
 
         Args:
             name: The name of the parameter to add.
@@ -581,13 +618,14 @@ class ClientPowerShell(PowerShellPipeline, _ClientPipeline):
         Returns:
             ClientPowerShell: itself
         """
-        if not self.commands:
+        commands = self.metadata.commands
+        if not commands:
             raise ValueError(
                 "A command is required to add a parameter/argument. A command must be added to the "
                 "PowerShell instance first."
             )
 
-        self.commands[-1].add_parameter(name, value)
+        commands[-1].add_parameter(name, value)
         return self
 
     def add_parameters(
@@ -641,13 +679,14 @@ class ClientPowerShell(PowerShellPipeline, _ClientPipeline):
         Returns:
             ClientPowerShell: itself
         """
-        if self.commands:
-            self.commands[-1].end_of_statement = True
+        commands = self.metadata.commands
+        if commands:
+            commands[-1].end_of_statement = True
 
         return self
 
 
-class ClientGetCommandMetadata(GetCommandMetadataPipeline, _ClientPipeline):
+class ClientGetCommandMetadata(_ClientPipeline):
     """Client Get Command Metadata Pipeline.
 
     A Get Command Metadata pipeline to be used from the client.
@@ -665,7 +704,16 @@ class ClientGetCommandMetadata(GetCommandMetadataPipeline, _ClientPipeline):
     def __init__(
         self,
         runspace_pool: "ClientRunspacePool",
-        *args: typing.Any,
-        **kwargs: typing.Any,
+        name: typing.Union[str, typing.List[str]],
+        command_type: CommandTypes = CommandTypes.All,
+        namespace: typing.Optional[typing.List[str]] = None,
+        arguments: typing.Optional[typing.List[typing.Any]] = None,
     ) -> None:
-        super().__init__(runspace_pool=runspace_pool, *args, **kwargs)
+        super().__init__(runspace_pool=runspace_pool)
+        self.metadata: GetMetadata = GetMetadata(
+            name=name,
+            command_type=command_type,
+            namespace=namespace,
+            arguments=arguments,
+        )
+        self._message_type = PSRPMessageType.GetCommandMetadata

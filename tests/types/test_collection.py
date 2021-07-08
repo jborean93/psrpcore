@@ -2,6 +2,7 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+import collections
 import queue
 import re
 import xml.etree.ElementTree as ElementTree
@@ -10,9 +11,14 @@ import pytest
 
 import psrpcore.types._collection as collection
 from psrpcore.types import PSChar, PSInt64, PSNoteProperty
-from psrpcore.types._serializer import deserialize, serialize
 
-from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING, assert_xml_diff
+from ..conftest import (
+    COMPLEX_ENCODED_STRING,
+    COMPLEX_STRING,
+    assert_xml_diff,
+    deserialize,
+    serialize,
+)
 
 
 def test_ps_dict_instantiation():
@@ -430,3 +436,34 @@ def test_ps_dict_with_properties():
     # PSObject property list
     assert actual.PSObject.extended_properties[1].name == COMPLEX_STRING
     assert actual.PSObject.extended_properties[1].get_value(actual) == "prop"
+
+
+def test_ps_ienumerable():
+    ps_value = collection.PSIEnumerable([0, 1, 2, 3, 4])
+    assert isinstance(ps_value, collection.PSIEnumerable)
+    assert isinstance(ps_value, list)
+
+    element = serialize(ps_value)
+    actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
+    expected = (
+        '<Obj RefId="0">'
+        '<TN RefId="0">'
+        "<T>System.Collections.IEnumerable</T>"
+        "<T>System.Object</T>"
+        "</TN>"
+        "<IE>"
+        "<I32>0</I32>"
+        "<I32>1</I32>"
+        "<I32>2</I32>"
+        "<I32>3</I32>"
+        "<I32>4</I32>"
+        "</IE>"
+        "</Obj>"
+    )
+    assert actual == expected
+
+    actual = deserialize(element)
+    assert isinstance(actual, collection.PSIEnumerable)
+    assert isinstance(actual, list)
+    assert actual == [0, 1, 2, 3, 4]
+    assert actual.PSTypeNames == ["System.Collections.IEnumerable", "System.Object"]

@@ -44,9 +44,8 @@ jobs:
 
     - name: Build docs
       run: |
-        poetry shell
         cd docs
-        make htlm-strict
+        poetry run make html-strict
 
   test:
     name: test

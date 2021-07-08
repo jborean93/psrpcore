@@ -6,9 +6,14 @@ import xml.etree.ElementTree as ElementTree
 
 import psrpcore.types._complex as complex
 from psrpcore.types import PSChar, PSObject
-from psrpcore.types._serializer import deserialize, serialize
 
-from ..conftest import assert_xml_diff
+from ..conftest import (
+    COMPLEX_ENCODED_STRING,
+    COMPLEX_STRING,
+    assert_xml_diff,
+    deserialize,
+    serialize,
+)
 
 
 def test_ps_custom_object_empty():
@@ -109,62 +114,6 @@ def test_console_color():
     value = deserialize(element)
     assert isinstance(value, complex.ConsoleColor)
     assert value == complex.ConsoleColor.DarkRed
-
-
-def test_coordinates():
-    value = complex.Coordinates(10, 412)
-    assert value.X == 10
-    assert value.Y == 412
-
-    element = serialize(value)
-    actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0">'
-        '<TN RefId="0">'
-        "<T>System.Management.Automation.Host.Coordinates</T>"
-        "<T>System.ValueType</T>"
-        "<T>System.Object</T>"
-        "</TN>"
-        "<Props>"
-        '<I32 N="X">10</I32>'
-        '<I32 N="Y">412</I32>'
-        "</Props>"
-        "</Obj>"
-    )
-
-    value = deserialize(element)
-    assert isinstance(value, PSObject)
-    assert isinstance(value, complex.Coordinates)
-    assert value.X == 10
-    assert value.Y == 412
-
-
-def test_size():
-    value = complex.Size(10, 412)
-    assert value.Width == 10
-    assert value.Height == 412
-
-    element = serialize(value)
-    actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0">'
-        '<TN RefId="0">'
-        "<T>System.Management.Automation.Host.Size</T>"
-        "<T>System.ValueType</T>"
-        "<T>System.Object</T>"
-        "</TN>"
-        "<Props>"
-        '<I32 N="Width">10</I32>'
-        '<I32 N="Height">412</I32>'
-        "</Props>"
-        "</Obj>"
-    )
-
-    value = deserialize(element)
-    assert isinstance(value, PSObject)
-    assert isinstance(value, complex.Size)
-    assert value.Width == 10
-    assert value.Height == 412
 
 
 def test_ps_thread_options():
@@ -974,7 +923,95 @@ def test_verbose_record_invocation_info():
     assert verbose.serialize_extended_info
 
 
-def test_script_extend_text_no_end():
+def test_progress_record_defaults():
+    record = complex.ProgressRecord(
+        ActivityId=10,
+        Activity=(COMPLEX_STRING + " - activity"),
+        StatusDescription=(COMPLEX_STRING + " - status"),
+    )
+    element = serialize(record)
+    actual = ElementTree.tostring(element, encoding="utf-8").decode()
+    expected = (
+        "<PR>"
+        f"<AV>{COMPLEX_ENCODED_STRING} - activity</AV>"
+        "<AI>10</AI>"
+        "<Nil />"
+        "<PI>-1</PI>"
+        "<PC>-1</PC>"
+        "<T>Processing</T>"
+        "<SR>-1</SR>"
+        f"<SD>{COMPLEX_ENCODED_STRING} - status</SD>"
+        "</PR>"
+    )
+    assert actual == expected
+
+    record = deserialize(element)
+    assert isinstance(record, complex.ProgressRecord)
+    assert record.ActivityId == 10
+    assert record.Activity == COMPLEX_STRING + " - activity"
+    assert record.StatusDescription == COMPLEX_STRING + " - status"
+    assert record.CurrentOperation is None
+    assert record.ParentActivityId == -1
+    assert record.PercentComplete == -1
+    assert record.RecordType == complex.ProgressRecordType.Processing
+    assert record.SecondsRemaining == -1
+
+
+def test_progress_record_explicit():
+    record = complex.ProgressRecord(
+        ActivityId=10,
+        Activity=(COMPLEX_STRING + " - activity"),
+        StatusDescription=(COMPLEX_STRING + " - status"),
+        CurrentOperation=(COMPLEX_STRING + " - operation"),
+        ParentActivityId=20,
+        PercentComplete=100,
+        RecordType=complex.ProgressRecordType.Completed,
+        SecondsRemaining=0,
+    )
+    element = serialize(record)
+    actual = ElementTree.tostring(element, encoding="utf-8").decode()
+    expected = (
+        "<PR>"
+        f"<AV>{COMPLEX_ENCODED_STRING} - activity</AV>"
+        "<AI>10</AI>"
+        f"<S>{COMPLEX_ENCODED_STRING} - operation</S>"
+        "<PI>20</PI>"
+        "<PC>100</PC>"
+        "<T>Completed</T>"
+        "<SR>0</SR>"
+        f"<SD>{COMPLEX_ENCODED_STRING} - status</SD>"
+        "</PR>"
+    )
+    assert actual == expected
+
+    record = deserialize(element)
+    assert isinstance(record, complex.ProgressRecord)
+    assert record.ActivityId == 10
+    assert record.Activity == COMPLEX_STRING + " - activity"
+    assert record.StatusDescription == COMPLEX_STRING + " - status"
+    assert record.CurrentOperation == COMPLEX_STRING + " - operation"
+    assert record.ParentActivityId == 20
+    assert record.PercentComplete == 100
+    assert record.RecordType == complex.ProgressRecordType.Completed
+    assert record.SecondsRemaining == 0
+
+
+def test_progress_record_missing_entry():
+    data = "<PR><AV>activity</AV><AI>95</AI><PI /><SD>status</SD></PR>"
+    record = deserialize(ElementTree.fromstring(data))
+
+    assert isinstance(record, complex.ProgressRecord)
+    assert record.ActivityId == 95
+    assert record.Activity == "activity"
+    assert record.StatusDescription == "status"
+    assert record.CurrentOperation is None
+    assert record.ParentActivityId == -1
+    assert record.PercentComplete == -1
+    assert record.RecordType == complex.ProgressRecordType.Processing
+    assert record.SecondsRemaining == -1
+
+
+def test_script_extent_text_no_end():
     extent = complex.ScriptExtent(
         StartPosition=complex.ScriptPosition(ColumnNumber=0), EndPosition=complex.ScriptPosition(ColumnNumber=0)
     )
@@ -982,7 +1019,7 @@ def test_script_extend_text_no_end():
     assert extent.Text == ""
 
 
-def test_script_extend_text_same_line():
+def test_script_extent_text_same_line():
     extent = complex.ScriptExtent(
         StartPosition=complex.ScriptPosition(
             ColumnNumber=0,
@@ -999,7 +1036,7 @@ def test_script_extend_text_same_line():
     assert extent.Text == "test l"
 
 
-def test_script_extend_text_multiple_lines():
+def test_script_extent_text_multiple_lines():
     extent = complex.ScriptExtent(
         StartPosition=complex.ScriptPosition(
             ColumnNumber=2,

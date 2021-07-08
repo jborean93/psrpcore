@@ -15,6 +15,7 @@ of the Progress and Information records which are complex types.
     https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c8c85974-ffd7-4455-84a8-e49016c20683
 """
 
+import base64
 import datetime
 import decimal
 import enum
@@ -24,7 +25,7 @@ import struct
 import typing
 import uuid
 
-from psrpcore.types._base import PSObject, PSType
+from psrpcore.types._base import PSCryptoProvider, PSObject, PSType
 
 # Used by PSVersion to validate the string input. Must be int.int with an optional 3rd and 4th integer values.
 _VERSION_PATTERN = re.compile(
@@ -1247,13 +1248,13 @@ class PSScriptBlock(PSStringBase):
 
 
 @PSType(["System.Security.SecureString"], tag="SS")
-class PSSecureString(PSStringBase):
+class PSSecureString(PSObject):
     """The Secure String primitive type.
 
     This is the PowerShell secure string primitive type which represents the
     following types:
 
-        Python: :class:`str`
+        Python: N/A
 
         Native Serialization: no
 
@@ -1261,16 +1262,28 @@ class PSSecureString(PSStringBase):
 
         .NET: `System.Security.SecureString`_
 
-    Note:
-        Before a `PSSecureString` can be serialized, the session key must be
-        exchanged between the client and server which is required to encrypt
-        the value.
+    It is designed to mark a string as a secure string which will be encrypted
+    as it is serialized. The plaintext value can be retrieved using the
+    :meth:`PSSecureString.decrypt` function.
 
     Note:
-        A SecureString in Python is not actually encrypted in memory and the
-        value just looks like a normal `str`. This class is just a way to tag a
-        string so that is it serialized as an encrypted SecureString when it is
-        exchanged between the client and server.
+        Before a `PSSecureString` can be created or decrypted from the peer,
+        the session key must be exchanged.
+
+    Note:
+        There are no guarantees of security when using this class. It is only
+        useful when trying to encrypt data as it goes over the wire rather than
+        marking it as sensitive data in Python. Because the plaintext value is
+        cached the data may remain behind in memory before Python cleans up the
+        value.
+
+    Args:
+        value: The plaintext value to encrypt (when `cipher` is `None`) or the
+            encrypted value (when `cipher` is not `None`).
+        cipher: The :class:`PSCryptoProvider` cipher used to encrypt or decrypt
+            the secure string. If omitted then the `value` specified is
+            treated as the plaintext and will be encrypted during
+            serialization.
 
     .. _[MS-PSRP] 2.2.5.1.24 Secure String:
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/69b9dc01-a843-4f91-89f8-0205f021a7dd
@@ -1278,3 +1291,49 @@ class PSSecureString(PSStringBase):
     .. _System.Security.SecureString:
         https://docs.microsoft.com/en-us/dotnet/api/system.security.securestring?view=net-5.0
     """
+
+    def __init__(
+        self,
+        value: str,
+        cipher: typing.Optional[PSCryptoProvider] = None,
+    ) -> None:
+        super().__init__()
+        self._value: str = value
+        self._cipher = cipher
+        self._encrypted = cipher is not None
+
+    def decrypt(self) -> PSString:
+        """Decrypts a PSSecureString into the plaintext string."""
+        if self._cipher:
+            b_enc = base64.b64decode(self._value)
+            b_dec = self._cipher.decrypt(b_enc)
+            raw = b_dec.decode("utf-16-le")
+
+        else:
+            raw = self._value
+
+        dec_str = PSString(raw)
+        dec_str.PSObject = self.PSObject
+        return dec_str
+
+    def __str__(self) -> str:
+        return (str(self._value) if self._encrypted else self.PSObject.type_names[0]) or ""
+
+    @classmethod
+    def ToPSObjectForRemoting(
+        cls,
+        instance: "PSSecureString",
+        cipher: PSCryptoProvider,
+        **kwargs: typing.Any,
+    ) -> PSObject:
+        if not instance._encrypted:
+            # The value was provided by the user without a cipher. Use the one passed in by the serializer to encrypt
+            # the value and return that for serialization.
+            b_value = instance._value.encode("utf-16-le")
+            b_enc = cipher.encrypt(b_value)
+            enc_value = base64.b64encode(b_enc).decode()
+
+            return cls(enc_value, cipher)
+
+        else:
+            return instance

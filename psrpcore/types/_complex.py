@@ -33,7 +33,6 @@ from psrpcore.types._collection import PSDict, PSList
 from psrpcore.types._enum import PSEnumBase, PSFlagBase
 from psrpcore.types._primitive import (
     PSBool,
-    PSChar,
     PSDateTime,
     PSInt,
     PSInt64,
@@ -382,80 +381,6 @@ class ErrorCategory(PSEnumBase):
     NotEnabled = 31  #: The operation attempted to use functionality that is currently disabled.
 
 
-@PSType(["System.Management.Automation.Remoting.RemoteHostMethodId"])
-class HostMethodIdentifier(PSEnumBase):
-    """Host Method Identifier enum.
-
-    This is an enum class for the
-    System.Management.Automation.Remoting.RemoteHostMethodId .NET class. It is
-    documented in PSRP under `[MS-PSRP] 2.2.3.17 Host Method Identifier`_.
-
-    The values are used in :class:`psrpcore.types.RunspacePoolHostCall` and
-    :class:`psrpcore.types.PipelineHostCall` to identify what method should be
-    invoked.
-
-    .. _[MS-PSRP] 2.2.3.17 Host Method Identifier:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ddd2a4d1-797d-4d73-8372-7a77a62fb204
-    """
-
-    GetName = 1
-    GetVersion = 2
-    GetInstanceId = 3
-    GetCurrentCulture = 4
-    GetCurrentUICulture = 5
-    SetShouldExit = 6
-    EnterNestedPrompt = 7
-    ExitNestedPrompt = 8
-    NotifyBeginApplication = 9
-    NotifyEndApplication = 10
-    ReadLine = 11
-    ReadLineAsSecureString = 12
-    Write1 = 13
-    Write2 = 14
-    WriteLine1 = 15
-    WriteLine2 = 16
-    WriteLine3 = 17
-    WriteErrorLine = 18
-    WriteDebugLine = 19
-    WriteProgress = 20
-    WriteVerboseLine = 21
-    WriteWarningLine = 22
-    Prompt = 23
-    PromptForCredential1 = 24
-    PromptForCredential2 = 25
-    PromptForChoice = 26
-    GetForegroundColor = 27
-    SetForegroundColor = 28
-    GetBackgroundColor = 29
-    SetBackgroundColor = 30
-    GetCursorPosition = 31
-    SetCursorPosition = 32
-    GetWindowPosition = 33
-    SetWindowPosition = 34
-    GetCursorSize = 35
-    SetCursorSize = 36
-    GetBufferSize = 37
-    SetBufferSize = 38
-    GetWindowSize = 39
-    SetWindowSize = 40
-    GetWindowTitle = 41
-    SetWindowTitle = 42
-    GetMaxWindowSize = 43
-    GetMaxPhysicalWindowSize = 44
-    GetKeyAvailable = 45
-    ReadKey = 46
-    FlushInputBuffer = 47
-    SetBufferContents1 = 48
-    SetBufferContents2 = 49
-    GetBufferContents = 50
-    ScrollBufferContents = 51
-    PushRunspace = 52
-    PopRunspace = 53
-    GetIsRunspacePushed = 54
-    GetRunspace = 55
-    PromptForChoiceMultipleSelection = 56
-
-
 @PSType(["System.Management.Automation.CommandTypes"])
 class CommandTypes(PSFlagBase):
     """System.Management.Automation.CommandTypes enum flags.
@@ -483,60 +408,6 @@ class CommandTypes(PSFlagBase):
     Script = 64  #: A script that is built into the runspace configuration.
     Configuration = 256  #: A configuration.
     All = 383  #: All possible command types.
-
-
-@PSType(["System.Management.Automation.Host.ControlKeyStates"])
-class ControlKeyStates(PSFlagBase):
-    """System.Management.Automation.Host.ControlKeyStates enum flags.
-
-    Defines the state of the control key. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.27 ControlKeyStates`_.
-
-    Note:
-        This is an auto-generated Python class for the
-        `System.Management.Automation.Host.ControlKeyStates`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.27 ControlKeyStates:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/bd7241a2-4ba0-4db1-a2b3-77ea1a8a4cbf
-
-    .. _System.Management.Automation.Host.ControlKeyStates:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.controlkeystates
-    """
-
-    RightAltPressed = 1  #: The right alt key is pressed.
-    LeftAltPressed = 2  #: The left alt key is pressed.
-    RightCtrlPressed = 4  #: The right ctrl key is pressed.
-    LeftCtrlPressed = 8  #: The left ctrl key is pressed.
-    ShiftPressed = 16  #: The shift key is pressed.
-    NumLockOn = 32  #: The numlock light is on.
-    ScrollLockOn = 64  #: The scrolllock light is on.
-    CapsLockOn = 128  #: The capslock light is on.
-    EnhancedKey = 256  #: The key is enhanced.
-
-
-@PSType(["System.Management.Automation.Host.ControlKeyStates"])
-class BufferCellType(PSFlagBase):
-    """System.Management.Automation.Host.BufferCellType enum flags.
-
-    Defines three types of BufferCells to accommodate for hosts that use up to
-    two cells to display a character in some languages such as Chinese and
-    Japanese. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.29 BufferCellType`_.
-
-    Note:
-        This is an auto-generated Python class for the
-        `System.Management.Automation.Host.BufferCellType`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.29 BufferCellType:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/99938ede-6d84-422e-b75d-ace93ea85ea2
-
-    .. _System.Management.Automation.Host.BufferCellType:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.buffercelltype
-    """
-
-    Complete = 0  #: Character occupies one BufferCell.
-    Leading = 1  #: Character occupies two BufferCells and this is the leading one.
-    Trailing = 2  #: Preceded by a Leading BufferCell.
 
 
 @PSType(["System.Management.Automation.CommandOrigin"])
@@ -592,244 +463,6 @@ class PipelineResultTypes(PSFlagBase):
     Information = 6  #: Information stream.
     All = 7  #: All streams.
     Null = 8  #: Redirect to nothing.
-
-
-@PSType(
-    type_names=[
-        "System.Management.Automation.Host.Coordinates",
-        "System.ValueType",
-    ],
-    adapted_properties=[
-        PSNoteProperty("X", mandatory=True, ps_type=PSInt),
-        PSNoteProperty("Y", mandatory=True, ps_type=PSInt),
-    ],
-)
-class Coordinates(PSObject):
-    """Coordinates
-
-    Represents an x,y coordinate pair. This is the actual .NET type
-    `System.Management.Automation.Host.Coordinates`_. It is documented under
-    `[MS-PSRP] 2.2.3.1 Coordinates`_ but the PSRP documentation represents how
-    this value is serialized under :class:`HostDefaultData` not the .NET type.
-
-    Args:
-        X: X coordinate (0 is the leftmost column).
-        Y: Y coordinate (0 is the topmost row).
-
-    .. _[MS-PSRP] 2.2.3.1 Coordinates:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/05db8994-ec5c-485c-9e91-3a398e461d38
-
-    .. _System.Management.Automation.Host.Coordinates:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.coordinates
-    """
-
-
-@PSType(
-    type_names=[
-        "System.Management.Automation.Host.Size",
-        "System.ValueType",
-    ],
-    adapted_properties=[
-        PSNoteProperty("Width", mandatory=True, ps_type=PSInt),
-        PSNoteProperty("Height", mandatory=True, ps_type=PSInt),
-    ],
-)
-class Size(PSObject):
-    """Size
-
-    Represents a width and height pair. This is the actual .NET type
-    `System.Management.Automation.Host.Size`_. It is documented under
-    `[MS-PSRP] 2.2.3.2 Size`_ but the PSRP documentation represents how this
-    value is serialized under :class:`HostDefaultData` not the .NET type.
-
-    Args:
-        Width: The width of an area.
-        Height: The height of an area.
-
-    .. _[MS-PSRP] 2.2.3.2 Size:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/98cd950f-cc12-4ab4-955d-c389e3089856
-
-    .. _System.Management.Automation.Host.Size:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.size
-    """
-
-
-@PSType(
-    extended_properties=[
-        PSNoteProperty("ForegroundColor", mandatory=True, ps_type=ConsoleColor),
-        PSNoteProperty("BackgroundColor", mandatory=True, ps_type=ConsoleColor),
-        PSNoteProperty("CursorPosition", mandatory=True, ps_type=Coordinates),
-        PSNoteProperty("WindowPosition", mandatory=True, ps_type=Coordinates),
-        PSNoteProperty("CursorSize", mandatory=True, ps_type=PSInt),
-        PSNoteProperty("BufferSize", mandatory=True, ps_type=Size),
-        PSNoteProperty("WindowSize", mandatory=True, ps_type=Size),
-        PSNoteProperty("MaxWindowSize", mandatory=True, ps_type=Size),
-        PSNoteProperty("MaxPhysicalWindowSize", mandatory=True, ps_type=Size),
-        PSNoteProperty("WindowTitle", mandatory=True, ps_type=PSString),
-    ],
-    skip_inheritance=True,
-)
-class HostDefaultData(PSObject):
-    """HostInfo default data.
-
-    This defines the default data for a PSHost when creating a RunspacePool or
-    Pipeline. This does not represent an actual .NET type but is an internal
-    object representation used by PSRP itself. This type represents the
-    `hostDefaultData` property documented at `[MS-PSRP] 2.2.3.14 HostInfo`_.
-
-    Args:
-        ForegroundColor: Color of the character on the screen buffer.
-        BackgroundColor: Color behind characters on the screen buffer.
-        CursorPosition: Cursor position in the screen buffer.
-        WindowPosition: Position of the view window relative to the screen
-            buffer.
-        CursorSize: Cursor size as a percentage 0..100.
-        BufferSize: Current size of the screen buffer, measured in character
-            cells.
-        WindowSize: Current view window size, measured in character cells.
-        MaxWindowSize:  Size of the largest window position for the current
-            buffer.
-        MaxPhysicalWindowSize: Largest window possible ignoring the current
-            buffer dimensions.
-        WindowTitle: The titlebar text of the current view window.
-
-    .. _[MS-PSRP] 2.2.3.14 HostInfo:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6
-    """
-
-    @classmethod
-    def FromPSObjectForRemoting(
-        cls,
-        obj: PSObject,
-        **kwargs: typing.Any,
-    ) -> "HostDefaultData":
-        def coordinates(value: PSObject) -> Coordinates:
-            return Coordinates(X=value.x, Y=value.y)
-
-        def size(value: PSObject) -> Size:
-            return Size(Width=value.width, Height=value.height)
-
-        return HostDefaultData(
-            ForegroundColor=obj.data[0].V,
-            BackgroundColor=obj.data[1].V,
-            CursorPosition=coordinates(obj.data[2].V),
-            WindowPosition=coordinates(obj.data[3].V),
-            CursorSize=obj.data[4].V,
-            BufferSize=size(obj.data[5].V),
-            WindowSize=size(obj.data[6].V),
-            MaxWindowSize=size(obj.data[7].V),
-            MaxPhysicalWindowSize=size(obj.data[8].V),
-            WindowTitle=obj.data[9].V,
-        )
-
-    @classmethod
-    def ToPSObjectForRemoting(
-        cls,
-        instance: "HostDefaultData",
-        **kwargs: typing.Any,
-    ) -> PSObject:
-        obj = PSObject()
-
-        def dict_value(value: typing.Union[int, str, PSObject], value_type: str) -> PSObject:
-            dict_obj = PSObject()
-            add_note_property(dict_obj, "T", value_type, ps_type=PSString)
-            add_note_property(dict_obj, "V", value)
-            return dict_obj
-
-        data = {}
-        for idx, prop in enumerate(instance.PSObject.extended_properties):
-            value = prop.get_value(instance)
-            if isinstance(value, ConsoleColor):
-                value = dict_value(PSInt(value), value.PSObject.type_names[0])
-
-            elif isinstance(value, Coordinates):
-                raw = PSObject()
-                add_note_property(raw, "x", value.X, ps_type=PSInt)
-                add_note_property(raw, "y", value.Y, ps_type=PSInt)
-                value = dict_value(raw, value.PSObject.type_names[0])
-
-            elif isinstance(value, Size):
-                raw = PSObject()
-                add_note_property(raw, "width", value.Width, ps_type=PSInt)
-                add_note_property(raw, "height", value.Height, ps_type=PSInt)
-                value = dict_value(raw, value.PSObject.type_names[0])
-
-            else:
-                value = dict_value(value, value.PSObject.type_names[0])
-
-            data[idx] = value
-
-        add_note_property(obj, "data", data)
-
-        return obj
-
-
-@PSType(
-    extended_properties=[
-        PSNoteProperty("IsHostNull", value=True, ps_type=PSBool),
-        PSNoteProperty("IsHostUINull", value=True, ps_type=PSBool),
-        PSNoteProperty("IsHostRawUINull", value=True, ps_type=PSBool),
-        PSNoteProperty("UseRunspaceHost", value=True, ps_type=PSBool),
-        PSNoteProperty("HostDefaultData", ps_type=HostDefaultData),
-    ],
-    skip_inheritance=True,
-)
-class HostInfo(PSObject):
-    """HostInfo.
-
-    Defines the PSHost information. Message is defined in
-    `[MS-PSRP] 2.2.3.14 HostInfo`_.
-
-    Args:
-        IsHostNull: Whether there is a PSHost ``False`` or not ``True``.
-        IsHostUINull: Whether the PSHost implements the `UI` implementation
-            methods ``False`` or not ``True``.
-        IsHostRawUINull: Whether the PSHost UI implements the ``RawUI``
-            implementation methods ``False`` or not ``True``.
-        UseRunspaceHost: When creating a pipeline, set this to ``True`` to get
-            it to use the associated RunspacePool host.
-        HostDefaultData: Host default data associated with the PSHost
-            implementation. Can be ``None`` if not implemented.
-
-    .. _[MS-PSRP] 2.2.3.14 HostInfo:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6
-    """
-
-    @classmethod
-    def FromPSObjectForRemoting(
-        cls,
-        obj: PSObject,
-        **kwargs: typing.Any,
-    ) -> "HostInfo":
-        """Convert the raw HostInfo PSObject back to this easier to use object."""
-        host_data = getattr(obj, "_hostDefaultData", None)
-        if host_data is not None:
-            host_data = HostDefaultData.FromPSObjectForRemoting(host_data)
-
-        return HostInfo(
-            IsHostNull=obj._isHostNull,
-            IsHostUINull=obj._isHostUINull,
-            IsHostRawUINull=obj._isHostRawUINull,
-            UseRunspaceHost=obj._useRunspaceHost,
-            HostDefaultData=host_data,
-        )
-
-    @classmethod
-    def ToPSObjectForRemoting(
-        cls,
-        instance: "HostInfo",
-        **kwargs: typing.Any,
-    ) -> PSObject:
-        obj = PSObject()
-        add_note_property(obj, "_isHostNull", instance.IsHostNull)
-        add_note_property(obj, "_isHostUINull", instance.IsHostUINull)
-        add_note_property(obj, "_isHostRawUINull", instance.IsHostRawUINull)
-        add_note_property(obj, "_useRunspaceHost", instance.UseRunspaceHost)
-
-        if instance.HostDefaultData:
-            add_note_property(obj, "_hostDefaultData", instance.HostDefaultData)
-
-        return obj
 
 
 @PSType(
@@ -1272,7 +905,7 @@ class ErrorRecord(PSObject):
         # Technically PowerShell wraps the exception in a RemoteException class which contains
         # 'SerializedRemoteException' and 'SerializedRemoteInvocationInfo'. To make things simple we just use the
         # serialized exception as the actual Exception value and add the invocation info to that.
-        add_note_property(obj.Exception, "SerializedRemoteInvocationInfo", obj.InvocationInfo)
+        add_note_property(obj.Exception, "SerializedRemoteInvocationInfo", obj.InvocationInfo, force=True)
 
         invocation_info = None
         pipeline_iteration_info = None
@@ -1453,8 +1086,50 @@ class WarningRecord(InformationalRecord):
 
 
 @PSType(
+    type_names=["System.Management.Automation.ProgressRecord"],
+    adapted_properties=[
+        PSNoteProperty("ActivityId", mandatory=True, ps_type=PSInt),
+        PSNoteProperty("Activity", mandatory=True, ps_type=PSString),
+        PSNoteProperty("StatusDescription", mandatory=True, ps_type=PSString),
+        PSNoteProperty("CurrentOperation", ps_type=PSString),
+        PSNoteProperty("ParentActivityId", value=-1, ps_type=PSInt),
+        PSNoteProperty("PercentComplete", value=-1, ps_type=PSInt),
+        PSNoteProperty("RecordType", value=ProgressRecordType.Processing, ps_type=ProgressRecordType),
+        PSNoteProperty("SecondsRemaining", value=-1, ps_type=PSInt),
+    ],
+    tag="PR",
+)
+class ProgressRecord(PSObject):
+    """ProgressRecord.
+
+    Defines a data structure used to represent the status of an ongoing
+    operation at a point in time. This represents the
+    `System.Management.Automation.ProgressRecord`_ .NET type.
+
+    Args:
+        Activity: Description of the activity.
+        ActivityId: Id of the activity, used as a key for the linking of
+            subordinate activities.
+
+        CurrentOperation: Current operation of the many required to accomplish
+            the activity, e.g. "copying foo.txt".
+        ParentActivityId: Id of the activity for which this is a subordinate.
+        PercentComplete: Percentage of total work for the activity that is
+            completed.
+        RecordType: Type of record represented by this instance.
+        SecondsRemaining: Estimated time remaining until the activity is
+            complete.
+        StatusDescription: Current status of the operation, e.g. "35 of 50
+            items copied".
+
+    .. _System.Management.Automation.ProgressRecord:
+        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.progressrecord?view=powershellsdk-7.0.0
+    """
+
+
+@PSType(
     ["System.Management.Automation.InformationRecord"],
-    extended_properties=[
+    adapted_properties=[
         PSNoteProperty("MessageData"),
         PSNoteProperty("Source", ps_type=PSString),
         PSNoteProperty("TimeGenerated", ps_type=PSDateTime),
@@ -1555,140 +1230,6 @@ class PSCredential(PSObject):
 
     .. _System.Management.Automation.PSCredential:
         https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscredential
-    """
-
-
-@PSType(
-    extended_properties=[
-        PSNoteProperty("virtualKeyCode", ps_type=PSInt),
-        PSNoteProperty("character", ps_type=PSChar),
-        PSNoteProperty("controlKeyState", ps_type=PSInt),  # ControlKeyStates as integer.
-        PSNoteProperty("keyDown", ps_type=PSBool),
-    ],
-    skip_inheritance=True,
-)
-class PSRPKeyInfo(PSObject):
-    """KeyInfo.
-
-    Represents information of a keystroke. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.26 KeyInfo`_. This is not the same as the actual
-    `System.Management.Automation.Host.KeyInfo`_ .NET type but rather a custom
-    format used by PSRP.
-
-    Args:
-        virtualKeyCode: A virtual key code that identifies the given key in a device-independent manner.
-        character: Character corresponding to the pressed keys.
-        controlKeyState: State of the control keys.
-        keyDown: True if the event was generated when a key was pressed.
-
-    .. _[MS-PSRP] 2.2.3.26 KeyInfo:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/481442e2-5304-4679-b16d-6e53c351339d
-
-    .. _System.Management.Automation.Host.KeyInfo:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.keyinfo
-    """
-
-
-@PSType(
-    adapted_properties=[
-        PSNoteProperty("character", ps_type=PSChar),
-        PSNoteProperty("foregroundColor", ps_type=ConsoleColor),
-        PSNoteProperty("backgroundColor", ps_type=ConsoleColor),
-        PSNoteProperty("bufferCellType", ps_type=PSInt),  # BufferCellType as integer.
-    ],
-    skip_inheritance=True,
-)
-class PSRPBufferCell(PSObject):
-    """BufferCell.
-
-    Represents the contents of a cell of a Host's screen buffer. It is
-    documented in PSRP under `[MS-PSRP] 2.2.3.28 BufferCell`_. This is not the
-    same as the actual `System.Management.Automation.Host.BufferCell`_ .NET
-    type but rather a custom format used by PSRP.
-
-    Args:
-        character: Character visible in the cell.
-        foregroundColor: Foreground color.
-        backgroundColor: Background color.
-        bufferCellType: Type of the buffer cell.
-
-    .. _[MS-PSRP] 2.2.3.28 BufferCell:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/d6270c27-8855-46b6-834c-5a5d188bfe70
-
-    .. _System.Management.Automation.Host.BufferCell:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.buffercell
-    """
-
-
-@PSType(
-    extended_properties=[
-        PSNoteProperty("helpMessage", ps_type=PSString),
-        PSNoteProperty("label", ps_type=PSString),
-    ],
-    skip_inheritance=True,
-)
-class PSRPChoiceDescription(PSObject):
-    """ChoiceDescription.
-
-    Represents a description of a field for use by
-    :class:`psrp.host.PSHostUI.prompt_for_choice`.. It isn't documented in
-    MS-PSRP but the properties are based on what has been seen across the wire.
-    This is not the same as the actual
-    `System.Management.Automation.Host.ChoiceDescription`_ .NET type but rather
-    a custom format used by PSRP.
-
-    Args:
-        helpMessage: Help message for the choice.
-        label: Short human-presentable to describe and identify the choice.
-
-    .. _System.Management.Automation.Host.ChoiceDescription:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.choicedescription
-    """
-
-
-@PSType(
-    extended_properties=[
-        PSNoteProperty("name", ps_type=PSString),
-        PSNoteProperty("label", ps_type=PSString),
-        PSNoteProperty("parameterTypeName", ps_type=PSString),
-        PSNoteProperty("parameterTypeFullName", ps_type=PSString),
-        PSNoteProperty("parameterAssemblyFullName", ps_type=PSString),
-        PSNoteProperty("helpMessage", ps_type=PSString),
-        PSNoteProperty("isMandatory", ps_type=PSBool),
-        PSNoteProperty("metadata", ps_type=PSList),
-        PSNoteProperty("modifiedByRemotingProtocol", ps_type=PSBool),
-        PSNoteProperty("isFromRemoteHost", ps_type=PSBool),
-    ],
-    skip_inheritance=True,
-)
-class PSRPFieldDescription(PSObject):
-    """FieldDescription.
-
-    Represents a description of a field for use by
-    :class:`psrp.host.PSHostUI.prompt`. It isn't documented in MS-PSRP but the
-    properties are based on what has been seen across the w    PSObject = PSObjectMeta(
-
-    )ire. This is not the
-    same as the actual `System.Management.Automation.Host.FieldDescription`_
-    .NET type but rather a custom format used by PSRP.
-
-    Args:
-        name: The name of the field.
-        label: A short human-presentable message to describe and identify the
-            field.
-        parameterTypeName: Short string name of the parameter's type.
-        parameterTypeFullName: Full string name of the parameter's type.
-        parameterAssemblyFullName: Full name of the assembly containing the
-            type.
-        helpMessage: The help message for this field.
-        isMandatory: Whether a value must be supplied for this field.
-        metadata: Extra metadata for the field.
-        modifiedByRemotingProtocol: Whether the field was modified by the
-            remoting protocol.
-        isFromRemoteHost:  Whether the field is from a remote host.
-
-    .. _System.Management.Automation.Host.FieldDescription:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.fielddescription
     """
 
 

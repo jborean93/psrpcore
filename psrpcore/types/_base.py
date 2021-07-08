@@ -795,6 +795,58 @@ class PSType:
         return cls
 
 
+class PSCryptoProvider(metaclass=abc.ABCMeta):
+    """PSRemoting crypto provider
+
+    The CryptoProvider used by PSRemoting that can encrypt and decrypt secure
+    exchanged in that PSSession. The key must be registered once it has been
+    generated using :meth:`PSCryptoProvider.register_key`.
+    """
+
+    @abc.abstractmethod
+    def decrypt(self, value: bytes) -> bytes:
+        """Decrypts the encrypted bytes.
+
+        Decrypts the encrypted bytes passed in.
+
+        Args:
+            value: The encrypted bytes to decrypt.
+
+        Returns:
+            bytes: The decrypted bytes.
+        """
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    def encrypt(self, value: bytes) -> bytes:
+        """Encrypted the bytes.
+
+        Encrypts the bytes passed in.
+
+        Args:
+            value: The bytes to encrypt.
+
+        Returns:
+            bytes: The encrypted bytes.
+        """
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    def register_key(
+        self,
+        key: bytes,
+    ) -> None:
+        """Registers the session key.
+
+        Registers the session key that is used to encrypt and decrypt secure
+        strings for PSRP.
+
+        Args:
+            key: The session key negotiated between the client and server.
+        """
+        pass  # pragma: no cover
+
+
 def add_member(
     obj: typing.Union[PSObject, typing.Type[PSObject]],
     prop: PSPropertyInfo,

@@ -10,6 +10,9 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.padding import PKCS7
 
+from psrpcore._exceptions import MissingCipherError
+from psrpcore.types import PSCryptoProvider
+
 
 def create_keypair() -> typing.Tuple[rsa.RSAPrivateKey, bytes]:
     """Create RSA keypair.
@@ -102,36 +105,17 @@ def decrypt_session_key(
     return decrypted_key
 
 
-class PSRemotingCrypto:
-    """PSRemoting crypto provider
+class PSRemotingCrypto(PSCryptoProvider):
+    """PSCryptoProvider used by PSRP for serializing SecureStrings."""
 
-    The CryptoProvider used by PSRemoting that can encrypt and decrypt secure
-    exchanged in that PSSession.
-
-    Args:
-        key: The session key negotiated between the client and server.
-    """
-
-    def __init__(
-        self,
-        key: bytes,
-    ):
-        algorithm = algorithms.AES(key)
-        mode = modes.CBC(b"\x00" * 16)  # PSRP doesn't use an IV
-        self._cipher = Cipher(algorithm, mode, default_backend())
-        self._padding = PKCS7(algorithm.block_size)
+    def __init__(self) -> None:
+        self._cipher: typing.Optional[Cipher] = None
+        self._padding = PKCS7(algorithms.AES.block_size)
 
     def decrypt(self, value: bytes) -> bytes:
-        """Decrypts the encrypted bytes.
+        if not self._cipher:
+            raise MissingCipherError()
 
-        Decrypts the encrypted bytes passed in.
-
-        Args:
-            value: The encrypted bytes to decrypt.
-
-        Returns:
-            bytes: The decrypted bytes.
-        """
         decryptor = self._cipher.decryptor()
         b_dec = decryptor.update(value) + decryptor.finalize()
 
@@ -141,16 +125,9 @@ class PSRemotingCrypto:
         return plaintext
 
     def encrypt(self, value: bytes) -> bytes:
-        """Encrypted the bytes.
+        if not self._cipher:
+            raise MissingCipherError()
 
-        Encrypted the bytes passed in.
-
-        Args:
-            value: The bytes to encrypt.
-
-        Returns:
-            bytes: The encrypted bytes.
-        """
         padder = self._padding.padder()
         b_padded = padder.update(value) + padder.finalize()
 
@@ -158,3 +135,11 @@ class PSRemotingCrypto:
         b_enc = encryptor.update(b_padded) + encryptor.finalize()
 
         return b_enc
+
+    def register_key(
+        self,
+        key: bytes,
+    ) -> None:
+        algorithm = algorithms.AES(key)
+        mode = modes.CBC(b"\x00" * 16)  # PSRP doesn't use an IV
+        self._cipher = Cipher(algorithm, mode, default_backend())
