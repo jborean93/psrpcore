@@ -84,7 +84,6 @@ exclude = '''
   | buck-out
   | build
   | dist
-  | docs
 )/
 '''
 
@@ -92,7 +91,7 @@ exclude = '''
 profile = "black"
 
 [tool.mypy]
-exclude = "tests/"
+exclude = "tests/|docs/"
 show_error_codes = true
 show_column_numbers = true
 disallow_any_unimported = true
