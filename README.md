@@ -13,7 +13,7 @@ This follows the [sans-IO](https://sans-io.readthedocs.io/) paradigm to promote 
 
 ## Documentation
 
-Documentation is available at https://psrpcore.readthedocs.io/en/latest/.
+Documentation is available at https://psrpcore.readthedocs.io/.
 
 
 ## Requirements
