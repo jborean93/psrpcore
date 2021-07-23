@@ -8,6 +8,8 @@ Contains the public entrypoint for all the .NET/Pwsh type code that is used to
 exchange objects between Python and PowerShell.
 """
 
+import logging
+
 from psrpcore.types._base import (
     PSAliasProperty,
     PSCryptoProvider,
@@ -143,6 +145,8 @@ from psrpcore.types._psrp import (
     WarningRecordMsg,
 )
 from psrpcore.types._serializer import deserialize, serialize
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __all__ = [
     "ApartmentState",
