@@ -78,7 +78,8 @@ class OutOfProcTransport(typing.Generic[T]):
         self._listen_task.join()
 
     def next_payload(self) -> OutOfProcPacket:
-        payload = self._incoming.get()
+        # No long running tests, anything taking more than 60 seconds is a failure
+        payload = self._incoming.get(timeout=60)
         if isinstance(payload, Exception):
             raise payload
 
