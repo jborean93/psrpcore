@@ -13,7 +13,6 @@ import xml.etree.ElementTree as ElementTree
 import pytest
 
 import psrpcore.types._serializer as serializer
-from psrpcore import MissingCipherError
 from psrpcore.types import (
     PSBool,
     PSByte,
@@ -31,7 +30,6 @@ from psrpcore.types import (
     PSQueue,
     PSSByte,
     PSScriptBlock,
-    PSSecureString,
     PSSingle,
     PSString,
     PSUInt,
@@ -42,7 +40,12 @@ from psrpcore.types import (
     PSXml,
 )
 
-from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING, assert_xml_diff
+from ..conftest import (
+    COMPLEX_ENCODED_STRING,
+    COMPLEX_STRING,
+    FakeCryptoProvider,
+    assert_xml_diff,
+)
 
 # A lot of the serializer tests are done in the tests for each object, these are just for extra edge cases we want to
 # validate
@@ -87,7 +90,7 @@ from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING, assert_xml_diff
     ],
 )
 def test_serialize_primitive_object(input_value, expected):
-    element = serializer.serialize(input_value)
+    element = serializer.serialize(input_value, FakeCryptoProvider())
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
     assert actual == expected
 
@@ -135,7 +138,7 @@ def test_serialize_primitive_object(input_value, expected):
 )
 def test_deserialize_primitive_object(input_value, expected):
     element = ElementTree.fromstring(input_value)
-    actual = serializer.deserialize(element)
+    actual = serializer.deserialize(element, FakeCryptoProvider())
     assert isinstance(actual, type(expected))
     assert actual == expected
 
@@ -143,7 +146,7 @@ def test_deserialize_primitive_object(input_value, expected):
 def test_deserialize_invalid_duration():
     expected = re.escape("Duration input 'invalid' is not valid, cannot deserialize")
     with pytest.raises(ValueError, match=expected):
-        serializer.deserialize(ElementTree.fromstring("<TS>invalid</TS>"))
+        serializer.deserialize(ElementTree.fromstring("<TS>invalid</TS>"), FakeCryptoProvider())
 
 
 def test_serialize_python_class():
@@ -162,7 +165,7 @@ def test_serialize_python_class():
         def function(self):
             return "wont appear"
 
-    element = serializer.serialize(MyClass())
+    element = serializer.serialize(MyClass(), FakeCryptoProvider())
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
     assert (
         actual == '<Obj RefId="0">'
@@ -181,7 +184,7 @@ def test_serialize_python_class():
 def test_deserialize_unknown_tag():
     expected = re.escape("Unknown element found: bad")
     with pytest.raises(ValueError, match=expected):
-        serializer.deserialize(ElementTree.fromstring("<bad>test</bad>"))
+        serializer.deserialize(ElementTree.fromstring("<bad>test</bad>"), FakeCryptoProvider())
 
 
 def test_deserialize_special_queue():
@@ -198,7 +201,7 @@ def test_deserialize_special_queue():
         "</Obj>"
     )
 
-    actual = serializer.deserialize(ElementTree.fromstring(clixml))
+    actual = serializer.deserialize(ElementTree.fromstring(clixml), FakeCryptoProvider())
     assert actual.PSTypeNames == [
         "Deserialized.System.Collections.Generic.Queue`1[[System.Object]]",
         "Deserialized.System.Object",
@@ -210,20 +213,12 @@ def test_deserialize_special_queue():
         actual.get(block=False)
 
 
-def test_serialize_secure_string_without_cipher():
-    with pytest.raises(MissingCipherError):
-        serializer.serialize(PSSecureString("test"))
-
-    with pytest.raises(MissingCipherError):
-        serializer.deserialize(ElementTree.fromstring("<SS></SS>"))
-
-
 def test_serialize_native_enum():
     class MyEnum(enum.IntEnum):
         none = 0
         test1 = 1
 
-    element = serializer.serialize(MyEnum.none)
+    element = serializer.serialize(MyEnum.none, FakeCryptoProvider())
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
     assert actual == (
         '<Obj RefId="0">'
@@ -238,7 +233,7 @@ def test_serialize_native_enum():
         "</Obj>"
     )
 
-    element = serializer.serialize(MyEnum.test1)
+    element = serializer.serialize(MyEnum.test1, FakeCryptoProvider())
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
     assert actual == (
         '<Obj RefId="0">'
@@ -260,7 +255,7 @@ def test_serialize_native_flags():
         test1 = 1
         test2 = 2
 
-    element = serializer.serialize(MyEnum.none)
+    element = serializer.serialize(MyEnum.none, FakeCryptoProvider())
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
     assert actual == (
         '<Obj RefId="0">'
@@ -275,7 +270,7 @@ def test_serialize_native_flags():
         "</Obj>"
     )
 
-    element = serializer.serialize(MyEnum.test1 | MyEnum.test2)
+    element = serializer.serialize(MyEnum.test1 | MyEnum.test2, FakeCryptoProvider())
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
     assert actual == (
         '<Obj RefId="0">'
@@ -305,7 +300,7 @@ def test_fail_deserialize_dict_no_key():
     )
 
     with pytest.raises(ValueError, match="Failed to find dict Key attribute"):
-        serializer.deserialize(ElementTree.fromstring(clixml))
+        serializer.deserialize(ElementTree.fromstring(clixml), FakeCryptoProvider())
 
 
 def test_fail_deserialize_dict_no_value():
@@ -322,7 +317,7 @@ def test_fail_deserialize_dict_no_value():
     )
 
     with pytest.raises(ValueError, match="Failed to find dict Value attribute"):
-        serializer.deserialize(ElementTree.fromstring(clixml))
+        serializer.deserialize(ElementTree.fromstring(clixml), FakeCryptoProvider())
 
 
 def test_serialize_circular_reference():
@@ -331,7 +326,7 @@ def test_serialize_circular_reference():
     obj.Dict["obj"] = obj
     obj.CircularRef = obj
 
-    element = serializer.serialize(obj)
+    element = serializer.serialize(obj, FakeCryptoProvider())
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
     expected = (
         '<Obj RefId="0">'
@@ -367,7 +362,7 @@ def test_serialize_circular_reference():
     )
     assert_xml_diff(actual, expected)
 
-    obj = serializer.deserialize(element)
+    obj = serializer.deserialize(element, FakeCryptoProvider())
     assert isinstance(obj, PSCustomObject)
     assert obj.MyProp == 1
     assert len(obj.List) == 2

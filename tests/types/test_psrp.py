@@ -12,7 +12,6 @@ from psrpcore.types import (
     ErrorCategory,
     ErrorCategoryInfo,
     HostInfo,
-    InformationRecord,
     NETException,
     PSBool,
     PSDateTime,
@@ -24,9 +23,8 @@ from psrpcore.types import (
     PSThreadOptions,
     PSVersion,
 )
-from psrpcore.types._serializer import deserialize, serialize
 
-from ..conftest import assert_xml_diff
+from ..conftest import assert_xml_diff, deserialize, serialize
 
 
 def test_session_capability():
@@ -495,16 +493,12 @@ def test_debug_record():
 
 
 def test_information_record():
-    ps_value = psrp.InformationRecord(MessageData=1, Source="source")
+    ps_value = psrp.InformationRecordMsg(MessageData=1, Source="source")
 
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
     expected = (
         '<Obj RefId="0">'
-        '<TN RefId="0">'
-        "<T>System.Management.Automation.InformationRecord</T>"
-        "<T>System.Object</T>"
-        "</TN>"
         "<MS>"
         '<I32 N="MessageData">1</I32>'
         '<S N="Source">source</S>'
@@ -523,7 +517,7 @@ def test_information_record():
     ps_value = deserialize(element)
     assert isinstance(ps_value, PSObject)
     assert not isinstance(ps_value, psrp.InformationRecordMsg)
-    assert isinstance(ps_value, InformationRecord)
+    assert isinstance(ps_value, PSObject)
     assert ps_value.MessageData == 1
     assert ps_value.Source == "source"
     assert ps_value.TimeGenerated is None

@@ -15,20 +15,26 @@ import uuid
 import weakref
 from xml.etree import ElementTree
 
-from psrpcore._crypto import PSRemotingCrypto
-from psrpcore._exceptions import MissingCipherError
-from psrpcore.types._base import PSObject, PSObjectMeta, TypeRegistry, add_note_property
+from psrpcore.types._base import (
+    PSCryptoProvider,
+    PSObject,
+    PSObjectMeta,
+    TypeRegistry,
+    add_note_property,
+)
 from psrpcore.types._collection import (
     PSDict,
     PSDictBase,
+    PSIEnumerable,
     PSList,
     PSListBase,
     PSQueue,
     PSQueueBase,
     PSStack,
     PSStackBase,
+    _PSListBase,
 )
-from psrpcore.types._complex import PSCustomObject
+from psrpcore.types._complex import ProgressRecord, ProgressRecordType, PSCustomObject
 from psrpcore.types._enum import PSEnumBase, PSFlagBase
 from psrpcore.types._primitive import (
     PSByte,
@@ -98,7 +104,7 @@ $""",
 
 def deserialize(
     value: ElementTree.Element,
-    cipher: typing.Optional[PSRemotingCrypto] = None,
+    cipher: PSCryptoProvider,
     **kwargs: typing.Any,
 ) -> typing.Optional[typing.Union[bool, PSObject]]:
     """Deserialize CLIXML to a Python object.
@@ -107,7 +113,7 @@ def deserialize(
 
     Args:
         value: The CLIXML XML Element to deserialize to a Python object.
-        cipher: The cipher to use when dealing with SecureStrings.
+        cipher: The Runspace Pool cipher to use for SecureStrings.
         kwargs: Optional parameters to sent to the FromPSObjectForRemoting
             method on classes that use that.
 
@@ -119,7 +125,7 @@ def deserialize(
 
 def serialize(
     value: typing.Optional[typing.Any],
-    cipher: typing.Optional[PSRemotingCrypto] = None,
+    cipher: PSCryptoProvider,
     **kwargs: typing.Any,
 ) -> ElementTree.Element:
     """Serialize the Python object to CLIXML.
@@ -128,7 +134,7 @@ def serialize(
 
     Args:
         value: The value to serialize.
-        cipher: The cipher to use when dealing with SecureStrings.
+        cipher: The Runspace Pool cipher to use for SecureStrings.
         kwargs: Optional parameters to sent to the ToPSObjectForRemoting
             method on classes that use that.
 
@@ -235,28 +241,49 @@ def _deserialize_duration(
     return PSDuration(nanoseconds=total)
 
 
-def _deserialize_secure_string(
-    value: str,
-    cipher: typing.Optional[PSRemotingCrypto],
-) -> PSSecureString:
-    """Deserializes a CLIXML SecureString.
+def _deserialize_progress_record(
+    value: ElementTree.Element,
+) -> ProgressRecord:
+    """Deserializes a CLIXML ProgressRecord.
 
-    Deserializes a CLIXML SecureString to a plaintext string.
+    Progress records in CLIXML are serialized in a different way compared to
+    other .NET classes. This is not documented in the MS-PSRP docs so the logic
+    is based on what was exchanged in a pwsh session.
 
     Args:
-        value: The CLIXML SecureString value to deserialize.
-        cipher: The CryptoProvider that can decrypt the SecureString.
+        value: The CLIXML element to deserialize.
 
     Returns:
-        (PSSecureString): The plaintext string that was deserialized.
+        (ProgressRecord): The ProgressRecord value that was deserialized.
     """
-    if cipher is None:
-        raise MissingCipherError()
+    record_kwargs = {}
+    for element_key, prop_name, prop_type in [
+        ("AV", "Activity", str),
+        ("AI", "ActivityId", int),
+        ("S", "CurrentOperation", str),
+        ("PI", "ParentActivityId", int),
+        ("PC", "PercentComplete", int),
+        ("T", "RecordType", ProgressRecordType),
+        ("SR", "SecondsRemaining", int),
+        ("SD", "StatusDescription", str),
+    ]:
+        element_value = value.find(element_key)
+        if element_value is None or not element_value.text:
+            continue
 
-    b_enc = base64.b64decode(value)
-    b_dec = cipher.decrypt(b_enc)
+        prop_value: typing.Union[int, str, ProgressRecordType]
+        if prop_type == int:
+            prop_value = int(element_value.text)
 
-    return PSSecureString(b_dec.decode("utf-16-le"))
+        else:
+            prop_value = _deserialize_string(element_value.text)
+
+        if prop_type == ProgressRecordType:
+            prop_value = ProgressRecordType[str(prop_value)]
+
+        record_kwargs[prop_name] = prop_value
+
+    return ProgressRecord(**record_kwargs)
 
 
 def _deserialize_string(
@@ -391,29 +418,6 @@ def _serialize_enum_to_string(
     )
 
 
-def _serialize_secure_string(
-    value: PSSecureString,
-    cipher: typing.Optional[PSRemotingCrypto],
-) -> str:
-    """Serializes a string as a .NET SecureString CLIXML value.
-
-    Args:
-        value: The string to serialize as a SecureString.
-        cipher: The CryptoProvider that encrypts the string.
-
-    Returns:
-        str: The CLIXML SecureString value.
-    """
-    if cipher is None:
-        raise MissingCipherError()
-
-    # Convert the string to a UTF-16 byte string as that is what is expected in Windows.
-    b_value = value.encode("utf-16-le")
-    b_enc = cipher.encrypt(b_value)
-
-    return base64.b64encode(b_enc).decode()
-
-
 def _serialize_string(
     value: str,
 ) -> str:
@@ -463,7 +467,7 @@ class _Serializer:
 
     def __init__(
         self,
-        cipher: typing.Optional[PSRemotingCrypto] = None,
+        cipher: PSCryptoProvider,
         **kwargs: typing.Any,
     ) -> None:
         self._cipher = cipher
@@ -493,10 +497,11 @@ class _Serializer:
         ps_object = getattr(value, "PSObject", None)
         ps_type: typing.Type[PSObject]  # To satisfy mypy
         is_enum = isinstance(value, enum.Enum)
+        is_extended_primitive: typing.Optional[bool] = None
 
         # If the value type has a ToPSObjectForRemoting class method we use that to build our true PSObject that will
         # be serialized.
-        if hasattr(value_type, "ToPSObjectForRemoting"):
+        if hasattr(value_type, "ToPSObjectForRemoting") and not isinstance(value, PSSecureString):
             value = value_type.ToPSObjectForRemoting(value, **self._kwargs)
 
             if ps_object and hasattr(value, "PSObject"):
@@ -585,10 +590,12 @@ class _Serializer:
             element = ElementTree.Element(self._type_to_element[ps_type])
             element.text = str(value)
 
-        # SecureString that needs encrypting
         elif isinstance(value, PSSecureString):
+            # ToPSObjectForRemoting here handles the case when the SS was created without a cipher and already contains
+            # the plaintext for encryption.
+            secure_string = PSSecureString.ToPSObjectForRemoting(value, cipher=self._cipher, **self._kwargs)
             element = ElementTree.Element(self._type_to_element[PSSecureString])
-            element.text = _serialize_secure_string(value, self._cipher)
+            element.text = str(secure_string)
 
         # String types that need escaping
         elif isinstance(value, str):
@@ -605,12 +612,36 @@ class _Serializer:
             element = ElementTree.Element(element_tag)
             element.text = _serialize_string(value)
 
+        elif isinstance(value, ProgressRecord):
+            element_tag = self._type_to_element[ProgressRecord]
+            element = ElementTree.Element(element_tag)
+            ElementTree.SubElement(element, "AV").text = _serialize_string(value.Activity)
+            ElementTree.SubElement(element, "AI").text = str(value.ActivityId)
+
+            if value.CurrentOperation is None:
+                ElementTree.SubElement(element, "Nil")
+            else:
+                ElementTree.SubElement(element, "S").text = _serialize_string(value.CurrentOperation)
+
+            ElementTree.SubElement(element, "PI").text = str(value.ParentActivityId)
+            ElementTree.SubElement(element, "PC").text = str(value.PercentComplete)
+            ElementTree.SubElement(element, "T").text = _serialize_string(value.RecordType.name)
+            ElementTree.SubElement(element, "SR").text = str(value.SecondsRemaining)
+            ElementTree.SubElement(element, "SD").text = _serialize_string(value.StatusDescription)
+
+            # Special case here, a ProgressRecord is only considered extended if it contains more adapted props or any
+            # extended props.
+            is_extended_primitive = len(value.PSObject.adapted_properties) > 8 or bool(
+                value.PSObject.extended_properties
+            )
+
         # These types of objects need to be placed inside a '<Obj></Obj>' entry.
-        is_extended_primitive = (
-            element is not None
-            and isinstance(value, PSObject)
-            and bool(value.PSObject.adapted_properties or value.PSObject.extended_properties)
-        )
+        if is_extended_primitive is None:
+            is_extended_primitive = (
+                element is not None
+                and isinstance(value, PSObject)
+                and bool(value.PSObject.adapted_properties or value.PSObject.extended_properties)
+            )
 
         if element is not None and not is_extended_primitive and not is_enum:
             return element
@@ -682,10 +713,17 @@ class _Serializer:
                 prop_element.attrib["N"] = _serialize_string(prop.name)
                 prop_elements.append(prop_element)
 
-        if isinstance(value, (PSStackBase, PSListBase, list)):
-            element_tag = self._type_to_element[PSStack if isinstance(value, PSStackBase) else PSList]
-            container_element = ElementTree.SubElement(element, element_tag)
+        if isinstance(value, (PSIEnumerable, PSStackBase, PSListBase, list)):
+            if isinstance(value, PSIEnumerable):
+                element_tag = self._type_to_element[PSIEnumerable]
 
+            elif isinstance(value, PSStackBase):
+                element_tag = self._type_to_element[PSStack]
+
+            else:
+                element_tag = self._type_to_element[PSList]
+
+            container_element = ElementTree.SubElement(element, element_tag)
             for entry in value:
                 container_element.append(self.serialize(entry))
 
@@ -775,7 +813,7 @@ class _Serializer:
         ps_type = TypeRegistry().element_registry.get(element_tag, None)
 
         if ps_type == PSSecureString:
-            return _deserialize_secure_string(element_text, self._cipher)
+            return PSSecureString(element_text, self._cipher)
 
         elif ps_type == PSByteArray:
             return PSByteArray(base64.b64decode(element_text))
@@ -808,7 +846,7 @@ class _Serializer:
             return ps_type(element.text)
 
         # String types
-        if ps_type in [
+        elif ps_type in [
             PSScriptBlock,
             PSString,
             PSUri,
@@ -816,6 +854,9 @@ class _Serializer:
         ]:
             # Empty strings are `<S />` which means element.text is None.
             return ps_type(_deserialize_string(element_text))
+
+        elif ps_type == ProgressRecord:
+            return _deserialize_progress_record(element)
 
         # By now we should have an Obj, if not something has gone wrong.
         if element_tag != "Obj":
@@ -881,16 +922,6 @@ class _Serializer:
 
                     value[self.deserialize(dict_key)] = self.deserialize(dict_value)
 
-            elif obj_entry.tag == self._type_to_element[PSStack]:
-                stack_type: typing.Type[PSStackBase] = PSStack
-                if isinstance(value, PSStackBase):
-                    stack_type = type(value)
-
-                value = self._update_value_ref(stack_type(), ref_id)
-
-                for stack_entry in obj_entry:
-                    value.append(self.deserialize(stack_entry))
-
             elif obj_entry.tag == self._type_to_element[PSQueue]:
                 if not isinstance(value, PSQueueBase):
                     value = self._update_value_ref(PSQueue(), ref_id)
@@ -899,14 +930,25 @@ class _Serializer:
                     value.put(self.deserialize(queue_entry))
 
             elif obj_entry.tag in [
+                self._type_to_element[PSIEnumerable],
                 self._type_to_element[PSList],
-                "IE",
-            ]:  # IE isn't used by us but the docs refer to it.
-                list_type: typing.Type[PSListBase] = PSList
-                if isinstance(value, PSListBase):
-                    list_type = type(value)
-                value = self._update_value_ref(list_type(), ref_id)
+                self._type_to_element[PSStack],
+            ]:
+                list_type: typing.Type[_PSListBase]
 
+                if obj_entry.tag == self._type_to_element[PSIEnumerable]:
+                    list_type = PSIEnumerable
+
+                elif obj_entry.tag == self._type_to_element[PSList]:
+                    list_type = PSList
+
+                else:
+                    list_type = PSStack
+
+                if isinstance(value, _PSListBase):
+                    list_type = type(value)
+
+                value = self._update_value_ref(list_type(), ref_id)
                 for list_entry in obj_entry:
                     value.append(self.deserialize(list_entry))
 

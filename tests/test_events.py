@@ -19,7 +19,6 @@ def test_create_pipeline_state_event():
     msg = PipelineState(PipelineState=PSInvocationState.Completed)
     event = events.PSRPEvent.create(PSRPMessageType.PipelineState, msg, uuid.UUID(int=0), uuid.UUID(int=0))
     assert isinstance(event, events.PipelineStateEvent)
-    assert event.ps_object == msg
     assert event.state == PSInvocationState.Completed
     assert event.reason is None
 
@@ -28,7 +27,6 @@ def test_runspace_availability_set():
     msg = RunspaceAvailability(SetMinMaxRunspacesResponse=True, ci=1)
     event = events.PSRPEvent.create(PSRPMessageType.RunspaceAvailability, msg, uuid.UUID(int=0), None)
     assert isinstance(event, events.SetRunspaceAvailabilityEvent)
-    assert event.ps_object == msg
     assert event.success == True
 
 
@@ -36,7 +34,6 @@ def test_runspace_availability_get():
     msg = RunspaceAvailability(SetMinMaxRunspacesResponse=10, ci=1)
     event = events.PSRPEvent.create(PSRPMessageType.RunspaceAvailability, msg, uuid.UUID(int=0), None)
     assert isinstance(event, events.GetRunspaceAvailabilityEvent)
-    assert event.ps_object == msg
     assert event.count == 10
 
 
@@ -44,6 +41,5 @@ def test_runspace_pool_state_event():
     msg = RunspacePoolStateMsg(RunspaceState=RunspacePoolState.Opened)
     event = events.PSRPEvent.create(PSRPMessageType.RunspacePoolState, msg, uuid.UUID(int=0), None)
     assert isinstance(event, events.RunspacePoolStateEvent)
-    assert event.ps_object == msg
     assert event.state == RunspacePoolState.Opened
     assert event.reason is None

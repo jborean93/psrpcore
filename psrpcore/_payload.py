@@ -2,7 +2,6 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
-import base64
 import enum
 import struct
 import typing
@@ -10,7 +9,7 @@ import uuid
 
 from psrpcore.types import PSObject, PSRPMessageType, PSVersion, add_note_property
 
-EMPTY_UUID = uuid.UUID(bytes=b"\x00" * 16)
+EMPTY_UUID = uuid.UUID(int=0)
 
 
 class Fragment(typing.NamedTuple):
@@ -66,7 +65,7 @@ class ProtocolVersion(enum.Enum):
         * Supports batch invocations on 1 pipeline using mutliple statements
             # TODO Verify
         * Server stopped sending the PublicKeyRequest message, must be done by
-            the client # TODO Verify whether the private key is still valid
+            the client
         * WSMan stack added Support for disconnect operations
         * On the WSMan stack the default envelope size increased from 150KiB to
             500KiB
@@ -288,53 +287,6 @@ def unpack_fragment(
     length = struct.unpack(">I", data[17:21])[0]
 
     return Fragment(object_id, fragment_id, start, end, data[21 : length + 21])
-
-
-def ps_data_packet(
-    data: bytes,
-    stream_type: StreamType = StreamType.default,
-    ps_guid: typing.Optional[uuid.UUID] = None,
-) -> bytes:
-    """Data packet for PSRP fragments.
-
-    This creates a data packet that is used to encode PSRP fragments when
-    sending to the server.
-
-    Args:
-        data: The PSRP fragments to encode.
-        stream_type: The stream type to target, Default or PromptResponse.
-        ps_guid: Set to `None` or a 0'd UUID to target the RunspacePool,
-            otherwise this should be the pipeline UUID.
-
-    Returns:
-        bytes: The encoded data XML packet.
-    """
-    ps_guid = ps_guid or EMPTY_UUID
-    stream_name = b"Default" if stream_type == StreamType.default else b"PromptResponse"
-    return b"<Data Stream='%s' PSGuid='%s'>%s</Data>" % (stream_name, str(ps_guid).encode(), base64.b64encode(data))
-
-
-def ps_guid_packet(
-    element: str,
-    ps_guid: typing.Optional[uuid.UUID] = None,
-) -> bytes:
-    """Common PSGuid packet for PSRP message.
-
-    This creates a PSGuid packet that is used to signal events and stages in
-    the PSRP exchange. Unlike the data packet this does not contain any PSRP
-    fragments.
-
-    Args:
-        element: The element type, can be DataAck, Command, CommandAck, Close,
-            CloseAck, Signal, and SignalAck.
-        ps_guid: Set to `None` or a 0'd UUID to target the RunspacePool,
-            otherwise this should be the pipeline UUID.
-
-    Returns:
-        bytes: The encoded PSGuid packet.
-    """
-    ps_guid = ps_guid or EMPTY_UUID
-    return b"<%s PSGuid='%s' />" % (element.encode(), str(ps_guid).encode())
 
 
 def dict_to_psobject(**kwargs: typing.Any) -> PSObject:

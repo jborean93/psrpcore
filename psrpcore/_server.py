@@ -11,14 +11,8 @@ import threading
 import typing
 import uuid
 
-from psrpcore._base import (
-    GetCommandMetadataPipeline,
-    Pipeline,
-    PowerShellPipeline,
-    RunspacePool,
-)
-from psrpcore._command import Command
-from psrpcore._crypto import PSRemotingCrypto, encrypt_session_key
+from psrpcore._base import Pipeline, RunspacePool
+from psrpcore._crypto import encrypt_session_key
 from psrpcore._events import (
     ConnectRunspacePoolEvent,
     CreatePipelineEvent,
@@ -44,23 +38,20 @@ from psrpcore._exceptions import (
 from psrpcore._payload import EMPTY_UUID, ProtocolVersion, PSRPPayload, StreamType
 from psrpcore.types import (
     ApplicationPrivateData,
-    CommandTypes,
+    DebugRecord,
     EncryptedSessionKey,
     ErrorCategory,
     ErrorCategoryInfo,
     ErrorDetails,
     ErrorRecord,
-    HostInfo,
     HostMethodIdentifier,
-    InformationalRecord,
     InformationRecordMsg,
     InvocationInfo,
     NETException,
     PipelineHostCall,
     PipelineState,
-    ProgressRecord,
+    ProgressRecordMsg,
     ProgressRecordType,
-    PSCustomObject,
     PSDateTime,
     PSInvocationState,
     PSRPMessageType,
@@ -71,10 +62,12 @@ from psrpcore.types import (
     RunspacePoolState,
     RunspacePoolStateMsg,
     UserEvent,
+    VerboseRecord,
+    WarningRecord,
 )
 
 
-class ServerRunspacePool(RunspacePool):
+class ServerRunspacePool(RunspacePool["ServerPipeline"]):
     """Server Runspace Pool.
 
     Represents a Runspace Pool from a server context.
@@ -90,10 +83,20 @@ class ServerRunspacePool(RunspacePool):
     ) -> None:
         super().__init__(
             EMPTY_UUID,
-            capability=None,
             application_arguments={},
             application_private_data=application_private_data or {},
         )
+
+        # Pwsh uses the app private data in some places to determine what the remote protocol is. This isn't consistent
+        # but happens enough that defaults should be set for these fields.
+        ps_version = self.application_private_data.setdefault("PSVersionTable", {})
+        if isinstance(ps_version, dict):
+            ps_version.setdefault("PSRemotingProtocolVersion", self.our_capability.protocolversion)
+            ps_version.setdefault("SerializationVersion", self.our_capability.SerializationVersion)
+
+        self._is_client = False
+        self._session_key = os.urandom(32)
+        self._cipher.register_key(self._session_key)
 
     def connect(self) -> None:
         """Marks the pool as connected.
@@ -205,13 +208,13 @@ class ServerRunspacePool(RunspacePool):
         if self.state != RunspacePoolState.Opened:
             raise InvalidRunspacePoolState("create host call", self.state, [RunspacePoolState.Opened])
 
-        ci = self._ci_counter
+        ci = -100 if method.is_void() else self._ci_counter
 
         call_type = PipelineHostCall if pipeline_id else RunspacePoolHostCall
         call = call_type(
             ci=ci,
             mi=method,
-            mp=parameters,
+            mp=parameters if parameters is not None else [],
         )
         self.prepare_message(call, pipeline_id=pipeline_id, stream_type=StreamType.prompt_response)
 
@@ -224,15 +227,63 @@ class ServerRunspacePool(RunspacePool):
         :class:`psrpcore.types.PSSecureString` objects can be serialized. This
         generates a :class:`psrpcore.types.PublicKeyRequest` message to be sent
         to the client.
+
+        This is not used in ProtocolVersion 2.2 or newer but still present for
+        backwards compatibility.
         """
-        # FIXME: Check if PowerShell does this or just generates the session key.
-        if self._cipher:
+        if self._key_requested:
             return
 
         if self.state != RunspacePoolState.Opened:
             raise InvalidRunspacePoolState("request exchange key", self.state, [RunspacePoolState.Opened])
 
         self.prepare_message(PublicKeyRequest())
+        self._key_requested = True
+
+    def runspace_availability_response(
+        self,
+        ci: int,
+        response: typing.Union[bool, int],
+    ) -> None:
+        """Response to Runspace Availablity.
+
+        Responds to a RunspacePool availability event. The following responses
+        are expected for these events:
+
+            :class:`SetMaxRunspacesEvent` - `bool`
+                Whether the max request worked or not.
+
+            :class:`SetMinRunspacesEvent` - `bool`
+                Whether the min request worked or not.
+
+            :class:`ResetRunspaceStateEvent` - `bool`
+                Whether the reset request worked or not.
+
+            :class:`GetRunspaceAvailabilityEvent` - `int`
+                The number of runspaces that are available
+
+        Args:
+            ci: The call ID to respond to.
+            response: The response to send.
+        """
+        if ci not in self._ci_events:
+            raise PSRPCoreError(f"Cannot respond to {ci}, not requested by client.")
+
+        event = self._ci_events[ci]
+        if isinstance(event, (SetMaxRunspacesEvent, SetMinRunspacesEvent, ResetRunspaceStateEvent)) and not isinstance(
+            response, bool
+        ):
+            raise PSRPCoreError(f"Response for this event expects a bool not {type(response).__name__}")
+
+        if isinstance(event, GetAvailableRunspacesEvent) and not isinstance(response, int):
+            raise PSRPCoreError(f"Response for this event expects an int not {type(response).__name__}")
+
+        del self._ci_events[ci]
+        handler = self._ci_handlers.pop(ci, None)
+        if handler and response is True:
+            handler(event)
+
+        self.prepare_message(RunspaceAvailability(SetMinMaxRunspacesResponse=response, ci=ci))
 
     def receive_data(
         self,
@@ -269,8 +320,8 @@ class ServerRunspacePool(RunspacePool):
         event: ConnectRunspacePoolEvent,
     ) -> None:
         # FIXME: Verify this behaviour when the props aren't set or when invalid ones are
-        self._max_runspaces = getattr(event.ps_object, "MaxRunspaces", self.max_runspaces)
-        self._min_runspaces = getattr(event.ps_object, "MinRunspaces", self.min_runspaces)
+        self._max_runspaces = event.max_runspaces or self.max_runspaces
+        self._min_runspaces = event.min_runspaces or self.min_runspaces
 
         self.prepare_message(
             RunspacePoolInitData(
@@ -286,31 +337,10 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: CreatePipelineEvent,
     ) -> None:
-        # FIXME: Validate pipelien_id is in pipeline table
-        create_pipeline = event.ps_object
-        powershell = create_pipeline.PowerShell
+        if event.pipeline_id not in self.pipeline_table:
+            raise PSRPCoreError(f"Failed to find pipeline for incoming event {event.pipeline_id!s}")
 
-        pipeline = ServerPowerShell(
-            runspace_pool=self,
-            pipeline_id=event.pipeline_id,
-            add_to_history=create_pipeline.AddToHistory,
-            apartment_state=create_pipeline.ApartmentState,
-            history=powershell.History,
-            host=HostInfo.FromPSObjectForRemoting(create_pipeline.HostInfo),
-            is_nested=create_pipeline.IsNested,
-            no_input=create_pipeline.NoInput,
-            remote_stream_options=create_pipeline.RemoteStreamOptions,
-            redirect_shell_error_to_out=powershell.RedirectShellErrorOutputPipe,
-        )
-        commands = [powershell.Cmds]
-        commands.extend([c.Cmds for c in getattr(powershell, "ExtraCmds", [])])
-
-        for statements in commands:
-            for raw_cmd in statements:
-                cmd = Command.FromPSObjectForRemoting(raw_cmd)
-                pipeline.commands.append(cmd)
-
-            pipeline.commands[-1].end_of_statement = True
+        self.pipeline_table[event.pipeline_id].metadata = event.pipeline
 
     def _process_EndOfPipelineInput(
         self,
@@ -322,39 +352,28 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: GetAvailableRunspacesEvent,
     ) -> None:
-        # FIXME: This should reflect the available runspaces and not the max.
-        self.prepare_message(
-            RunspaceAvailability(
-                SetMinMaxRunspacesResponse=self.max_runspaces,
-                ci=event.ps_object.ci,
-            )
-        )
+        self._ci_events[event.ci] = event
+        self._ci_handlers[event.ci] = None
 
     def _process_GetCommandMetadata(
         self,
         event: GetCommandMetadataEvent,
     ) -> None:
-        # FIXME: Validate pipelien_id is in pipeline table
-        get_meta = event.ps_object
-        ServerGetCommandMetadata(
-            runspace_pool=self,
-            pipeline_id=event.pipeline_id,
-            name=get_meta.Name,
-            command_type=get_meta.CommandType,
-            namespace=get_meta.Namespace,
-            arguments=get_meta.ArgumentList,
-        )
+        if event.pipeline_id not in self.pipeline_table:
+            raise PSRPCoreError(f"Failed to find pipeline for incoming event {event.pipeline_id!s}")
+
+        self.pipeline_table[event.pipeline_id].metadata = event.pipeline
 
     def _process_InitRunspacePool(
         self,
         event: InitRunspacePoolEvent,
     ) -> None:
-        self.apartment_state = event.ps_object.ApartmentState
-        self.application_arguments = event.ps_object.ApplicationArguments
-        self.host = event.ps_object.HostInfo
-        self.thread_options = event.ps_object.PSThreadOptions
-        self._max_runspaces = event.ps_object.MaxRunspaces
-        self._min_runspaces = event.ps_object.MinRunspaces
+        self.apartment_state = event.apartment_state
+        self.application_arguments = event.application_arguments
+        self.host = event.host_info
+        self.thread_options = event.ps_thread_options
+        self._max_runspaces = event.max_runspaces
+        self._min_runspaces = event.min_runspaces
 
         self.prepare_message(ApplicationPrivateData(ApplicationPrivateData=self.application_private_data))
         self._change_state(RunspacePoolState.Opened)
@@ -375,11 +394,8 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: PublicKeyEvent,
     ) -> None:
-        session_key = os.urandom(32)
-        self._cipher = PSRemotingCrypto(session_key)
-
-        exchange_key = base64.b64decode(event.ps_object.PublicKey)
-        encrypted_session_key = encrypt_session_key(exchange_key, session_key)
+        self._key_requested = True
+        encrypted_session_key = encrypt_session_key(event.key, self._session_key)
 
         msg = EncryptedSessionKey(
             EncryptedSessionKey=base64.b64encode(encrypted_session_key).decode(),
@@ -390,8 +406,8 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: ResetRunspaceStateEvent,
     ) -> None:
-        # FIXME: Determine if there should be something here.
-        pass
+        self._ci_events[event.ci] = event
+        self._ci_handlers[event.ci] = None
 
     def _process_RunspacePoolHostResponse(
         self,
@@ -417,30 +433,18 @@ class ServerRunspacePool(RunspacePool):
         self,
         event: SetMaxRunspacesEvent,
     ) -> None:
-        # FIXME: Check invalid values
-        self._max_runspaces = event.ps_object.MaxRunspaces
-        self.prepare_message(
-            RunspaceAvailability(
-                SetMinMaxRunspacesResponse=True,
-                ci=event.ps_object.ci,
-            )
-        )
+        self._ci_events[event.ci] = event
+        self._ci_handlers[event.ci] = lambda e: setattr(self, "_max_runspaces", event.count)
 
     def _process_SetMinRunspaces(
         self,
         event: SetMinRunspacesEvent,
     ) -> None:
-        # FIXME: Check invalid values
-        self._min_runspaces = event.ps_object.MinRunspaces
-        self.prepare_message(
-            RunspaceAvailability(
-                SetMinMaxRunspacesResponse=True,
-                ci=event.ps_object.ci,
-            )
-        )
+        self._ci_events[event.ci] = event
+        self._ci_handlers[event.ci] = lambda e: setattr(self, "_min_runspaces", event.count)
 
 
-class _ServerPipeline(Pipeline["ServerRunspacePool"]):
+class ServerPipeline(Pipeline["ServerRunspacePool"]):
     """Server Pipeline.
 
     Represent a server pipeline and the various methods that can be used to
@@ -448,28 +452,21 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
     retrieved through the Runspace Pool it is a member off.
     """
 
-    def start(self) -> None:
-        """Marks the pipeline as started."""
-        if self.state == PSInvocationState.Running:
-            return
-
-        if self.state != PSInvocationState.NotStarted:
-            raise InvalidPipelineState("start a pipeline", self.state, [PSInvocationState.NotStarted])
-
-        self.state = PSInvocationState.Running
-
-    def close(self) -> None:
+    def complete(self) -> None:
         """Marks the pipeline as closed.
 
         This marks the pipeline has completed and generates a
         :class:`psrpcore.types.PipelineState` message to be sent to the client.
         """
-        if self.state == PSInvocationState.Stopped:
-            return
+        self._change_state(PSInvocationState.Completed)
 
-        super().close()
-        self.state = PSInvocationState.Completed
-        self._send_state()
+    def start(self) -> None:
+        """Marks the pipeline as started."""
+        valid_states = [PSInvocationState.NotStarted, PSInvocationState.Stopped, PSInvocationState.Completed]
+        if self.state not in valid_states:
+            raise InvalidPipelineState("start a pipeline", self.state, valid_states)
+
+        self._change_state(PSInvocationState.Running)
 
     def stop(self) -> None:
         """Stops the pipeline.
@@ -477,25 +474,25 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
         Stops a running pipeline and generates a
         :class:`psrpcore.types.PipelineState` message to be sent to the client.
         """
-        if self.state in [PSInvocationState.Stopped, PSInvocationState.Stopping]:
+        if self.state == PSInvocationState.Stopped:
             return
 
-        if self.state != PSInvocationState.Running:
+        valid_states = [PSInvocationState.Running, PSInvocationState.Stopping]
+        if self.state not in valid_states:
             raise InvalidPipelineState("stop a pipeline", self.state, [PSInvocationState.Running])
-
-        self.state = PSInvocationState.Stopped
 
         exception = NETException(
             Message="The pipeline has been stopped.",
             HResult=-2146233087,
         )
-        exception.PSTypeNames.extend(
-            [
-                "System.Management.Automation.PipelineStoppedException",
-                "System.Management.Automation.RuntimeException",
-                "System.SystemException",
-            ]
-        )
+
+        type_names = [
+            "System.Management.Automation.PipelineStoppedException",
+            "System.Management.Automation.RuntimeException",
+            "System.SystemException",
+        ]
+        type_names.extend(exception.PSTypeNames)
+        exception.PSObject.type_names = type_names
 
         stopped_error = ErrorRecord(
             Exception=exception,
@@ -505,8 +502,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
             ),
             FullyQualifiedErrorId="PipelineStopped",
         )
-        self._send_state(stopped_error)
-        super().close()
+        self._change_state(PSInvocationState.Stopped, error=stopped_error)
 
     def host_call(
         self,
@@ -603,7 +599,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
         if self.state != PSInvocationState.Running:
             raise InvalidPipelineState("write pipeline debug", self.state, [PSInvocationState.Running])
 
-        value = InformationalRecord(
+        value = DebugRecord(
             Message=message,
             InvocationInfo=invocation_info,
             PipelineIterationInfo=pipeline_iteration_info,
@@ -621,7 +617,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
         if self.state != PSInvocationState.Running:
             raise InvalidPipelineState("write pipeline verbose", self.state, [PSInvocationState.Running])
 
-        value = InformationalRecord(
+        value = VerboseRecord(
             Message=message,
             InvocationInfo=invocation_info,
             PipelineIterationInfo=pipeline_iteration_info,
@@ -639,7 +635,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
         if self.state != PSInvocationState.Running:
             raise InvalidPipelineState("write pipeline warning", self.state, [PSInvocationState.Running])
 
-        value = InformationalRecord(
+        value = WarningRecord(
             Message=message,
             InvocationInfo=invocation_info,
             PipelineIterationInfo=pipeline_iteration_info,
@@ -685,7 +681,7 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
         if self.state != PSInvocationState.Running:
             raise InvalidPipelineState("write pipeline progress", self.state, [PSInvocationState.Running])
 
-        value = ProgressRecord(
+        value = ProgressRecordMsg(
             Activity=activity,
             ActivityId=activity_id,
             StatusDescription=status_description,
@@ -773,116 +769,18 @@ class _ServerPipeline(Pipeline["ServerRunspacePool"]):
         )
         self.prepare_message(value, message_type=PSRPMessageType.InformationRecord)
 
-    def _send_state(
+    def _change_state(
         self,
-        error_record: typing.Optional[ErrorRecord] = None,
+        state: PSInvocationState,
+        error: typing.Optional[ErrorRecord] = None,
+        emit: bool = True,
     ) -> None:
-        state = PipelineState(
-            PipelineState=int(self.state),
-        )
-        if error_record is not None:
-            state.ExceptionAsErrorRecord = error_record
-        self.prepare_message(state)
-
-
-class ServerPowerShell(PowerShellPipeline, _ServerPipeline):
-    """Server PowerShell Pipeline.
-
-    A PowerShell pipeline to be used from the server. This is the main pipeline
-    class used in a PSRP scenario.
-
-    Args:
-        runspace_pool: The Runspace Pool the pipeline is a member off.
-        pipeline_id: The Pipeline identifier.
-        add_to_history: Whether to add the pipeline to the history field of the
-            runspace.
-        apartment_state: The apartment state of the thread that executes the
-            pipeline.
-        history: The value to use as a historial reference of the pipeline.
-        host: The host information to use when executing the pipeline.
-        is_nested: Whether the pipeline is nested in another pipeline or not.
-        no_input: Whether there is any data to be input into the pipeline.
-        remote_stream_options: Whether to add invocation info the the PowerShell
-            streams or not.
-        redirect_shell_error_to_out: Redirects the global error output pipe to
-            the commands error output pipe.
-    """
-
-    def __init__(
-        self,
-        runspace_pool: "ServerRunspacePool",
-        pipeline_id: uuid.UUID,
-        *args: typing.Any,
-        **kwargs: typing.Any,
-    ) -> None:
-        super().__init__(runspace_pool=runspace_pool, pipeline_id=pipeline_id, *args, **kwargs)
-
-
-class ServerGetCommandMetadata(GetCommandMetadataPipeline, _ServerPipeline):
-    """Server Get Command Metadata Pipeline.
-
-    A Get Command Metadata pipeline to be used from the server.
-
-    Args:
-        runspace_pool: The Runspace Pool the pipeline is a member off.
-        pipeline_id: The Pipeline identifier.
-        name: List of command names to get the metadata for. Uses ``*`` as a
-            wildcard.
-        command_type: The type of commands to filter by.
-        namespace: Wildcard patterns describbing the command namespace to filter
-            by.
-        arguments: Extra arguments passed to the higher-layer above PSRP.
-    """
-
-    def __init__(
-        self,
-        runspace_pool: "ServerRunspacePool",
-        pipeline_id: uuid.UUID,
-        *args: typing.Any,
-        **kwargs: typing.Any,
-    ) -> None:
-        super().__init__(runspace_pool=runspace_pool, pipeline_id=pipeline_id, *args, **kwargs)
-        self._count: typing.Optional[int] = None
-        # TODO: Add support for writing other command info types.
-
-    def write_count(
-        self,
-        count: int,
-    ) -> None:
-        """Send the number of objects expected to be sent."""
-        self._count = count
-        obj = PSCustomObject(
-            PSTypeName="Selected.Microsoft.PowerShell.Commands.GenericMeasureInfo",
-            Count=count,
-        )
-        self.write_output(obj)
-
-    def write_cmdlet_info(
-        self,
-        name: str,
-        namespace: str,
-        help_uri: str = "",
-        output_type: typing.Optional[typing.List[str]] = None,
-        parameters: typing.Optional[typing.Dict[str, typing.Any]] = None,
-    ) -> None:
-        """Send the cmdlet metadata to the client."""
-        self.write_output(
-            PSCustomObject(
-                PSTypeName="Selected.System.Management.Automation.CmdletInfo",
-                CommandType=CommandTypes.Cmdlet,
-                Name=name,
-                Namespace=namespace,
-                HelpUri=help_uri,
-                OutputType=output_type or [],
-                Parameters=parameters or {},
-                ResolvedCommandName=None,
+        if emit:
+            pipe_state = PipelineState(
+                PipelineState=int(state),
             )
-        )
+            if error is not None:
+                pipe_state.ExceptionAsErrorRecord = error
+            self.prepare_message(pipe_state)
 
-    def write_output(
-        self,
-        value: typing.Any,
-    ) -> None:
-        if self._count is None:
-            raise ValueError("write_count must be called before writing to the command metadata pipeline")
-        super().write_output(value)
+        super()._change_state(state)

@@ -7,34 +7,32 @@ import typing
 import uuid
 from xml.etree import ElementTree
 
-from psrpcore._command import Command
-from psrpcore._crypto import PSRemotingCrypto, rsa
+from psrpcore._crypto import PSRemotingCrypto
 from psrpcore._events import PSRPEvent, SessionCapabilityEvent
-from psrpcore._exceptions import InvalidRunspacePoolState, PSRPCoreError
+from psrpcore._exceptions import (
+    InvalidPipelineState,
+    InvalidRunspacePoolState,
+    PSRPCoreError,
+)
 from psrpcore._payload import (
     ProtocolVersion,
     PSRPMessage,
     PSRPPayload,
     StreamType,
     create_message,
-    dict_to_psobject,
     unpack_fragment,
     unpack_message,
 )
 from psrpcore.types import (
     ApartmentState,
-    CommandTypes,
-    CreatePipeline,
     EndOfPipelineInput,
     ErrorRecord,
-    GetCommandMetadata,
     HostInfo,
     PSInvocationState,
     PSObject,
     PSRPMessageType,
     PSThreadOptions,
     PSVersion,
-    RemoteStreamOptions,
     RunspacePoolState,
     SessionCapability,
     deserialize,
@@ -43,17 +41,11 @@ from psrpcore.types import (
 
 log = logging.getLogger(__name__)
 
-T = typing.TypeVar("T", bound="RunspacePool")
+T1 = typing.TypeVar("T1", bound="Pipeline")
+T2 = typing.TypeVar("T2", bound="RunspacePool")
 
 
-_DEFAULT_CAPABILITY = SessionCapability(
-    PSVersion=PSVersion("2.0"),
-    protocolversion=ProtocolVersion.Pwsh5.value,
-    SerializationVersion=PSVersion("1.1.0.1"),
-)
-
-
-class RunspacePool:
+class RunspacePool(typing.Generic[T1]):
     """Runspace Pool base class.
 
     This is the base class for a Runspace Pool. It contains the common
@@ -62,11 +54,13 @@ class RunspacePool:
 
     Args:
         runspace_pool_id: The UUID that identified the Runspace Pool.
-        capability: The SessionCapability of the caller.
         application_arguments: Any arguments supplied when creating the
             Runspace Pool as a client.
         application_private_data: Any special data supplied by the Runspace
             Pool as a server.
+        ps_version: The PowerShell version.
+        protocol_version: The PSRP protocol version that the pool understands.
+        serialization_version: The serialization version used by the pool.
 
     Attributes:
         runspace_pool_id: See args.
@@ -105,12 +99,18 @@ class RunspacePool:
     def __init__(
         self,
         runspace_pool_id: uuid.UUID,
-        capability: typing.Optional[SessionCapability],
         application_arguments: typing.Dict[str, typing.Any],
         application_private_data: typing.Dict[str, typing.Any],
+        ps_version: typing.Optional[PSVersion] = None,
+        protocol_version: typing.Optional[PSVersion] = None,
+        serialization_version: typing.Optional[PSVersion] = None,
     ) -> None:
         self.runspace_pool_id = runspace_pool_id
-        self.our_capability: SessionCapability = capability or _DEFAULT_CAPABILITY
+        self.our_capability = SessionCapability(
+            PSVersion=ps_version or PSVersion("2.0"),
+            protocolversion=protocol_version or ProtocolVersion.Pwsh5.value,
+            SerializationVersion=serialization_version or PSVersion("1.1.0.1"),
+        )
         self.their_capability: typing.Optional[SessionCapability] = None
         self.application_arguments = application_arguments
         self.application_private_data = application_private_data
@@ -118,14 +118,15 @@ class RunspacePool:
         self.state = RunspacePoolState.BeforeOpen
         self.apartment_state = ApartmentState.Unknown
         self.thread_options = PSThreadOptions.Default
-        self.pipeline_table: typing.Dict[uuid.UUID, "Pipeline"] = {}
+        self.pipeline_table: typing.Dict[uuid.UUID, T1] = {}
 
+        self._is_client = True
         self._ci_handlers: typing.Dict[int, typing.Optional[typing.Callable[[PSRPEvent], None]]] = {}
         self._ci_events: typing.Dict[int, PSRPEvent] = {}
         self._ci_count = 1
         self._fragment_count = 1
-        self._cipher: typing.Optional[PSRemotingCrypto] = None
-        self._exchange_key: typing.Optional[rsa.RSAPrivateKey] = None
+        self._key_requested = False
+        self._cipher = PSRemotingCrypto()
         self._min_runspaces = 0
         self._max_runspaces = 0
         self._send_buffer: typing.List[PSRPMessage] = []
@@ -329,7 +330,7 @@ class RunspacePool:
 
     def prepare_message(
         self,
-        message: PSObject,
+        message: typing.Optional[PSObject],
         message_type: typing.Optional[PSRPMessageType] = None,
         pipeline_id: typing.Optional[uuid.UUID] = None,
         stream_type: StreamType = StreamType.default,
@@ -347,26 +348,31 @@ class RunspacePool:
                 targets the runspace pool.
             stream_type: The stream type the message is for.
         """
-        if isinstance(message, EndOfPipelineInput):
+        if message is None:
+            b_data = b""
+            message_type = PSRPMessageType.PipelineOutput
+
+        elif isinstance(message, EndOfPipelineInput):
             b_data = b""  # Special edge case for this particular message type
+            message_type = PSRPMessageType.EndOfPipelineInput
+
         else:
             element = serialize(
                 message,
-                cipher=self._cipher,
+                self._cipher,
                 # Extra info we pass to the serializer that may adjust how objects are serialized.
                 our_capability=self.our_capability,
                 their_capability=self.their_capability,
             )
             b_data = ElementTree.tostring(element, encoding="utf-8", method="xml")
 
-        if message_type is None:
-            try:
-                message_type = PSRPMessageType.get_message_id(type(message))
-            except KeyError:
-                raise ValueError("message_type must be specified when the message is not a PSRP message") from None
+            if message_type is None:
+                try:
+                    message_type = PSRPMessageType.get_message_id(type(message))
+                except KeyError:
+                    raise ValueError("message_type must be specified when the message is not a PSRP message") from None
 
-        is_client = isinstance(self, RunspacePool)
-        b_msg = create_message(is_client, message_type, b_data, self.runspace_pool_id, pipeline_id)
+        b_msg = create_message(self._is_client, message_type, b_data, self.runspace_pool_id, pipeline_id)
 
         object_id = self._fragment_counter
         psrp_message = PSRPMessage(
@@ -390,6 +396,9 @@ class RunspacePool:
         if message.message_type == PSRPMessageType.EndOfPipelineInput:
             # Special edge case for EndOfPipelineInput which has no data.
             ps_object = EndOfPipelineInput()
+
+        elif message.message_type == PSRPMessageType.PipelineOutput and message.data == b"":
+            ps_object = None
 
         else:
             ps_object = deserialize(
@@ -416,10 +425,14 @@ class RunspacePool:
         event: SessionCapabilityEvent,
     ) -> None:
         # This is the only common message that is processed the same by clients and servers.
-        self.their_capability = event.ps_object
+        self.their_capability = SessionCapability(
+            PSVersion=event.ps_version,
+            protocolversion=event.protocol_version,
+            SerializationVersion=event.serialization_version,
+        )
 
 
-class Pipeline(typing.Generic[T]):
+class Pipeline(typing.Generic[T2]):
     """Pipeline base class.
 
     This is the base class for a Pipeline. It contains the common attributes
@@ -452,13 +465,22 @@ class Pipeline(typing.Generic[T]):
 
     def __init__(
         self,
-        runspace_pool: T,
+        runspace_pool: T2,
         pipeline_id: uuid.UUID,
     ) -> None:
         self.runspace_pool = runspace_pool
         self.pipeline_id = pipeline_id
         self.state = PSInvocationState.NotStarted
+        self.metadata: typing.Optional[PSObject] = None
         runspace_pool.pipeline_table[self.pipeline_id] = self
+
+    def begin_stop(self) -> None:
+        """Marks the Pipeline to be in the stopping phase."""
+        valid_state = [PSInvocationState.Running, PSInvocationState.Stopping]
+        if self.state not in valid_state:
+            raise InvalidPipelineState("begin stopping a pipeline", self.state, valid_state)
+
+        self._change_state(PSInvocationState.Stopping)
 
     def close(self) -> None:
         """Close the Pipeline.
@@ -466,11 +488,20 @@ class Pipeline(typing.Generic[T]):
         Closes the pipeline by removing itself from the Runspace Pool pipeline
         table.
         """
+        valid_state = [
+            PSInvocationState.NotStarted,
+            PSInvocationState.Stopped,
+            PSInvocationState.Stopping,
+            PSInvocationState.Completed,
+            PSInvocationState.Failed,
+        ]
+        if self.state not in valid_state:
+            raise InvalidPipelineState("closing a pipeline", self.state, valid_state)
         self.runspace_pool.pipeline_table.pop(self.pipeline_id, None)
 
     def prepare_message(
         self,
-        message: PSObject,
+        message: typing.Optional[PSObject],
         message_type: typing.Optional[PSRPMessageType] = None,
         stream_type: StreamType = StreamType.default,
     ) -> None:
@@ -488,135 +519,9 @@ class Pipeline(typing.Generic[T]):
         """
         self.runspace_pool.prepare_message(message, message_type, self.pipeline_id, stream_type)
 
-    def to_psobject(
+    def _change_state(
         self,
-    ) -> PSObject:
-        """Converts the pipeline to a PSObject for serialization."""
-        raise NotImplementedError()  # pragma: no cover
-
-
-class PowerShellPipeline(Pipeline):
-    """PowerShell Pipeline.
-
-    This implements the PowerShell pipeline specific methods used to invoke a
-    PowerShell pipeline.
-
-    Args:
-        add_to_history: Whether to add the pipeline to the history field of the
-            runspace.
-        apartment_state: The apartment state of the thread that executes the
-            pipeline.
-        history: The value to use as a historial reference of the pipeline.
-        host: The host information to use when executing the pipeline.
-        is_nested: Whether the pipeline is nested in another pipeline or not.
-        no_input: Whether there is any data to be input into the pipeline.
-        remote_stream_options: Whether to add invocation info the the PowerShell
-            streams or not.
-        redirect_shell_error_to_out: Redirects the global error output pipe to
-            the commands error output pipe.
-    """
-
-    def __init__(
-        self,
-        add_to_history: bool = False,
-        apartment_state: typing.Optional[ApartmentState] = None,
-        history: typing.Optional[str] = None,
-        host: typing.Optional[HostInfo] = None,
-        is_nested: bool = False,
-        no_input: bool = True,
-        remote_stream_options: RemoteStreamOptions = RemoteStreamOptions.none,
-        redirect_shell_error_to_out: bool = True,
-        *args: typing.Any,
-        **kwargs: typing.Any,
+        state: PSInvocationState,
+        error: typing.Optional[ErrorRecord] = None,
     ) -> None:
-        super().__init__(*args, **kwargs)
-        self.add_to_history = add_to_history
-        self.apartment_state = apartment_state or self.runspace_pool.apartment_state
-        self.commands: typing.List[Command] = []
-        self.history = history
-        self.host = host or HostInfo()
-        self.is_nested = is_nested
-        self.no_input = no_input
-        self.remote_stream_options = remote_stream_options
-        self.redirect_shell_error_to_out = redirect_shell_error_to_out
-
-    def to_psobject(
-        self,
-    ) -> CreatePipeline:
-        if not self.commands:
-            raise ValueError("A command is required to invoke a PowerShell pipeline.")
-
-        extra_cmds: typing.List[typing.List[PSObject]] = [[]]
-        for cmd in self.commands:
-            extra_cmds[-1].append(cmd)
-            if cmd.end_of_statement:
-                extra_cmds.append([])
-        cmds = extra_cmds.pop(0)
-
-        # MS-PSRP 2.2.3.11 Pipeline
-        # https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/82a8d1c6-4560-4e68-bfd0-a63c36d6a199
-        pipeline_kwargs = {
-            "Cmds": cmds,
-            "IsNested": self.is_nested,
-            "History": self.history,
-            "RedirectShellErrorOutputPipe": self.redirect_shell_error_to_out,
-        }
-
-        if extra_cmds:
-            # This isn't documented in MS-PSRP but this is how PowerShell batches multiple statements in 1 pipeline.
-            # TODO: ExtraCmds may not work with protocol <=2.1.
-            pipeline_kwargs["ExtraCmds"] = [dict_to_psobject(Cmds=s) for s in extra_cmds]
-
-        return CreatePipeline(
-            NoInput=self.no_input,
-            ApartmentState=self.apartment_state,
-            RemoteStreamOptions=self.remote_stream_options,
-            AddToHistory=self.add_to_history,
-            HostInfo=self.host,
-            PowerShell=dict_to_psobject(**pipeline_kwargs),
-            IsNested=self.is_nested,
-        )
-
-
-class GetCommandMetadataPipeline(Pipeline):
-    """Get Command Metadata Pipeline.
-
-    This implements the GetCommandMetadata pipeline specific methods used to get
-    command metadata information.
-
-    Args:
-        name: List of command names to get the metadata for. Uses ``*`` as a
-            wildcard.
-        command_type: The type of commands to filter by.
-        namespace: Wildcard patterns describbing the command namespace to filter
-            by.
-        arguments: Extra arguments passed to the higher-layer above PSRP.
-    """
-
-    def __init__(
-        self,
-        name: typing.Union[str, typing.List[str]],
-        command_type: CommandTypes = CommandTypes.All,
-        namespace: typing.Optional[typing.List[str]] = None,
-        arguments: typing.Optional[typing.List[typing.Any]] = None,
-        *args: typing.Any,
-        **kwargs: typing.Any,
-    ) -> None:
-        super().__init__(*args, **kwargs)
-
-        if not isinstance(name, list):
-            name = [name]
-        self.name = name
-        self.command_type = command_type
-        self.namespace = namespace
-        self.arguments = arguments
-
-    def to_psobject(
-        self,
-    ) -> GetCommandMetadata:
-        return GetCommandMetadata(
-            Name=self.name,
-            CommandType=self.command_type,
-            Namespace=self.namespace,
-            ArgumentList=self.arguments,
-        )
+        self.state = state

@@ -28,20 +28,3 @@ def test_unpack_message_with_bom():
     assert actual.rpid == uuid.UUID(int=0)
     assert actual.pid is None
     assert actual.data == bytearray(b"abc")
-
-
-def test_create_ps_data_packet():
-    actual = payload.ps_data_packet(b"abc")
-    assert actual == b"<Data Stream='Default' PSGuid='00000000-0000-0000-0000-000000000000'>YWJj</Data>"
-
-
-def test_create_ps_data_packet_pr():
-    actual = payload.ps_data_packet(
-        b"abc", payload.StreamType.prompt_response, uuid.UUID("00000000-0000-0000-0000-000000000001")
-    )
-    assert actual == b"<Data Stream='PromptResponse' PSGuid='00000000-0000-0000-0000-000000000001'>YWJj</Data>"
-
-
-def test_create_ps_guid_packet():
-    actual = payload.ps_guid_packet("Command")
-    assert actual == b"<Command PSGuid='00000000-0000-0000-0000-000000000000' />"

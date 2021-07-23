@@ -8,15 +8,9 @@ from xml.etree import ElementTree
 import pytest
 
 import psrpcore
-from psrpcore.types import (
-    PipelineResultTypes,
-    PSObject,
-    SessionCapability,
-    deserialize,
-    serialize,
-)
+from psrpcore.types import PipelineResultTypes, PSObject, SessionCapability
 
-from .conftest import assert_xml_diff
+from .conftest import assert_xml_diff, deserialize, serialize
 
 
 @pytest.mark.parametrize(

@@ -5,7 +5,7 @@
 import typing
 
 from psrpcore._payload import ProtocolVersion, dict_to_psobject
-from psrpcore.types import PipelineResultTypes, PSObject, PSType, PSVersion
+from psrpcore.types import PipelineResultTypes, PSObject, PSType
 
 
 @PSType(skip_inheritance=True, rehydrate=False)
@@ -106,7 +106,7 @@ class Command(PSObject):
     def add_parameter(
         self,
         name: typing.Optional[str],
-        value: typing.Any = None,
+        value: typing.Any = True,
     ) -> "Command":
         """Add a parameter and value to the command."""
         self.parameters.append((name, value))

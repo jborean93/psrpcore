@@ -6,7 +6,7 @@ import re
 
 import pytest
 
-import psrpcore
+from psrpcore._base import Pipeline, RunspacePool
 
 
 def test_fail_to_init_runspace_base():
@@ -16,7 +16,7 @@ def test_fail_to_init_runspace_base():
     )
 
     with pytest.raises(TypeError, match=expected):
-        psrpcore.RunspacePool()
+        RunspacePool()
 
 
 def test_fail_to_init_pipeline():
@@ -25,4 +25,4 @@ def test_fail_to_init_pipeline():
     )
 
     with pytest.raises(TypeError, match=expected):
-        psrpcore.Pipeline(None)
+        Pipeline(None)

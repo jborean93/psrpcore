@@ -12,22 +12,15 @@ import xml.etree.ElementTree as ElementTree
 import pytest
 
 import psrpcore.types._primitive as primitive
-from psrpcore._crypto import PSRemotingCrypto
 from psrpcore.types import PSNoteProperty, PSObject
-from psrpcore.types._serializer import deserialize, serialize
 
-from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING
-
-
-class FakeCryptoProvider(PSRemotingCrypto):
-    def __init__(self):
-        super().__init__(b"\x00" * 16)
-
-    def decrypt(self, value):
-        return value
-
-    def encrypt(self, value):
-        return value
+from ..conftest import (
+    COMPLEX_ENCODED_STRING,
+    COMPLEX_STRING,
+    FakeCryptoProvider,
+    deserialize,
+    serialize,
+)
 
 
 def test_fail_to_create_integer_base():
@@ -1400,44 +1393,69 @@ def test_ps_version_compare_invalid():
 
 
 def test_ps_secure_string():
-    fake_cipher = FakeCryptoProvider()
     ps_value = primitive.PSSecureString(COMPLEX_STRING)
+    assert str(ps_value) == "System.Security.SecureString"
+    assert ps_value.decrypt() == COMPLEX_STRING
 
-    element = serialize(ps_value, cipher=fake_cipher)
+    element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
     assert (
         actual
         == "<SS>dAByAGUAYgBsAGUAIABjAGwAZQBmAAoAIABfAHgAMAAwADAAMABfACAAXwBYADAAMAAwADAAXwAgADTYHt0gAGMAYQBmAOkA</SS>"
     )
 
-    actual = deserialize(element, cipher=fake_cipher)
+    actual = deserialize(element)
     assert isinstance(actual, primitive.PSSecureString)
-    assert isinstance(actual, str)
-    assert actual == COMPLEX_STRING
+    assert not isinstance(actual, str)
+    assert str(actual) == (
+        "dAByAGUAYgBsAGUAIABjAGwAZQBmAAoAIABfAHgAMAAwADAAMABfACAAXwBYADAAMAAwADAAXwAgADTYHt0gAGMAYQBmAOkA"
+    )
     assert actual.PSTypeNames == ["System.Security.SecureString", "System.Object"]
+
+    dec_actual = actual.decrypt()
+    assert isinstance(dec_actual, primitive.PSString)
+    assert dec_actual == COMPLEX_STRING
 
 
 def test_ps_secure_string_with_properties():
-    fake_cipher = FakeCryptoProvider()
     ps_value = primitive.PSSecureString("abc")
     ps_value.PSObject.extended_properties.append(PSNoteProperty("Test Property"))
     ps_value["Test Property"] = primitive.PSSecureString("abc")
 
-    element = serialize(ps_value, cipher=fake_cipher)
+    element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
     assert actual == f'<Obj RefId="0"><SS>YQBiAGMA</SS><MS><SS N="Test Property">YQBiAGMA</SS></MS></Obj>'
 
-    actual = deserialize(element, cipher=fake_cipher)
+    actual = deserialize(element)
     assert isinstance(actual, primitive.PSSecureString)
-    assert isinstance(actual, str)
-    assert actual == "abc"
-    assert actual["Test Property"] == "abc"
+    assert not isinstance(actual, str)
+    assert str(actual) == "YQBiAGMA"
     assert isinstance(actual["Test Property"], primitive.PSSecureString)
+    assert not isinstance(actual["Test Property"], str)
+    assert str(actual["Test Property"]) == "YQBiAGMA"
     assert actual.PSTypeNames == ["System.Security.SecureString", "System.Object"]
 
-    # Check that we can still slice a string and the type is preserved
-    sliced_actual = actual[:2]
-    assert isinstance(sliced_actual, primitive.PSSecureString)
-    assert isinstance(sliced_actual, str)
-    assert sliced_actual == "ab"
-    assert sliced_actual.PSObject.extended_properties == []
+    dec_actual = actual.decrypt()
+    assert isinstance(dec_actual, primitive.PSString)
+    assert dec_actual == "abc"
+
+    dec_actual = actual["Test Property"].decrypt()
+    assert isinstance(dec_actual, primitive.PSString)
+    assert dec_actual == "abc"
+
+
+def test_ps_secure_string_already_encrypted():
+    ps_value = primitive.PSSecureString("YQBiAGMA", FakeCryptoProvider())
+    assert isinstance(ps_value, primitive.PSSecureString)
+    assert str(ps_value) == "YQBiAGMA"
+    assert ps_value.decrypt() == "abc"
+
+    element = serialize(ps_value)
+    actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
+    assert actual == f"<SS>YQBiAGMA</SS>"
+
+    actual = deserialize(element)
+    assert isinstance(actual, primitive.PSSecureString)
+    assert not isinstance(actual, str)
+    assert str(ps_value) == "YQBiAGMA"
+    assert ps_value.decrypt() == "abc"

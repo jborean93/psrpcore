@@ -18,9 +18,8 @@ from psrpcore.types import (
     PSType,
     PSUInt,
 )
-from psrpcore.types._serializer import deserialize, serialize
 
-from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING
+from ..conftest import COMPLEX_ENCODED_STRING, COMPLEX_STRING, deserialize, serialize
 
 
 @pytest.mark.parametrize("rehydrate", [True, False])
