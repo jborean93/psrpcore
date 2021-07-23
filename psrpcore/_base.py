@@ -19,6 +19,7 @@ from psrpcore._payload import (
     PSRPMessage,
     PSRPPayload,
     StreamType,
+    create_fragment,
     create_message,
     unpack_fragment,
     unpack_message,
@@ -105,6 +106,12 @@ class RunspacePool(typing.Generic[T1]):
         protocol_version: typing.Optional[PSVersion] = None,
         serialization_version: typing.Optional[PSVersion] = None,
     ) -> None:
+        log.debug(
+            "Creating Runspace Pool - RPID: %s, Type: %s",
+            runspace_pool_id,
+            type(self).__name__,
+        )
+
         self.runspace_pool_id = runspace_pool_id
         self.our_capability = SessionCapability(
             PSVersion=ps_version or PSVersion("2.0"),
@@ -263,7 +270,18 @@ class RunspacePool(typing.Generic[T1]):
                 allowed_length = amount - fragment_size
                 amount -= fragment_size + len(message)
 
-            current_buffer += message.fragment(allowed_length)
+            fragment = message.fragment(allowed_length)
+            log.debug(
+                "Packing fragment - OID: %s, FID: %s, Start: %s, End: %s, Length: %s",
+                fragment.object_id,
+                fragment.fragment_id,
+                fragment.start,
+                fragment.end,
+                len(fragment.data),
+            )
+
+            current_buffer += create_fragment(fragment.object_id, fragment.fragment_id, fragment.data, fragment.end)
+
             if len(message) == 0:
                 self._send_buffer.remove(message)
 
@@ -299,6 +317,14 @@ class RunspacePool(typing.Generic[T1]):
         # First unpacks the raw receive buffer into messages.
         while self._receive_buffer:
             fragment = unpack_fragment(self._receive_buffer)
+            log.debug(
+                "Unpacked fragment - OID: %s, FID: %s, Start: %s, End: %s, Length: %s",
+                fragment.object_id,
+                fragment.fragment_id,
+                fragment.start,
+                fragment.end,
+                len(fragment.data),
+            )
             self._receive_buffer = self._receive_buffer[21 + len(fragment.data) :]
 
             buffer = self._incoming_fragments.setdefault(fragment.object_id, [])
@@ -378,6 +404,16 @@ class RunspacePool(typing.Generic[T1]):
         psrp_message = PSRPMessage(
             message_type, bytearray(b_msg), self.runspace_pool_id, pipeline_id, object_id, stream_type
         )
+
+        log.debug(
+            "Queuing PSRP Message - MessageType: %s,  RPID: %s,  PID: %s,  OID: %s, Type: %s - '%s'",
+            message_type.name,
+            self.runspace_pool_id,
+            pipeline_id or "''",
+            object_id,
+            stream_type.name,
+            b_data.decode(),
+        )
         self._send_buffer.append(psrp_message)
 
     def _change_state(
@@ -385,6 +421,7 @@ class RunspacePool(typing.Generic[T1]):
         state: RunspacePoolState,
         error: typing.Optional[ErrorRecord] = None,
     ) -> None:
+        log.debug("Runspace Pool State change %s -> %s", self.state.name, state.name)
         self.state = state
 
     def _process_message(
@@ -392,17 +429,28 @@ class RunspacePool(typing.Generic[T1]):
         message: PSRPMessage,
     ) -> PSRPEvent:
         """Process a TransportDataAction data message received from a peer."""
+        data = message.data
+        log.debug(
+            "Processing PSRP Message - MessageType: %s,  RPID: %s,  PID: %s,  OID: %s, Type: %s - '%s'",
+            message.message_type.name,
+            message.runspace_pool_id,
+            message.pipeline_id or "''",
+            message.object_id,
+            message.stream_type.name,
+            data.decode(),
+        )
+
         ps_object: typing.Any
         if message.message_type == PSRPMessageType.EndOfPipelineInput:
             # Special edge case for EndOfPipelineInput which has no data.
             ps_object = EndOfPipelineInput()
 
-        elif message.message_type == PSRPMessageType.PipelineOutput and message.data == b"":
+        elif message.message_type == PSRPMessageType.PipelineOutput and data == b"":
             ps_object = None
 
         else:
             ps_object = deserialize(
-                ElementTree.fromstring(message.data),
+                ElementTree.fromstring(data),
                 cipher=self._cipher,
                 # Extra info we pass to the serializer that may adjust how objects are serialized.
                 our_capability=self.our_capability,
@@ -468,6 +516,12 @@ class Pipeline(typing.Generic[T2]):
         runspace_pool: T2,
         pipeline_id: uuid.UUID,
     ) -> None:
+        log.debug(
+            "Creating pipeline - RPID: %s, PID: %s, Type: %s",
+            runspace_pool.runspace_pool_id,
+            pipeline_id,
+            type(self).__name__,
+        )
         self.runspace_pool = runspace_pool
         self.pipeline_id = pipeline_id
         self.state = PSInvocationState.NotStarted
@@ -524,4 +578,5 @@ class Pipeline(typing.Generic[T2]):
         state: PSInvocationState,
         error: typing.Optional[ErrorRecord] = None,
     ) -> None:
+        log.debug("Pipeline State change %s -> %s", self.state.name, state.name)
         self.state = state

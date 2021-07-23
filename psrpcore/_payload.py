@@ -147,14 +147,14 @@ class PSRPMessage:
     def fragment(
         self,
         length: int,
-    ) -> bytes:
+    ) -> Fragment:
         """Create a fragment with a maximum length."""
         data = self._data[:length]
         self._data = self._data[length:]
         fragment_id = self.fragment_counter
         end = len(self) == 0
 
-        return create_fragment(self.object_id, fragment_id, data, end)
+        return Fragment(self.object_id, fragment_id, fragment_id == 0, end, data)
 
 
 def create_message(

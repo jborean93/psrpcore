@@ -112,7 +112,7 @@ class ServerRunspacePool(RunspacePool["ServerPipeline"]):
                 "accept Runspace Pool connections", self.state, [RunspacePoolState.Disconnected]
             )
 
-        # The incoming messages will be from a blank runspace pool so start back at 0
+        # The incoming messages will be from a blank runspace pool so start back at 1
         # TODO: Verify there are no incoming fragments/messages not processed.
         self._ci_count = 1
         self._fragment_count = 1
