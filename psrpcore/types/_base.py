@@ -429,7 +429,7 @@ class PSAliasProperty(PSPropertyInfo):
     alias property, see :class:`PSScriptProperty` which allows the caller
     to define a way to get and set properties on an object dynamically.
 
-    ..Note:
+    Note:
         When an object that has an alias property is deserialized, the property
         is converted to a :class:`PSNoteProperty` and the alias will no longer
         exist.
@@ -467,7 +467,7 @@ class PSNoteProperty(PSPropertyInfo):
     to replicate the functionality of `PSNoteProperty`_ and is typically the
     type of property to use when creating a PSObject.
 
-    ..Note:
+    Note:
         See :class:`PSPropertyInfo` for more information on the `mandatory`
         argument.
 

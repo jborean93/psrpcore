@@ -94,7 +94,7 @@ class ClientHostResponder:
         Responds to :class:`psrpcore.types.HostMethodIdentifier.GetName` with a
         human friendly host name identifier.
 
-        ..Note:
+        Note:
             For pwsh this value is typically static and set by the server on
             creation. It is rare for this to be requested by the server.
 
@@ -114,7 +114,7 @@ class ClientHostResponder:
         Responds to :class:`psrpcore.types.HostMethodIdentifier.GetVersion`
         with the version of the host.
 
-        ..Note:
+        Note:
             For pwsh this value is typically static and set by the server on
             creation. It is rare for this to be requested by the server.
 
@@ -137,7 +137,7 @@ class ClientHostResponder:
         Responds to :class:`psrpcore.types.HostMethodIdentifier.GetInstanceId`
         with a unique identifier of the host.
 
-        ..Note:
+        Note:
             For pwsh this value is typically static and set by the server on
             creation. It is rare for this to be requested by the server.
 
@@ -158,7 +158,7 @@ class ClientHostResponder:
         :class:`psrpcore.types.HostMethodIdentifier.GetCurrentCulture` with the
         host's culture, like ``en-US``.
 
-        ..Note:
+        Note:
             For pwsh this value is typically static and set by the server on
             creation. It is rare for this to be requested by the server.
 
@@ -180,7 +180,7 @@ class ClientHostResponder:
         the host's UI culture, like ``en-US``. The UI culture is used for
         operations like loading resource files.
 
-        ..Note:
+        Note:
             For pwsh this value is typically static and set by the server on
             creation. It is rare for this to be requested by the server.
 
@@ -201,7 +201,7 @@ class ClientHostResponder:
         :class:`psrpcore.types.HostMethodIdentifier.GetIsRunspacePushed` with
         whether the runspace is pushed or not.
 
-        ..Note:
+        Note:
             For pwsh this value is typically static and set by the server on
             creation. It is rare for this to be requested by the server.
 
@@ -324,7 +324,7 @@ class ClientHostResponder:
         :class:`psrpcore.types.HostMethodIdentifier.GetForegroundColor` with
         the foreground (text) color of the host.
 
-        ..Note:
+        Note:
             For pwsh this value is set when the server creates the host based
             on the host default data. It is rare for this to be requested by
             the server.
@@ -346,7 +346,7 @@ class ClientHostResponder:
         :class:`psrpcore.types.HostMethodIdentifier.GetBackgroundColor` with
         the background color of the host.
 
-        ..Note:
+        Note:
             For pwsh this value is set when the server creates the host based
             on the host default data. It is rare for this to be requested by
             the server.
@@ -369,7 +369,7 @@ class ClientHostResponder:
         :class:`psrpcore.types.HostMethodIdentifier.GetCursorPosition` the
         coordinates of the cursor in the host.
 
-        ..Note:
+        Note:
             For pwsh this value is set when the server creates the host based
             on the host default data. It is rare for this to be requested by
             the server.
@@ -393,7 +393,7 @@ class ClientHostResponder:
         :class:`psrpcore.types.HostMethodIdentifier.GetWindowPosition` the
         coordinates (from the top left point) of the host window.
 
-        ..Note:
+        Note:
             For pwsh this value is set when the server creates the host based
             on the host default data. It is rare for this to be requested by
             the server.
@@ -416,7 +416,7 @@ class ClientHostResponder:
         :class:`psrpcore.types.HostMethodIdentifier.GetCursorSize` with the
         size (as a percentage) of the cursor.
 
-        ..Note:
+        Note:
             For pwsh this value is set when the server creates the host based
             on the host default data. It is rare for this to be requested by
             the server.
@@ -440,7 +440,7 @@ class ClientHostResponder:
         size of the buffer of the host. The size is measured in character cells
         which can contain a 16-bit Char.
 
-        ..Note:
+        Note:
             For pwsh this value is set when the server creates the host based
             on the host default data. It is rare for this to be requested by
             the server.
@@ -465,7 +465,7 @@ class ClientHostResponder:
         size of the window of the host. The size is measured in character cells
         which can contain a 16-bit Char.
 
-        ..Note:
+        Note:
             For pwsh this value is set when the server creates the host based
             on the host default data. It is rare for this to be requested by
             the server.
@@ -488,7 +488,7 @@ class ClientHostResponder:
         :class:`psrpcore.types.HostMethodIdentifier.GetWindowTitle` with the
         title of the host window.
 
-        ..Note:
+        Note:
             For pwsh this value is set when the server creates the host based
             on the host default data. It is rare for this to be requested by
             the server.
@@ -512,7 +512,7 @@ class ClientHostResponder:
         maximum size of the window of the host. The size is measured in
         character cells which can contain a 16-bit Char.
 
-        ..Note:
+        Note:
             For pwsh this value is set when the server creates the host based
             on the host default data. It is rare for this to be requested by
             the server.
@@ -537,7 +537,7 @@ class ClientHostResponder:
         with the maximum physical size of the window of the host. The size is
         measured in character cells which can contain a 16-bit Char.
 
-        ..Note:
+        Note:
             For pwsh this value is set when the server creates the host based
             on the host default data. It is rare for this to be requested by
             the server.
@@ -612,7 +612,7 @@ class ClientHostResponder:
         :class:`psrpcore.types.BufferCell` where the first list dimension
         represents each row and the 2nd dimension is each column of that row.
 
-        ..Note:
+        Note:
             PowerShell does not implement this call for security reasons.
             Unless you trust the target host you should not return this
             information, or sanitise the data as needed.
@@ -655,7 +655,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHost.Name Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -677,7 +677,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHost.Version Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -699,7 +699,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHost.InstanceId Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -722,7 +722,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHost.CurrentCulture Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -745,7 +745,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHost.CurrentUICulture Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -770,7 +770,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHost.SetShouldExit Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -795,7 +795,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHost.EnterNestedPrompt Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -819,7 +819,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHost.ExitNestedPrompt Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -849,7 +849,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHost.NotifyBeginApplication Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -873,7 +873,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHost.NotifyEndApplication Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -897,7 +897,7 @@ class ServerHostRequestor:
 
         This corresponds to the `IHostSupportsInteractiveSession.PopRunspace Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -917,7 +917,7 @@ class ServerHostRequestor:
 
         This corresponds to the `IHostSupportsInteractiveSession.IsRunspacePushed Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -944,7 +944,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.ReadLine Method`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -967,7 +967,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.ReadLineAsSecureString Method`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -993,7 +993,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.Write Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1030,7 +1030,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.WriteLine Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1070,7 +1070,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.WriteErrorLine Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1093,7 +1093,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.WriteDebugLine Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1124,7 +1124,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.WriteProgress Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1181,7 +1181,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.WriteVerboseLine Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1204,7 +1204,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.WriteWarningLine Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1230,7 +1230,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.Prompt Method`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1267,7 +1267,7 @@ class ServerHostRequestor:
 
         This corresponds to the `PSHostUserInterface.PromptForCredential Method`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1314,7 +1314,7 @@ class ServerHostRequestor:
         See :meth:`prompt_for_multiple_choice()` for a way to allow the user to
         select multiple choices.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1353,7 +1353,7 @@ class ServerHostRequestor:
         This corresponds to the
         `IHostUISupportsMultipleChoiceSelection.PromptForChoice Method`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1389,7 +1389,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.ForegroundColor Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1414,7 +1414,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.ForegroundColor Property`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1438,7 +1438,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.BackgroundColor Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1463,7 +1463,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.BackgroundColor Property`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1487,7 +1487,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.CursorPosition Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1513,7 +1513,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.CursorPosition Property`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1542,7 +1542,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.WindowPosition Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1569,7 +1569,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.WindowPosition Property`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1597,7 +1597,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.CursorSize Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1622,7 +1622,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.CursorSize Property`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1646,7 +1646,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.BufferSize Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1672,7 +1672,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.BufferSize Property`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1699,7 +1699,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.WindowSize Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1725,7 +1725,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.WindowSize Property`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1752,7 +1752,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.WindowTitle Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1777,7 +1777,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.WindowTitle Property`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1802,7 +1802,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.MaxWindowSize Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1826,7 +1826,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.MaxPhysicalWindowSize Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1850,7 +1850,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.KeyAvailable Property`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1874,7 +1874,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.ReadKey Method`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
@@ -1901,7 +1901,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.FlushInputBuffer Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1931,7 +1931,7 @@ class ServerHostRequestor:
         :meth:`set_buffer_contents()` to set the buffer contents by individual
         cells.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -1976,7 +1976,7 @@ class ServerHostRequestor:
         `PSHostRawUserInterface.SetBufferContents Method`_. See
         :meth:`set_buffer_cells()` to set an individual cell across a region.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 
@@ -2011,11 +2011,11 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.GetBufferContents Method`_.
 
-        ..Note:
+        Note:
             The server should wait for the host response before continuing the
             pipeline that created this request.
 
-        ..Note:
+        Note:
             PowerShell does not implement this call for security reasons.
             Unless you trust the client host you should write an error record
             instead.
@@ -2064,7 +2064,7 @@ class ServerHostRequestor:
         This corresponds to the
         `PSHostRawUserInterface.ScrollBufferContents Method`_.
 
-        ..Note:
+        Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
 

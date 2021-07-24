@@ -13,6 +13,9 @@ brief and will be expanded upon in the future.
    :maxdepth: 2
    :caption: Contents:
 
+   protocol
+   scenarios
+   transport
    source/modules
 
 Indices and tables

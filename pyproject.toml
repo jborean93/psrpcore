@@ -21,6 +21,7 @@ recommonmark = { version = "*", optional = true }
 Sphinx = { version = "*", optional = true }
 sphinx-rtd-theme = { version = "*", optional = true }
 sphinxcontrib-apidoc = { version = "*", optional = true }
+sphinx-markdown-tables = { version = "*", optional = true }
 
 [tool.poetry.dev-dependencies]
 black = "^21.6b0"
@@ -37,7 +38,7 @@ pywin32 = [
 ]
 
 [tool.poetry.extras]
-docs = ["Pygments", "recommonmark", "Sphinx", "sphinx-rtd-theme", "sphinxcontrib-apidoc"]
+docs = ["Pygments", "recommonmark", "Sphinx", "sphinx-rtd-theme", "sphinxcontrib-apidoc", "sphinx-markdown-tables"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
