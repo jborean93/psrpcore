@@ -1,4 +1,4 @@
-name: Test PSAccessToken
+name: Test PSRPCore
 on:
   push:
     branches:
@@ -39,7 +39,7 @@ jobs:
         echo "Installing baseline pip packages"
         python -m pip install --upgrade pip poetry tox
 
-        poetry install
+        poetry install -E docs
         poetry update
 
     - name: Build docs

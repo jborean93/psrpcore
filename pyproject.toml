@@ -15,6 +15,14 @@ include = [
 python = "^3.6.2"
 cryptography = "*"
 
+# For doc build
+Pygments = { version = "*", optional = true }
+recommonmark = { version = "*", optional = true }
+Sphinx = { version = "*", optional = true }
+sphinx-rtd-theme = { version = "*", optional = true }
+sphinxcontrib-apidoc = { version = "*", optional = true }
+sphinx-markdown-tables = { version = "*", optional = true }
+
 [tool.poetry.dev-dependencies]
 black = "^21.6b0"
 pytest = "*"
@@ -25,14 +33,12 @@ mypy = "*"
 isort = "*"
 pre-commit = "*"
 types-cryptography = "*"
-Pygments = "*"
-recommonmark = "*"
-Sphinx = "*"
-sphinx-rtd-theme = "*"
-sphinxcontrib-apidoc = "*"
 pywin32 = [
     { version = '*', platform = 'win32' },
 ]
+
+[tool.poetry.extras]
+docs = ["Pygments", "recommonmark", "Sphinx", "sphinx-rtd-theme", "sphinxcontrib-apidoc", "sphinx-markdown-tables"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -86,7 +92,7 @@ exclude = '''
 profile = "black"
 
 [tool.mypy]
-exclude = "tests/"
+exclude = "tests/|docs/"
 show_error_codes = true
 show_column_numbers = true
 disallow_any_unimported = true
