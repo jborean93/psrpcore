@@ -38,7 +38,7 @@ pywin32 = [
 ]
 
 [tool.poetry.extras]
-docs = ["Pygments", "recommonmark", "Sphinx", "sphinx-rtd-theme", "sphinxcontrib-apidoc", "sphinx-markdown-tables"]
+docs = ["myst-parser", "Pygments", "Sphinx", "sphinx-rtd-theme", "sphinxcontrib-apidoc"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
