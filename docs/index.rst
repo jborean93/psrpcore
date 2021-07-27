@@ -16,6 +16,7 @@ brief and will be expanded upon in the future.
    protocol
    scenarios
    transport
+   types
    source/modules
 
 Indices and tables
