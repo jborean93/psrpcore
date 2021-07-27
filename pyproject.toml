@@ -7,6 +7,7 @@ license = "MIT"
 keywords = ["psrp", "pwsh", "powershell", "remoting"]
 readme = "README.md"
 homepage = "https://github.com/jborean93/psrpcore"
+documentation = "https://psrpcore.readthedocs.io/"
 include = [
     "CHANGELOG.md",
 ]
@@ -16,12 +17,11 @@ python = "^3.6.2"
 cryptography = "*"
 
 # For doc build
+myst-parser = { version = "*", optional = true }
 Pygments = { version = "*", optional = true }
-recommonmark = { version = "*", optional = true }
 Sphinx = { version = "*", optional = true }
 sphinx-rtd-theme = { version = "*", optional = true }
 sphinxcontrib-apidoc = { version = "*", optional = true }
-sphinx-markdown-tables = { version = "*", optional = true }
 
 [tool.poetry.dev-dependencies]
 black = "^21.6b0"
