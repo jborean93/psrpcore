@@ -576,7 +576,7 @@ class PSObject:
         if super().__new__ is object.__new__ and cls.__init__ is not object.__init__:
             obj = super().__new__(cls)
         else:
-            obj = super().__new__(cls, *args, **kwargs)  # type: ignore[call-arg]  # The __mro__ may be screwed up.
+            obj = super().__new__(cls, *args, **kwargs)
 
         # Make sure the class instance has a copy of the class PSObject so they aren't shared. Also add a reference to
         # the instance for that PSObject.

@@ -7,12 +7,14 @@
     "editor.trimAutoWhitespace": true,
     "python.formatting.provider": "black",
     "python.linting.mypyEnabled": true,
+    "python.analysis.extraPaths": [
+        "src",
+    ],
     "python.testing.pytestArgs": [
         "tests",
         "-vv"
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
     "[python]": {
         "editor.codeActionsOnSave": {

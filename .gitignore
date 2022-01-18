@@ -114,6 +114,3 @@ ENV/
 
 # Vagrant
 .vagrant/
-
-# poetry
-poetry.lock

@@ -1,0 +1,5 @@
+myst-parser
+Pygments
+Sphinx
+sphinx-rtd-theme
+sphinxcontrib-apidoc
