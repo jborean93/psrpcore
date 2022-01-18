@@ -1,0 +1,14 @@
+include .coveragerc
+include .readthedocs.yaml
+include CHANGELOG.md
+include requirements-*.txt
+exclude .coverage
+exclude .gitignore
+exclude .pre-commit-config.yaml
+
+recursive-include tests *
+recursive-exclude tests *.pyc
+
+recursive-include docs *
+recursive-exclude docs/_build *
+recursive-exclude docs/source *

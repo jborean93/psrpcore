@@ -46,7 +46,7 @@ extensions = [
     "sphinxcontrib.apidoc",
 ]
 
-apidoc_module_dir = "../psrpcore"
+apidoc_module_dir = "../src/psrpcore"
 apidoc_output_dir = "source"
 
 # Add any paths that contain templates here, relative to this directory.

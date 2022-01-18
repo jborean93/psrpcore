@@ -140,9 +140,14 @@ class PSFlagBase(PSIntegerBase, enum.Flag, metaclass=PSEnumMeta):
     def __xor__(self, other):  # type: ignore[no-untyped-def]
         return enum.IntFlag.__xor__(self, other)
 
-    __ror__ = __or__
-    __rand__ = __and__
-    __rxor__ = __xor__
+    def __ror__(self, other):  # type: ignore[no-untyped-def]
+        return enum.IntFlag.__or__(self, other)
+
+    def __rand__(self, other):  # type: ignore[no-untyped-def]
+        return enum.IntFlag.__and__(self, other)
+
+    def __rxor__(self, other):  # type: ignore[no-untyped-def]
+        return enum.IntFlag.__xor__(self, other)
 
     def __invert__(self):  # type: ignore[no-untyped-def]
         return enum.IntFlag.__invert__(self)

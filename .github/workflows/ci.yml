@@ -37,18 +37,39 @@ jobs:
     - name: Install
       run: |
         echo "Installing baseline pip packages"
-        python -m pip install --upgrade pip poetry tox
 
-        poetry install -E docs
-        poetry update
+        python -m pip install -e .
+        python -m pip install -r requirements-docs.txt
 
     - name: Build docs
       run: |
         cd docs
-        poetry run make html-strict
+        make html-strict
+
+  build:
+    name: build project
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions/setup-python@v2
+
+    - name: install build pre-requisites
+      run: pip install build
+
+    - name: build sdist and wheel
+      run: python -m build --sdist --wheel
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: artifact
+        path: ./dist/*
 
   test:
     name: test
+    needs:
+    - build
+
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -61,6 +82,7 @@ jobs:
         - 3.7
         - 3.8
         - 3.9
+        - '3.10'
         python-arch:
         - x86
         - x64
@@ -78,23 +100,55 @@ jobs:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.python-arch }}
 
-    - name: Install
-      run: |
-        echo "Installing baseline pip packages"
-        python -m pip install --upgrade pip poetry tox
+    - uses: actions/download-artifact@v2
+      with:
+        name: artifact
+        path: ./dist
 
-        poetry install
-        poetry update
+    - name: Extract OS name
+      shell: bash
+      run: |
+        echo "##[set-output name=name;]$( echo '${{ matrix.os }}' | tr '-' ' ' | awk '{print $1}' )"
+      id: os
+
+    - name: Install
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+
+        echo "Installing psrpcore"
+        if [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ]; then
+            DIST_LINK_PATH="$( echo "${PWD}/dist" | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' )"
+        else
+            DIST_LINK_PATH="${PWD}/dist"
+        fi
+
+        python -m pip install psrpcore \
+            --no-index \
+            --find-links "file://${DIST_LINK_PATH}" \
+            --no-build-isolation \
+            --no-dependencies \
+            --verbose
+        python -m pip install psrpcore
+
+        echo "Installing dev dependencies"
+        python -m pip install -r requirements-dev.txt
 
     - name: Run Sanity Test
+      shell: bash
       run: |
-        poetry run python -m black . --check
-        poetry run python -m isort . --check-only
-        poetry run python -m mypy .
+        python -m black . --check
+        python -m isort . --check-only
+
+        # mypy has false positives on these older versions
+        PY_VER="$( python -c "import sys; ver = sys.version_info; print(f'cp{ver.major}{ver.minor}')" )"
+        if [ "${PY_VER}" != "cp36" ] && [ "${PY_VER}" != "cp37" ]; then
+            python -m mypy .
+        fi
 
     - name: Run Tests
       run: |
-        poetry run python -m pytest -v --junitxml junit/test-results.xml --cov psrpcore --cov-report xml --cov-report term-missing
+        python -m pytest -v --junitxml junit/test-results.xml --cov psrpcore --cov-report xml --cov-report term-missing
 
     - name: Upload Test Results
       if: always()
@@ -111,38 +165,26 @@ jobs:
         path: ./coverage.xml
 
     - name: Upload Coverage to codecov
-      if: always() && !startsWith(github.ref, 'refs/tags/v')
-      uses: codecov/codecov-action@v1
+      if: always()
+      uses: codecov/codecov-action@v2
       with:
         files: ./coverage.xml
-        flags: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.python-arch }}
+        flags: ${{ steps.os.outputs.name }},py${{ matrix.python-version }},${{ matrix.python-arch }}
 
   publish:
     name: publish
     needs:
     - docs
     - test
+
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-
-    - name: Installing baseline packages
-      run: |
-        echo "Installing baseline pip packages"
-        python -m pip install --upgrade pip poetry
-
-    - name: Build package
-      run: |
-        poetry build
-
-    - name: Capture Wheel and SDist
-      uses: actions/upload-artifact@v2
+    - uses: actions/download-artifact@v2
       with:
-        name: Module
-        path: dist/*
+        name: artifact
+        path: ./dist
 
     - name: Publish
       if: startsWith(github.ref, 'refs/tags/v')

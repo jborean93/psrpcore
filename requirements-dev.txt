@@ -1,0 +1,10 @@
+black
+isort
+mypy
+pre-commit
+pytest
+pytest-cov
+pywin32 ; sys_platform == 'win32'
+tox
+types-cryptography
+xmldiff

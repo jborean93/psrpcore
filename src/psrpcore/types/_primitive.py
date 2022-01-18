@@ -182,8 +182,8 @@ class PSIntegerBase(PSObject, int):
     def __pos__(self) -> "PSIntegerBase":
         return type(self)(super().__pos__())
 
-    def __pow__(self, *args: typing.Any, **kwargs: typing.Any) -> "PSIntegerBase":
-        val = super().__pow__(*args, **kwargs)  # type: ignore[call-overload]  # base has an overload so this is easier
+    def __pow__(self, *args: typing.Any, **kwargs: typing.Any) -> "PSIntegerBase":  # type: ignore[override]
+        val = super().__pow__(*args, **kwargs)
         return type(self)(val)
 
     def __rshift__(self, n: int) -> "PSIntegerBase":
@@ -424,7 +424,7 @@ class PSDateTime(PSObject, datetime.datetime):
         if isinstance(other, (PSDuration, datetime.timedelta)):
             return self + -other
 
-        duration = PSDuration(super().__sub__(other))
+        duration = PSDuration(super().__sub__(other))  # type: ignore[call-overload]
         nanosecond_diff = self.nanosecond - getattr(other, "nanosecond", 0)
         return duration + PSDuration(nanoseconds=nanosecond_diff)
 
