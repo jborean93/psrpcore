@@ -43,11 +43,9 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
-    "sphinxcontrib.apidoc",
 ]
 
-apidoc_module_dir = "../src/psrpcore"
-apidoc_output_dir = "source"
+myst_heading_anchors = 3
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = [
@@ -198,7 +196,6 @@ def autodoc_skip_member_handler(
     skip: bool,
     options: typing.Dict[str, typing.Any],
 ) -> bool:
-    a = ""
     return (
         skip
         # This is a metadata class for all PSObject types, end users don't need

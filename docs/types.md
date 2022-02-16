@@ -132,30 +132,30 @@ Here is the mapping of the primitive types:
 
 | .NET | psrpcore.type | Python Type | Native |
 |-|-|-|-|
-| [System.String](https://docs.microsoft.com/en-us/dotnet/api/system.string) | [PSString](./source/psrpcore.types.html#psrpcore.types.PSString) | str | Y |
-| [System.Char](https://docs.microsoft.com/en-us/dotnet/api/system.char) | [PSChar](./source/psrpcore.types.html#psrpcore.types.PSChar) | int¹ | N |
-| [System.Boolean](https://docs.microsoft.com/en-us/dotnet/api/system.boolean) | [PSBool](./source/psrpcore.types.html#psrpcore.types.PSBool)² | bool | Y |
-| [System.DateTime](https://docs.microsoft.com/en-us/dotnet/api/system.datetime) | [PSDateTime](./source/psrpcore.types.html#psrpcore.types.PSDateTime) | datetime.datetime | Y |
-| [System.TimeSpan](https://docs.microsoft.com/en-us/dotnet/api/system.timespan) | [PSDuration](./source/psrpcore.types.html#psrpcore.types.PSDuration) | str | N |
-| [System.Byte](https://docs.microsoft.com/en-us/dotnet/api/system.byte) | [PSByte](./source/psrpcore.types.html#psrpcore.types.PSByte) | int | N |
-| [System.SByte](https://docs.microsoft.com/en-us/dotnet/api/system.sbyte) | [PSSByte](./source/psrpcore.types.html#psrpcore.types.PSSByte) | int | N |
-| [System.UInt16](https://docs.microsoft.com/en-us/dotnet/api/system.uint16) | [PSUInt16](./source/psrpcore.types.html#psrpcore.types.PSUInt16) | int | N |
-| [System.Int16](https://docs.microsoft.com/en-us/dotnet/api/system.int16) | [PSInt16](./source/psrpcore.types.html#psrpcore.types.PSInt16) | int | N |
-| [System.UInt32](https://docs.microsoft.com/en-us/dotnet/api/system.uint32) | [PSUInt](./source/psrpcore.types.html#psrpcore.types.PSUInt) | int | N |
-| [System.Int32](https://docs.microsoft.com/en-us/dotnet/api/system.int32) | [PSInt](./source/psrpcore.types.html#psrpcore.types.PSInt) | int | Y |
-| [System.UInt64](https://docs.microsoft.com/en-us/dotnet/api/system.uint64) | [PSUInt64](./source/psrpcore.types.html#psrpcore.types.PSUInt64) | int | N |
-| [System.Int64](https://docs.microsoft.com/en-us/dotnet/api/system.int64) | [PSInt64](./source/psrpcore.types.html#psrpcore.types.PSInt64) | int | N |
-| [System.Single](https://docs.microsoft.com/en-us/dotnet/api/system.single) | [PSSingle](./source/psrpcore.types.html#psrpcore.types.PSSingle) | float | Y |
-| [System.Double](https://docs.microsoft.com/en-us/dotnet/api/system.double) | [PSDouble](./source/psrpcore.types.html#psrpcore.types.PSDouble) | float | N |
-| [System.Decimal](https://docs.microsoft.com/en-us/dotnet/api/system.decimal) | [PSDecimal](./source/psrpcore.types.html#psrpcore.types.PSDecimal) | decimal.Decimal | Y |
-| `System.Byte[]` - Array | [PSByteArray](./source/psrpcore.types.html#psrpcore.types.PSByteArray) | bytes | Y |
-| [System.Guid](https://docs.microsoft.com/en-us/dotnet/api/system.guid) | [PSGuid](./source/psrpcore.types.html#psrpcore.types.PSGuid) | uuid.UUID | Y |
-| [System.Uri](https://docs.microsoft.com/en-us/dotnet/api/system.uri) | [PSUri](./source/psrpcore.types.html#psrpcore.types.PSUri) | str | N |
+| [System.String](https://docs.microsoft.com/en-us/dotnet/api/system.string) | [PSString](psrpcore.types.PSString) | str | Y |
+| [System.Char](https://docs.microsoft.com/en-us/dotnet/api/system.char) | [PSChar](psrpcore.types.PSChar) | int¹ | N |
+| [System.Boolean](https://docs.microsoft.com/en-us/dotnet/api/system.boolean) | [PSBool](psrpcore.types.PSBool)² | bool | Y |
+| [System.DateTime](https://docs.microsoft.com/en-us/dotnet/api/system.datetime) | [PSDateTime](psrpcore.types.PSDateTime) | datetime.datetime | Y |
+| [System.TimeSpan](https://docs.microsoft.com/en-us/dotnet/api/system.timespan) | [PSDuration](psrpcore.types.PSDuration) | str | N |
+| [System.Byte](https://docs.microsoft.com/en-us/dotnet/api/system.byte) | [PSByte](psrpcore.types.PSByte) | int | N |
+| [System.SByte](https://docs.microsoft.com/en-us/dotnet/api/system.sbyte) | [PSSByte](psrpcore.types.PSSByte) | int | N |
+| [System.UInt16](https://docs.microsoft.com/en-us/dotnet/api/system.uint16) | [PSUInt16](psrpcore.types.PSUInt16) | int | N |
+| [System.Int16](https://docs.microsoft.com/en-us/dotnet/api/system.int16) | [PSInt16](psrpcore.types.PSInt16) | int | N |
+| [System.UInt32](https://docs.microsoft.com/en-us/dotnet/api/system.uint32) | [PSUInt](psrpcore.types.PSUInt) | int | N |
+| [System.Int32](https://docs.microsoft.com/en-us/dotnet/api/system.int32) | [PSInt](psrpcore.types.PSInt) | int | Y |
+| [System.UInt64](https://docs.microsoft.com/en-us/dotnet/api/system.uint64) | [PSUInt64](psrpcore.types.PSUInt64) | int | N |
+| [System.Int64](https://docs.microsoft.com/en-us/dotnet/api/system.int64) | [PSInt64](psrpcore.types.PSInt64) | int | N |
+| [System.Single](https://docs.microsoft.com/en-us/dotnet/api/system.single) | [PSSingle](psrpcore.types.PSSingle) | float | Y |
+| [System.Double](https://docs.microsoft.com/en-us/dotnet/api/system.double) | [PSDouble](psrpcore.types.PSDouble) | float | N |
+| [System.Decimal](https://docs.microsoft.com/en-us/dotnet/api/system.decimal) | [PSDecimal](psrpcore.types.PSDecimal) | decimal.Decimal | Y |
+| `System.Byte[]` - Array | [PSByteArray](psrpcore.types.PSByteArray) | bytes | Y |
+| [System.Guid](https://docs.microsoft.com/en-us/dotnet/api/system.guid) | [PSGuid](psrpcore.types.PSGuid) | uuid.UUID | Y |
+| [System.Uri](https://docs.microsoft.com/en-us/dotnet/api/system.uri) | [PSUri](psrpcore.types.PSUri) | str | N |
 | `$null` | `PSNull`² | None | Y |
-| [System.Version](https://docs.microsoft.com/en-us/dotnet/api/system.version) | [PSVersion](./source/psrpcore.types.html#psrpcore.types.PSVersion) | N/A | N |
-| [System.Xml.XmlDocument](https://docs.microsoft.com/en-us/dotnet/api/system.xml.xmldocument) | [PSXml](./source/psrpcore.types.html#psrpcore.types.PSXml) | str | N |
-| [System.Management.Automation.ScriptBlock](https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.scriptblock) | [PSScriptBlock](./source/psrpcore.types.html#psrpcore.types.PSScriptBlock) | str | N |
-| [System.Security.SecureString](https://docs.microsoft.com/en-us/dotnet/api/system.security.securestring) | [PSSecureString](./source/psrpcore.types.html#psrpcore.types.PSSecureString)³ | N/A | N |
+| [System.Version](https://docs.microsoft.com/en-us/dotnet/api/system.version) | [PSVersion](psrpcore.types.PSVersion) | N/A | N |
+| [System.Xml.XmlDocument](https://docs.microsoft.com/en-us/dotnet/api/system.xml.xmldocument) | [PSXml](psrpcore.types.PSXml) | str | N |
+| [System.Management.Automation.ScriptBlock](https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.scriptblock) | [PSScriptBlock](psrpcore.types.PSScriptBlock) | str | N |
+| [System.Security.SecureString](https://docs.microsoft.com/en-us/dotnet/api/system.security.securestring) | [PSSecureString](psrpcore.types.PSSecureString)³ | N/A | N |
 
 ¹ - While the base Python type is an `int`, doing `PSChar('1')` will get the char based on the string value. Do `PSChar(1)` if you want the `PSChar` to represent `\u0001`
 
@@ -192,11 +192,11 @@ While `psrpcore` supports (de)serialization of effectively any complex object, t
 
 | .NET | psrpcore.type | Python Type | Native |
 |-|-|-|-|
-| [System.Collections.ArrayList](https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist)¹ | [PSList](./source/psrpcore.types.html#psrpcore.types.PSList) | list | Y |
-| [System.Collections.Hashtable](https://docs.microsoft.com/en-us/dotnet/api/system.collections.hashtable)¹ | [PSDict](./source/psrpcore.types.html#psrpcore.types.PSDict) | dict | Y |
-| [System.Collections.Stack](https://docs.microsoft.com/en-us/dotnet/api/system.collections.stack)¹ | [PSStack](./source/psrpcore.types.html#psrpcore.types.PSStack) | list | N |
-| [System.Collections.Queue](https://docs.microsoft.com/en-us/dotnet/api/system.collections.queue)¹ | [PSQueue](./source/psrpcore.types.html#psrpcore.types.PSQueue) | queue.Queue | Y |
-| [System.Management.Automation.PSCustomObject](https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscustomobject) | [PSCustomObject](./source/psrpcore.types.html#psrpcore.types.PSCustomObject) | type² | Y |
+| [System.Collections.ArrayList](https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist)¹ | [PSList](psrpcore.types.PSList) | list | Y |
+| [System.Collections.Hashtable](https://docs.microsoft.com/en-us/dotnet/api/system.collections.hashtable)¹ | [PSDict](psrpcore.types.PSDict) | dict | Y |
+| [System.Collections.Stack](https://docs.microsoft.com/en-us/dotnet/api/system.collections.stack)¹ | [PSStack](psrpcore.types.PSStack) | list | N |
+| [System.Collections.Queue](https://docs.microsoft.com/en-us/dotnet/api/system.collections.queue)¹ | [PSQueue](psrpcore.types.PSQueue) | queue.Queue | Y |
+| [System.Management.Automation.PSCustomObject](https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscustomobject) | [PSCustomObject](psrpcore.types.PSCustomObject) | type² | Y |
 
 ¹ - Other .NET types that are similar to this type are always deserialized to this .NET type, `psrpcore` acts the same, e.g. an` [Object[]]` will become a `PSList`
 
@@ -212,8 +212,8 @@ Because of its uniqueness they are implemented slightly differently and have a f
 
 There are 2 base enum types that can be used
 
-* [psrpcore.types.PSEnumBase](./source/psrpcore.types.html#psrpcore.types.PSEnumBase): Inherits `PSObject`, used for enum types that should be set with a single value
-* [psrpcore.types.PSFlagBase](./source/psrpcore.types.html#psrpcore.types.PSFlagBase): Same as `PSEnumBase` but has special behaviour to allow multiple values to be set
+* [psrpcore.types.PSEnumBase](psrpcore.types.PSEnumBase): Inherits `PSObject`, used for enum types that should be set with a single value
+* [psrpcore.types.PSFlagBase](psrpcore.types.PSFlagBase): Same as `PSEnumBase` but has special behaviour to allow multiple values to be set
 
 Like with .NET enums, the enums that inherit `PSEnumBase` or `PSFlagBase` must represent one of the [numeric types](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/integral-numeric-types) like:
 
@@ -289,17 +289,17 @@ When implementing your own Python class to represent a .NET type there are few t
 + The property names of the .NET class must match up with the ones defined on the Python class
 + When an object is serialized, property values are sourced from the property object inside `PSObject`
   + Using a `@property` decorator to generate a calculated property value won't work
-  + The workaround is to use a [PSAliasProperty](./source/psrpcore.types.html#psrpcore.types.PSAliasProperty) or [PSScriptProperty](./source/psrpcore.types.html#psrpcore.types.PSScriptProperty) that is automatically called during the serialization process
+  + The workaround is to use a [PSAliasProperty](psrpcore.types.PSAliasProperty) or [PSScriptProperty](psrpcore.types.PSScriptProperty) that is automatically called during the serialization process
 + Methods defined on the Python class are not transferred to PowerShell, only properties are
 + Whether you want the type to be rehydrated on deserialization or not
 
-All custom .NET types in PowerShell that you implement *SHOULD* inherit from [psrpcore.types.PSObject](./source/psrpcore.types.html#psrpcore.types.PSObject) and use the [psrpcore.types.PSType](./source/psrpcore.types.html#psrpcore.types.PSType) decorator to define the .NET metadata.
+All custom .NET types in PowerShell that you implement *SHOULD* inherit from [psrpcore.types.PSObject](psrpcore.types.PSObject) and use the [psrpcore.types.PSType](psrpcore.types.PSType) decorator to define the .NET metadata.
 Any classes that do not do this will be treated as a `PSCustomObject` which is explained a bit later.
 The `PSType` decorator accepts the following arguments:
 
 + `type_names`: A list of .NET types the object implements, i.e. `['System.String']`
-+ `adapted_properties`: A list of [psrpcore.types.PSPropertyInfo](./source/psrpcore.types.html#psrpcore.types.PSPropertyInfo) instances that define the adapted properties of the object
-+ `extended_properties`: A list of [psrpcore.types.PSPropertyInfo](./source/psrpcore.types.html#psrpcore.types.PSPropertyInfo) instances that define the extended properties of the object
++ `adapted_properties`: A list of [psrpcore.types.PSPropertyInfo](psrpcore.types.PSPropertyInfo) instances that define the adapted properties of the object
++ `extended_properties`: A list of [psrpcore.types.PSPropertyInfo](psrpcore.types.PSPropertyInfo) instances that define the extended properties of the object
 + `skip_inheritance`: Do not inherit the type names and properties of the base class
 + `rehydrate`: Whether this type can be rehydrated (deserialized to this type) or not (default: `True`)
 + `tag`: The CLIXML tag element value to use, this should not be used for end users as all complex types are `Obj`
@@ -308,7 +308,7 @@ The type names and properties of the base object will also be inherited onto the
 For example `PSObject` defines the type names as `["System.Object"]` and thus anything that inherits `PSObject` will have those types appended on it's custom types, e.g. `["System.MyType", "System.Object"]`.
 To skip this behaviour and have a blank starting slate, set `skip_inheritance=True`.
 
-The `adapted_properties` and `extended_properties` kwargs take a list of [PSPropertyInfo](./source/psrpcore.types.html#psrpcore.types.PSPropertyInfo) objects that define the properties of the object itself.
+The `adapted_properties` and `extended_properties` kwargs take a list of [PSPropertyInfo](psrpcore.types.PSPropertyInfo) objects that define the properties of the object itself.
 Once a property has been defined on the object it is immediately gettable/settable like a normal attribute of an instance.
 
 The `rehydrate` kwarg is used during serialization to determine the Python type that is used for the deserialized value.
@@ -456,15 +456,15 @@ Here is a brief overview of how `psrpcore` deserializes CLIXML to an object
   + Even if a rehydrated object was used and did not have that property in the class metadata it will still be added to the new instance
   + This also applies to enums and extended primitive objects
 + If the object wraps a dictionary (XML tag == `DCT`)
-  + The value becomes [psrpcore.types.PSDict](./source/psrpcore.types.html#psrpcore.types.PSDict) and is populated with the dict elements
+  + The value becomes [psrpcore.types.PSDict](psrpcore.types.PSDict) and is populated with the dict elements
 + If the object wraps a stack (XML tag == `STK`)
-  + The value becomes [psrpcore.types.PSStack](./source/psrpcore.types.html#psrpcore.types.PSStack) and is populated with the stack elements
+  + The value becomes [psrpcore.types.PSStack](psrpcore.types.PSStack) and is populated with the stack elements
 + If the object wraps a queue (XML tag == `QUE`)
-  + The value becomes [psrpcore.types.PSQueue](./source/psrpcore.types.html#psrpcore.types.PSQueue) and is populated with the queue elements
+  + The value becomes [psrpcore.types.PSQueue](psrpcore.types.PSQueue) and is populated with the queue elements
 + If the object wraps a list (XML tag == `LST`)
-  + The value becomes [psrpcore.types.PSList](./source/psrpcore.types.html#psrpcore.types.PSList) and is populated with the list elements
+  + The value becomes [psrpcore.types.PSList](psrpcore.types.PSList) and is populated with the list elements
 + If the object wraps a IEnumerable (XML tag == `IE`)
-  + The value becomes [psrpcore.types.PSIEnumerable](./source/psrpcore.types.html#psrpcore.types.PSIEnumerable) and is populated with the enumerable elements
+  + The value becomes [psrpcore.types.PSIEnumerable](psrpcore.types.PSIEnumerable) and is populated with the enumerable elements
 + If the object contains a remaining value
   + If the type names match a *registered rehydratable* enum, the enum value is set to this primitive value
   + Else the value now becomes an instance of the primitive value specified instead of a `PSObject`
@@ -497,10 +497,10 @@ The [Update-TypeData](https://docs.microsoft.com/en-us/powershell/module/microso
 
 You can achieve a similar thing in `psrpcore` by using one of the following methods:
 
-+ [add_member](./source/psrpcore.types.html#psrpcore.types.add_member)
-+ [add_alias_property](./source/psrpcore.types.html#psrpcore.types.add_alias_property)
-+ [add_note_property](./source/psrpcore.types.html#psrpcore.types.add_note_property)
-+ [add_script_property](./source/psrpcore.types.html#psrpcore.types.add_script_property)
++ [add_member](psrpcore.types.add_member)
++ [add_alias_property](psrpcore.types.add_alias_property)
++ [add_note_property](psrpcore.types.add_note_property)
++ [add_script_property](psrpcore.types.add_script_property)
 
 ```python
 import psrpcore.types
