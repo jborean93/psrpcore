@@ -1,4 +1,4 @@
-myst-parser == 0.16.1
+myst-parser
 Pygments
 Sphinx
 sphinx-rtd-theme
