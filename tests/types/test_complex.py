@@ -35,6 +35,7 @@ def test_ps_custom_object_empty():
     assert isinstance(actual, complex.PSCustomObject)
     assert actual.PSTypeNames == ["System.Management.Automation.PSCustomObject", "System.Object"]
     assert str(actual) == "to string value"
+    assert repr(actual) == "PSCustomObject()"
 
 
 def test_ps_custom_object_type_name():
@@ -64,6 +65,28 @@ def test_ps_custom_object_type_name():
         "Deserialized.System.Object",
     ]
     assert str(actual) == "to string value"
+    assert repr(actual) == "PSObject(My Property='Value')"
+
+
+def test_ps_custom_object_properties():
+    obj = complex.PSCustomObject(Foo="Bar", Hello="World")
+    assert obj.PSTypeNames == ["System.Management.Automation.PSCustomObject", "System.Object"]
+
+    element = serialize(obj)
+
+    actual = ElementTree.tostring(element, encoding="utf-8").decode()
+    assert (
+        actual == '<Obj RefId="0">'
+        '<TN RefId="0"><T>System.Management.Automation.PSCustomObject</T><T>System.Object</T></TN>'
+        '<MS><S N="Foo">Bar</S><S N="Hello">World</S></MS>'
+        "</Obj>"
+    )
+
+    actual = deserialize(element)
+    assert isinstance(actual, complex.PSCustomObject)
+    assert actual.PSTypeNames == ["System.Management.Automation.PSCustomObject", "System.Object"]
+    assert str(actual) == "PSCustomObject(Foo='Bar', Hello='World')"
+    assert repr(actual) == "PSCustomObject(Foo='Bar', Hello='World')"
 
 
 def test_psrp_pipeline_result_types():

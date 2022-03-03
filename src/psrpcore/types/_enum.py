@@ -89,6 +89,12 @@ class PSEnumBase(PSIntegerBase, enum.Enum, metaclass=PSEnumMeta):
     if you require a flag like enum, use :class:`PSFlagBase` as the base type.
     """
 
+    def __repr__(self) -> str:
+        return enum.Enum.__repr__(self)
+
+    def __str__(self) -> str:
+        return enum.Enum.__str__(self)
+
 
 @PSType(["System.Enum", "System.ValueType"], rehydrate=False)
 class PSFlagBase(PSIntegerBase, enum.Flag, metaclass=PSEnumMeta):
@@ -151,3 +157,9 @@ class PSFlagBase(PSIntegerBase, enum.Flag, metaclass=PSEnumMeta):
 
     def __invert__(self):  # type: ignore[no-untyped-def]
         return enum.IntFlag.__invert__(self)
+
+    def __repr__(self) -> str:
+        return enum.IntFlag.__repr__(self)
+
+    def __str__(self) -> str:
+        return enum.IntFlag.__str__(self)

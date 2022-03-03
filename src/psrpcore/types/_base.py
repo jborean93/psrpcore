@@ -729,6 +729,13 @@ class PSObject:
         else:
             return super().__str__()
 
+    def __repr__(self) -> str:
+        prop_entries = {p.name: p for p in self.PSObject.adapted_properties}
+        prop_entries.update({p.name: p for p in self.PSObject.extended_properties})
+
+        kw = ", ".join(f"{k}={v.get_value(self)!r}" for k, v in prop_entries.items())
+        return f"{type(self).__name__}({kw})"
+
 
 class PSType:
     """PSType class decorator.
