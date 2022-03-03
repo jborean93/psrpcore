@@ -55,7 +55,7 @@ deps =
 commands =
     python -m pytest -v --cov psrpcore --cov-report term-missing
 
-[testenv:lint]
+[testenv:sanity]
 commands =
     python -m black . --check
     python -m isort . --check-only

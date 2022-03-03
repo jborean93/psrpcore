@@ -1365,3 +1365,112 @@ $host.UI.RawUI.SetBufferContents($coordinates, $cells)
                 assert cell.BackgroundColor == psrpcore.types.ConsoleColor.Black
                 assert isinstance(cell.BackgroundColor, psrpcore.types.ConsoleColor)
                 assert cell.BufferCellType == psrpcore.types.BufferCellType.Complete
+
+
+def test_pipeline_extra_cmds(server_pwsh: ServerTransport, client_opened_pwsh: ClientTransport):
+    cmd = """[CmdletBinding()]
+    param ([String]$Name)
+
+    $connInfo = [System.Management.Automation.Runspaces.NamedPipeConnectionInfo]::new($Name)
+    $runspace = [RunspaceFactory]::CreateRunspace($Host, $connInfo)
+    $runspace.Open()
+    try {
+        $ps = [PowerShell]::Create()
+        $ps.Runspace = $runspace
+
+        [void]$ps.AddCommand("Set-Variable").AddParameters([Ordered]@{
+            Name = "string"
+            Value = "foo"
+        }).AddStatement()
+
+        [void]$ps.AddCommand("Get-Variable").AddParameter("Name", "string")
+        [void]$ps.AddCommand("Select-Object").AddParameter("Property", @("Name", "Value"))
+        [void]$ps.AddStatement()
+
+        [void]$ps.AddCommand("Get-Variable").AddArgument("string").AddParameter("ValueOnly", $true)
+        [void]$ps.AddCommand("Select-Object")
+        [void]$ps.AddStatement()
+
+        [void]$ps.AddScript('[PSCustomObject]@{ Value = $string }')
+        [void]$ps.AddScript('process { $_ | Select-Object -Property @{N="Test"; E={ $_.Value }} }')
+        [void]$ps.AddStatement()
+
+        $ps.Invoke()
+    }
+    finally {
+        $runspace.Dispose()
+    }
+    """
+
+    with BackgroundPipeline(
+        client_opened_pwsh,
+        cmd,
+        Name=server_pwsh.pipe_name,
+    ) as ps:
+        open_runspace(server_pwsh)
+        runspace = server_pwsh.runspace
+
+        command = server_pwsh.next_payload()
+        assert command.action == "Command"
+        server_pwsh.command_ack(command.ps_guid)
+
+        s_ps = psrpcore.ServerPipeline(runspace, command.ps_guid)
+        create_pipe = server_pwsh.next_event()
+        assert isinstance(create_pipe, psrpcore.CreatePipelineEvent)
+        assert isinstance(create_pipe.pipeline, psrpcore.PowerShell)
+        assert create_pipe.pipeline_id == s_ps.pipeline_id
+        assert len(s_ps.metadata.commands) == 7
+        assert s_ps.metadata.commands[0].command_text == "Set-Variable"
+        assert s_ps.metadata.commands[0].parameters == [("Name", "string"), ("Value", "foo")]
+        assert s_ps.metadata.commands[0].end_of_statement
+        assert s_ps.metadata.commands[0].is_script is False
+
+        assert s_ps.metadata.commands[1].command_text == "Get-Variable"
+        assert s_ps.metadata.commands[1].parameters == [("Name", "string")]
+        assert s_ps.metadata.commands[1].end_of_statement is False
+        assert s_ps.metadata.commands[1].is_script is False
+
+        assert s_ps.metadata.commands[2].command_text == "Select-Object"
+        assert s_ps.metadata.commands[2].parameters == [("Property", ["Name", "Value"])]
+        assert s_ps.metadata.commands[2].end_of_statement
+        assert s_ps.metadata.commands[2].is_script is False
+
+        assert s_ps.metadata.commands[3].command_text == "Get-Variable"
+        assert s_ps.metadata.commands[3].parameters == [(None, "string"), ("ValueOnly", True)]
+        assert s_ps.metadata.commands[3].end_of_statement is False
+        assert s_ps.metadata.commands[3].is_script is False
+
+        assert s_ps.metadata.commands[4].command_text == "Select-Object"
+        assert s_ps.metadata.commands[4].parameters == []
+        assert s_ps.metadata.commands[4].end_of_statement
+        assert s_ps.metadata.commands[4].is_script is False
+
+        assert s_ps.metadata.commands[5].command_text == "[PSCustomObject]@{ Value = $string }"
+        assert s_ps.metadata.commands[5].parameters == []
+        assert s_ps.metadata.commands[5].end_of_statement is False
+        assert s_ps.metadata.commands[5].is_script
+
+        assert (
+            s_ps.metadata.commands[6].command_text
+            == 'process { $_ | Select-Object -Property @{N="Test"; E={ $_.Value }} }'
+        )
+        assert s_ps.metadata.commands[6].parameters == []
+        assert s_ps.metadata.commands[6].end_of_statement is True
+        assert s_ps.metadata.commands[6].is_script
+
+        server_pwsh.data_ack(s_ps.pipeline_id)
+        s_ps.start()
+        server_pwsh.data()
+
+        s_ps.complete()
+        server_pwsh.data()
+
+        close = server_pwsh.next_payload()
+        assert close.action == "Close"
+        assert close.ps_guid == s_ps.pipeline_id
+        server_pwsh.close_ack(close.ps_guid)
+
+        close = server_pwsh.next_payload()
+        assert close.action == "Close"
+        assert close.ps_guid is None
+        server_pwsh.close_ack()
