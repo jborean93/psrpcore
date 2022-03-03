@@ -145,6 +145,13 @@ class PSIntegerBase(PSObject, int):
     ) -> None:
         super().__init__(*args, **kwargs)
 
+    def __repr__(self) -> str:
+        return int.__repr__(self)
+
+    def __str__(self) -> str:
+        # Use the PSObject.to_string in case this was a deserialized enum
+        return self.PSObject._to_string if self.PSObject._to_string is not None else int.__str__(self)
+
     def __abs__(self) -> "PSIntegerBase":
         return type(self)(super().__abs__())
 
@@ -200,6 +207,12 @@ class PSStringBase(PSObject, str):
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
 
+    def __repr__(self) -> str:
+        return str.__repr__(self)
+
+    def __str__(self) -> str:
+        return str.__str__(self)
+
     def __getitem__(self, item: typing.Union[int, str, slice]) -> "PSStringBase":
         # Allows slicing alongside getting extended properties which preserves the underlying type.
         if isinstance(item, str):
@@ -230,8 +243,6 @@ class PSString(PSStringBase):
     .. _System.String:
         https://docs.microsoft.com/en-us/dotnet/api/system.string?view=net-5.0
     """
-
-    pass
 
 
 @PSType(["System.Char", "System.ValueType"], tag="C")
@@ -291,6 +302,9 @@ class PSChar(PSObject, int):
     def __str__(self) -> str:
         # While backed by an int value, the str representation should be the char it represents.
         return str(chr(self))
+
+    def __repr__(self) -> str:
+        return int.__repr__(self)
 
 
 PSBool = bool
@@ -375,7 +389,7 @@ class PSDateTime(PSObject, datetime.datetime):
         return instance
 
     def __repr__(self) -> str:
-        datetime_repr = super().__repr__()[:-1]
+        datetime_repr = datetime.datetime.__repr__(self)[:-1]
         return f"{datetime_repr}, nanosecond={self.nanosecond})"
 
     def __str__(self) -> str:
@@ -499,8 +513,7 @@ class PSDuration(PSObject, datetime.timedelta):
             values.append("0")
 
         kwargs = ", ".join(values)
-        cls = self.__class__
-        return f"{cls.__qualname__}({kwargs})"
+        return f"{type(self).__name__}({kwargs})"
 
     def __str__(self) -> str:
         s = ""
@@ -855,6 +868,12 @@ class PSSingle(PSObject, float):
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
 
+    def __repr__(self) -> str:
+        return float.__repr__(self)
+
+    def __str__(self) -> str:
+        return float.__str__(self)
+
 
 @PSType(["System.Double", "System.ValueType"], tag="Db")
 class PSDouble(PSObject, float):
@@ -880,6 +899,12 @@ class PSDouble(PSObject, float):
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
 
+    def __repr__(self) -> str:
+        return float.__repr__(self)
+
+    def __str__(self) -> str:
+        return float.__str__(self)
+
 
 @PSType(["System.Decimal", "System.ValueType"], tag="D")
 class PSDecimal(PSObject, decimal.Decimal):
@@ -904,6 +929,12 @@ class PSDecimal(PSObject, decimal.Decimal):
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__()
+
+    def __repr__(self) -> str:
+        return decimal.Decimal.__repr__(self)
+
+    def __str__(self) -> str:
+        return decimal.Decimal.__str__(self)
 
 
 @PSType(["System.Byte[]", "System.Array"], tag="BA")
@@ -938,6 +969,12 @@ class PSByteArray(PSObject, bytes):
         else:
             # String indexing, need to preserve the type.
             return type(self)(bytes.__getitem__(self, item))
+
+    def __repr__(self) -> str:
+        return bytes.__repr__(self)
+
+    def __str__(self) -> str:
+        return bytes.__str__(self)
 
 
 @PSType(["System.Guid", "System.ValueType"], tag="G")
@@ -989,6 +1026,12 @@ class PSGuid(PSObject, uuid.UUID):
             return
 
         super().__setattr__(name, value)
+
+    def __repr__(self) -> str:
+        return uuid.UUID.__repr__(self)
+
+    def __str__(self) -> str:
+        return uuid.UUID.__str__(self)
 
 
 @PSType(["System.Uri"], tag="URI")
@@ -1128,8 +1171,7 @@ class PSVersion(PSObject):
                 values.append(f"{field}={value}")
 
         kwargs = ", ".join(values)
-        cls = self.__class__
-        return f"{cls.__module__}.{cls.__qualname__}({kwargs})"
+        return f"{type(self).__name__}({kwargs})"
 
     def __str__(self) -> str:
         parts = [self.major, self.minor, self.build, self.revision]
@@ -1315,6 +1357,9 @@ class PSSecureString(PSObject):
         dec_str = PSString(raw)
         dec_str.PSObject = self.PSObject
         return dec_str
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}()"
 
     def __str__(self) -> str:
         return (str(self._value) if self._encrypted else self.PSObject.type_names[0]) or ""

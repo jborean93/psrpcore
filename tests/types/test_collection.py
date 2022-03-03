@@ -71,6 +71,8 @@ def test_ps_stack():
     actual = deserialize(element)
     assert isinstance(actual, collection.PSStack)
     assert isinstance(actual, list)
+    assert str(actual) == "['abc', 123, 1, True]"
+    assert repr(actual) == "['abc', 123, 1, True]"
     assert actual == ["abc", 123, PSInt64(1), True]
     # Verify we can still index the list
     assert actual[0] == "abc"
@@ -111,6 +113,8 @@ def test_ps_stack_with_properties():
     actual = deserialize(element)
     assert isinstance(actual, collection.PSStack)
     assert isinstance(actual, list)
+    assert str(actual) == "[0, 1, 97, 2]"
+    assert repr(actual) == "[0, 1, 97, 2]"
     assert actual == [0, 1, PSChar("a"), 2]
     # Verify we can still index the list
     assert actual[0] == 0
@@ -150,6 +154,8 @@ def test_ps_queue():
     actual = deserialize(element)
     assert isinstance(actual, collection.PSQueue)
     assert isinstance(actual, queue.Queue)
+    assert str(actual) == queue.Queue.__str__(actual)
+    assert repr(actual) == queue.Queue.__repr__(actual)
 
     assert actual.get() == "abc"
     assert actual.get() == 123
@@ -214,6 +220,8 @@ def test_ps_queue_with_properties():
     actual = deserialize(element)
     assert isinstance(actual, collection.PSQueue)
     assert isinstance(actual, queue.Queue)
+    assert str(actual) == queue.Queue.__str__(actual)
+    assert repr(actual) == queue.Queue.__repr__(actual)
 
     assert actual.get() == "abc"
     assert actual.get() == 123
@@ -256,6 +264,9 @@ def test_ps_list():
     actual = deserialize(element)
     assert isinstance(actual, collection.PSList)
     assert isinstance(actual, list)
+    assert str(actual) == "['abc', 123, 1, True]"
+    assert repr(actual) == "['abc', 123, 1, True]"
+
     assert actual == ["abc", 123, PSInt64(1), True]
     # Verify we can still index the list
     assert actual[0] == "abc"
@@ -423,6 +434,8 @@ def test_ps_dict_with_properties():
     actual = deserialize(element)
     assert isinstance(actual, collection.PSDict)
     assert isinstance(actual, dict)
+    assert str(actual) == f"{{'key': 'dict', {COMPLEX_STRING!r}: 'dict'}}"
+    assert repr(actual) == f"{{'key': 'dict', {COMPLEX_STRING!r}: 'dict'}}"
 
     # In the case of a prop shadowing a dict, [] will favour the dict, and . will only get props
     assert actual["key"] == "dict"
@@ -465,5 +478,8 @@ def test_ps_ienumerable():
     actual = deserialize(element)
     assert isinstance(actual, collection.PSIEnumerable)
     assert isinstance(actual, list)
+    assert str(actual) == "[0, 1, 2, 3, 4]"
+    assert repr(actual) == "[0, 1, 2, 3, 4]"
+
     assert actual == [0, 1, 2, 3, 4]
     assert actual.PSTypeNames == ["System.Collections.IEnumerable", "System.Object"]

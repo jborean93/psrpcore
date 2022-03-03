@@ -1033,6 +1033,8 @@ def test_ps_decimal(input_value, expected):
     ps_value = primitive.PSDecimal(input_value)
     assert isinstance(ps_value, primitive.PSDecimal)
     assert isinstance(ps_value, decimal.Decimal)
+    assert str(ps_value) == decimal.Decimal.__str__(ps_value)
+    assert repr(ps_value) == decimal.Decimal.__repr__(ps_value)
 
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
@@ -1074,6 +1076,8 @@ def test_ps_byte_array(input_value, expected):
     ps_value = primitive.PSByteArray(input_value)
     assert isinstance(ps_value, primitive.PSByteArray)
     assert isinstance(ps_value, bytes)
+    assert str(ps_value) == bytes.__str__(ps_value)
+    assert repr(ps_value) == bytes.__repr__(ps_value)
 
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
@@ -1130,6 +1134,8 @@ def test_ps_guid(input_value, expected):
     ps_value = primitive.PSGuid(input_value)
     assert isinstance(ps_value, primitive.PSGuid)
     assert isinstance(ps_value, uuid.UUID)
+    assert str(ps_value) == uuid.UUID.__str__(ps_value)
+    assert repr(ps_value) == uuid.UUID.__repr__(ps_value)
 
     element = serialize(ps_value)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
@@ -1285,7 +1291,7 @@ def test_ps_version_with_properties():
 def test_ps_version_str(input_value, expected_repr):
     actual = primitive.PSVersion(input_value)
     assert str(actual) == input_value
-    assert repr(actual) == f"psrpcore.types._primitive.PSVersion({expected_repr})"
+    assert repr(actual) == f"PSVersion({expected_repr})"
 
 
 @pytest.mark.parametrize(
@@ -1395,6 +1401,7 @@ def test_ps_version_compare_invalid():
 def test_ps_secure_string():
     ps_value = primitive.PSSecureString(COMPLEX_STRING)
     assert str(ps_value) == "System.Security.SecureString"
+    assert repr(ps_value) == "PSSecureString()"
     assert ps_value.decrypt() == COMPLEX_STRING
 
     element = serialize(ps_value)

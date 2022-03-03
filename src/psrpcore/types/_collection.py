@@ -52,6 +52,12 @@ class PSDictBase(PSObject, dict):
     def __setitem__(self, key: typing.Any, value: typing.Any) -> None:
         dict.__setitem__(self, key, value)
 
+    def __repr__(self) -> str:
+        return dict.__repr__(self)
+
+    def __str__(self) -> str:
+        return dict.__str__(self)
+
 
 class _PSListBase(PSObject, list):
     """Common list base class for PSListBase and PSStackBase."""
@@ -79,6 +85,12 @@ class _PSListBase(PSObject, list):
             return super().__setitem__(key, value)
         else:
             return list.__setitem__(self, key, value)
+
+    def __repr__(self) -> str:
+        return list.__repr__(self)
+
+    def __str__(self) -> str:
+        return list.__str__(self)
 
 
 class PSListBase(_PSListBase):
@@ -135,6 +147,12 @@ class PSQueueBase(PSObject, queue.Queue):
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         pass  # We cannot call the base __init__() function in ase any properties are set.
+
+    def __repr__(self) -> str:
+        return queue.Queue.__repr__(self)
+
+    def __str__(self) -> str:
+        return queue.Queue.__str__(self)
 
 
 class PSStackBase(_PSListBase):

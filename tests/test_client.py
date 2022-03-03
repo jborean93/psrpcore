@@ -88,8 +88,8 @@ def test_open_runspacepool():
         repr(init_runspace_pool) == f"<InitRunspacePoolEvent runspace_pool_id={client.runspace_pool_id!r} "
         f"min_runspaces=1 max_runspaces=1 ps_thread_options=<PSThreadOptions.Default: 0> "
         f"apartment_state=<ApartmentState.Unknown: 2> "
-        f"host_info=<HostInfo IsHostNull=True IsHostUINull=True IsHostRawUINull=True UseRunspaceHost=True> "
-        "application_arguments={}>"
+        f"host_info=HostInfo(IsHostNull=True, IsHostUINull=True, IsHostRawUINull=True, UseRunspaceHost=True, "
+        f"HostDefaultData=None) application_arguments={{}}>"
     )
     assert init_runspace_pool.apartment_state == ApartmentState.Unknown
     assert init_runspace_pool.application_arguments == {}
@@ -123,8 +123,8 @@ def test_open_runspacepool():
     }
     assert (
         repr(private_data) == f"<ApplicationPrivateDataEvent runspace_pool_id={client.runspace_pool_id!r}: "
-        f"{{'PSVersionTable': {{'PSRemotingProtocolVersion': psrpcore.types._primitive.PSVersion(major=2, minor=3), "
-        f"'SerializationVersion': psrpcore.types._primitive.PSVersion(major=1, minor=1, build=0, revision=1)}}}}>"
+        f"{{'PSVersionTable': {{'PSRemotingProtocolVersion': PSVersion(major=2, minor=3), 'SerializationVersion': "
+        f"PSVersion(major=1, minor=1, build=0, revision=1)}}}}>"
     )
     assert client.state == RunspacePoolState.Opening
     assert server.state == RunspacePoolState.Opened
@@ -792,8 +792,8 @@ def test_create_pipeline():
         f"<CreatePipelineEvent runspace_pool_id={client.runspace_pool_id!r} pipeline_id={c_pipeline.pipeline_id!r} "
         f"pipeline=<PowerShell add_to_history=False apartment_state=<ApartmentState.Unknown: 2> "
         f"commands=[<Command command_text='testing' is_script=True use_local_scope=None end_of_statement=True>] "
-        f"history=None host=<HostInfo IsHostNull=True IsHostUINull=True IsHostRawUINull=True UseRunspaceHost=True> "
-        f"is_nested=False no_input=True remote_stream_options=<RemoteStreamOptions.none: 0> "
+        f"history=None host=HostInfo(IsHostNull=True, IsHostUINull=True, IsHostRawUINull=True, UseRunspaceHost=True, "
+        f"HostDefaultData=None) is_nested=False no_input=True remote_stream_options=<RemoteStreamOptions.none: 0> "
         f"redirect_shell_error_to_out=True>>"
     )
     assert isinstance(s_pipeline.metadata, psrpcore.PowerShell)

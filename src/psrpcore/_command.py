@@ -52,7 +52,6 @@ class Command(PSObject):
         self._merge_information = PipelineResultTypes.none
 
     def __repr__(self) -> str:
-        cls = self.__class__
         return (
             f"<{type(self).__name__} command_text={self.command_text!r} is_script={self.is_script} "
             f"use_local_scope={self.use_local_scope} end_of_statement={self.end_of_statement}>"
