@@ -78,8 +78,11 @@ class PowerShell(PSObject):
             redirect_shell_error_to_out=powershell.RedirectShellErrorOutputPipe,
         )
 
-        commands = [powershell.Cmds]
-        commands.extend([c.Cmds for c in getattr(powershell, "ExtraCmds", [])])
+        extra_cmds = getattr(powershell, "ExtraCmds", None)
+        if extra_cmds is not None:
+            commands = [c.Cmds for c in extra_cmds]
+        else:
+            commands = [powershell.Cmds]
 
         for statements in commands:
             for raw_cmd in statements:
@@ -104,7 +107,7 @@ class PowerShell(PSObject):
             extra_cmds[-1].append(cmd)
             if cmd.end_of_statement:
                 extra_cmds.append([])
-        cmds = extra_cmds.pop(0)
+        cmds = extra_cmds[0]
 
         # MS-PSRP 2.2.3.11 Pipeline
         # https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/82a8d1c6-4560-4e68-bfd0-a63c36d6a199
@@ -115,7 +118,7 @@ class PowerShell(PSObject):
             "RedirectShellErrorOutputPipe": instance.redirect_shell_error_to_out,
         }
 
-        if extra_cmds:
+        if len(extra_cmds) > 1:
             # This isn't documented in MS-PSRP but this is how PowerShell batches multiple statements in 1 pipeline.
             # TODO: ExtraCmds may not work with protocol <=2.1.
             pipeline_kwargs["ExtraCmds"] = [dict_to_psobject(Cmds=s) for s in extra_cmds]

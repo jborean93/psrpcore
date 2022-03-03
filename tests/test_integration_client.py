@@ -986,3 +986,51 @@ def test_set_buffer_call(client_opened_pwsh: ClientTransport):
             assert cell.BackgroundColor == psrpcore.types.ConsoleColor.Gray
             assert isinstance(cell.BackgroundColor, psrpcore.types.ConsoleColor)
             assert cell.BufferCellType == psrpcore.types.BufferCellType.Complete
+
+
+def test_pipeline_multiple_statements(client_opened_pwsh: ClientTransport):
+    runspace = client_opened_pwsh.runspace
+
+    ps = psrpcore.ClientPowerShell(runspace)
+    ps.add_command("Set-Variable").add_parameters(Name="string", Value="foo")
+    ps.add_statement()
+
+    ps.add_command("Get-Variable").add_parameter("Name", "string")
+    ps.add_command("Select-Object").add_parameter("Property", ["Name", "Value"])
+    ps.add_statement()
+
+    ps.add_command("Get-Variable").add_argument("string").add_parameter("ValueOnly", True)
+    ps.add_command("Select-Object")
+    ps.add_statement()
+
+    ps.add_script("[PSCustomObject]@{ Value = $string }")
+    ps.add_script("process { $_ | Select-Object -Property @{N='Test'; E={ $_.Value }} }")
+    ps.start()
+
+    client_opened_pwsh.command(ps.pipeline_id)
+    client_opened_pwsh.data()
+    events = []
+    while ps.state == psrpcore.types.PSInvocationState.Running:
+        events.append(client_opened_pwsh.next_event())
+
+    assert ps.state == psrpcore.types.PSInvocationState.Completed
+    assert len(events) == 4
+    assert isinstance(events[0], psrpcore.PipelineOutputEvent)
+    assert isinstance(events[0].data, psrpcore.types.PSObject)
+    assert len(events[0].data.PSObject.extended_properties) == 2
+    assert events[0].data.Name == "string"
+    assert events[0].data.Value == "foo"
+
+    assert isinstance(events[1], psrpcore.PipelineOutputEvent)
+    assert events[1].data == "foo"
+
+    assert isinstance(events[2], psrpcore.PipelineOutputEvent)
+    assert len(events[2].data.PSObject.extended_properties) == 1
+    assert events[2].data.Test == "foo"
+
+    assert isinstance(events[3], psrpcore.PipelineStateEvent)
+    assert events[3].state == psrpcore.types.PSInvocationState.Completed
+
+    ps.close()
+    assert ps.state == psrpcore.types.PSInvocationState.Completed
+    client_opened_pwsh.close(ps.pipeline_id)
