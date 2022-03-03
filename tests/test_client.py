@@ -84,6 +84,13 @@ def test_open_runspacepool():
 
     init_runspace_pool = server.next_event()
     assert isinstance(init_runspace_pool, psrpcore.InitRunspacePoolEvent)
+    assert (
+        repr(init_runspace_pool) == f"<InitRunspacePoolEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"min_runspaces=1 max_runspaces=1 ps_thread_options=<PSThreadOptions.Default: 0> "
+        f"apartment_state=<ApartmentState.Unknown: 2> "
+        f"host_info=<HostInfo IsHostNull=True IsHostUINull=True IsHostRawUINull=True UseRunspaceHost=True> "
+        "application_arguments={}>"
+    )
     assert init_runspace_pool.apartment_state == ApartmentState.Unknown
     assert init_runspace_pool.application_arguments == {}
     assert init_runspace_pool.host_info.IsHostNull
@@ -114,11 +121,20 @@ def test_open_runspacepool():
             "SerializationVersion": psrpcore.types.PSVersion("1.1.0.1"),
         }
     }
+    assert (
+        repr(private_data) == f"<ApplicationPrivateDataEvent runspace_pool_id={client.runspace_pool_id!r}: "
+        f"{{'PSVersionTable': {{'PSRemotingProtocolVersion': psrpcore.types._primitive.PSVersion(major=2, minor=3), "
+        f"'SerializationVersion': psrpcore.types._primitive.PSVersion(major=1, minor=1, build=0, revision=1)}}}}>"
+    )
     assert client.state == RunspacePoolState.Opening
     assert server.state == RunspacePoolState.Opened
 
     runspace_state = client.next_event()
     assert isinstance(runspace_state, psrpcore.RunspacePoolStateEvent)
+    assert repr(runspace_state) == (
+        f"<RunspacePoolStateEvent runspace_pool_id={client.runspace_pool_id!r} state=<RunspacePoolState.Opened: 2> "
+        f"reason=None>"
+    )
     assert client.state == RunspacePoolState.Opened
     assert server.state == RunspacePoolState.Opened
 
@@ -170,6 +186,10 @@ def test_open_runspacepool_small():
     server.receive_data(client.data_to_send(60))
     session_cap = server.next_event()
     assert isinstance(session_cap, psrpcore.SessionCapabilityEvent)
+    assert repr(session_cap) == (
+        f"<SessionCapabilityEvent runspace_pool_id={client.runspace_pool_id!r} ps_version=2.0 protocol_version=2.3 "
+        f"serialization_version=1.1.0.1>"
+    )
     assert client.state == RunspacePoolState.Opening
     assert server.state == RunspacePoolState.Opening
     assert server.next_event() is None
@@ -209,6 +229,10 @@ def test_runspace_pool_get_runspace_availability():
     server.receive_data(client.data_to_send())
     get_avail = server.next_event()
     assert isinstance(get_avail, psrpcore.GetAvailableRunspacesEvent)
+    assert (
+        repr(get_avail) == f"<GetAvailableRunspacesEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"ci={actual_ci}>"
+    )
     assert get_avail.ci is not None
 
     with pytest.raises(psrpcore.PSRPCoreError, match=r"Cannot respond to \d+, not requested by client."):
@@ -222,6 +246,9 @@ def test_runspace_pool_get_runspace_availability():
     client.receive_data(server.data_to_send())
     runspace_avail = client.next_event()
     assert isinstance(runspace_avail, psrpcore.GetRunspaceAvailabilityEvent)
+    assert repr(runspace_avail) == (
+        f"<GetRunspaceAvailabilityEvent runspace_pool_id={client.runspace_pool_id!r} ci={get_avail.ci} count=3>"
+    )
     assert runspace_avail.ci is not None
     assert runspace_avail.count == 3
 
@@ -236,6 +263,10 @@ def test_runspace_host_call():
     host_call = client.next_event()
 
     assert isinstance(host_call, psrpcore.RunspacePoolHostCallEvent)
+    assert repr(host_call) == (
+        f"<RunspacePoolHostCallEvent runspace_pool_id={client.runspace_pool_id!r} ci=-100 "
+        f"method_identifier=<HostMethodIdentifier.WriteLine2: 16> method_parameters=['line']>"
+    )
     assert host_call.ci == -100
     assert host_call.method_identifier == HostMethodIdentifier.WriteLine2
     assert host_call.method_parameters == ["line"]
@@ -262,6 +293,10 @@ def test_runspace_host_call():
     host_resp = server.next_event()
 
     assert isinstance(host_resp, psrpcore.RunspacePoolHostResponseEvent)
+    assert repr(host_resp) == (
+        f"<RunspacePoolHostResponseEvent runspace_pool_id={client.runspace_pool_id!r} ci=1 "
+        f"method_identifier=<HostMethodIdentifier.ReadLine: 11> result=None error='ReadLine error'>"
+    )
     assert host_resp.ci == 1
     assert host_resp.method_identifier == HostMethodIdentifier.ReadLine
     assert isinstance(host_resp.error, ErrorRecord)
@@ -279,12 +314,16 @@ def test_runspace_reset():
 
     assert actual_ci == 1
     assert isinstance(reset, psrpcore.ResetRunspaceStateEvent)
+    assert repr(reset) == f"<ResetRunspaceStateEvent runspace_pool_id={client.runspace_pool_id!r} ci=1>"
     assert reset.ci == 1
 
     server.runspace_availability_response(actual_ci, True)
     client.receive_data(server.data_to_send())
     avail = client.next_event()
     assert isinstance(avail, psrpcore.SetRunspaceAvailabilityEvent)
+    assert (
+        repr(avail) == f"<SetRunspaceAvailabilityEvent runspace_pool_id={client.runspace_pool_id!r} ci=1 success=True>"
+    )
     assert avail.success is True
 
 
@@ -295,6 +334,7 @@ def test_runspace_user_event():
     event = client.next_event()
 
     assert isinstance(event, psrpcore.UserEventEvent)
+    assert repr(event) == f"<UserEventEvent runspace_pool_id={client.runspace_pool_id!r} pipeline_id=None>"
     assert isinstance(event.event, psrpcore.types.UserEvent)
     assert event.event.ComputerName is not None
     assert event.event.EventIdentifier == 1
@@ -485,6 +525,10 @@ def test_disconnect_and_connect_runspace_pool():
 
     connect = server.next_event()
     assert isinstance(connect, psrpcore.ConnectRunspacePoolEvent)
+    assert (
+        repr(connect) == f"<ConnectRunspacePoolEvent runspace_pool_id={client.runspace_pool_id!r} "
+        "min_runspaces=None max_runspaces=None>"
+    )
     assert connect.runspace_pool_id == client.runspace_pool_id
     assert client.state == RunspacePoolState.Connecting
     assert server.state == RunspacePoolState.Opened
@@ -492,6 +536,9 @@ def test_disconnect_and_connect_runspace_pool():
     client.receive_data(server.data_to_send())
     init = client.next_event()
     assert isinstance(init, psrpcore.RunspacePoolInitDataEvent)
+    assert repr(init) == (
+        f"<RunspacePoolInitDataEvent runspace_pool_id={client.runspace_pool_id!r} min_runspaces=1 max_runspaces=1>"
+    )
     assert client.state == RunspacePoolState.Connecting
     assert server.state == RunspacePoolState.Opened
 
@@ -586,6 +633,7 @@ def test_set_max_runspaces():
     server.receive_data(client.data_to_send())
     set_max = server.next_event()
     assert isinstance(set_max, psrpcore.SetMaxRunspacesEvent)
+    assert repr(set_max) == f"<SetMaxRunspacesEvent runspace_pool_id={client.runspace_pool_id!r} ci={ci} count=5>"
     assert set_max.ci == ci
     assert set_max.count == 5
     assert server.max_runspaces == 1
@@ -638,6 +686,7 @@ def test_set_min_runspaces():
     server.receive_data(client.data_to_send())
     set_min = server.next_event()
     assert isinstance(set_min, psrpcore.SetMinRunspacesEvent)
+    assert repr(set_min) == f"<SetMinRunspacesEvent runspace_pool_id={client.runspace_pool_id!r} ci={ci} count=2>"
     assert set_min.ci == ci
     assert set_min.count == 2
     assert server.min_runspaces == 1
@@ -739,6 +788,14 @@ def test_create_pipeline():
     server.receive_data(create_data)
     create_pipeline = server.next_event()
     assert isinstance(create_pipeline, psrpcore.CreatePipelineEvent)
+    assert repr(create_pipeline) == (
+        f"<CreatePipelineEvent runspace_pool_id={client.runspace_pool_id!r} pipeline_id={c_pipeline.pipeline_id!r} "
+        f"pipeline=<PowerShell add_to_history=False apartment_state=<ApartmentState.Unknown: 2> "
+        f"commands=[<Command command_text='testing' is_script=True use_local_scope=None end_of_statement=True>] "
+        f"history=None host=<HostInfo IsHostNull=True IsHostUINull=True IsHostRawUINull=True UseRunspaceHost=True> "
+        f"is_nested=False no_input=True remote_stream_options=<RemoteStreamOptions.none: 0> "
+        f"redirect_shell_error_to_out=True>>"
+    )
     assert isinstance(s_pipeline.metadata, psrpcore.PowerShell)
     assert create_pipeline.pipeline_id == c_pipeline.pipeline_id
 
@@ -874,7 +931,10 @@ def test_pipeline_multiple_commands():
 
     assert len(pwsh.commands) == 3
     assert str(pwsh.commands[0]) == "Get-ChildItem"
-    assert repr(pwsh.commands[0]) == "Command(name='Get-ChildItem', is_script=False, use_local_scope=None)"
+    assert (
+        repr(pwsh.commands[0])
+        == "<Command command_text='Get-ChildItem' is_script=False use_local_scope=None end_of_statement=False>"
+    )
     assert pwsh.commands[0].command_text == "Get-ChildItem"
     assert pwsh.commands[0].end_of_statement is False
     assert pwsh.commands[0].use_local_scope is None
@@ -882,7 +942,10 @@ def test_pipeline_multiple_commands():
     assert pwsh.commands[0].merge_my == PipelineResultTypes.none
     assert pwsh.commands[0].merge_to == PipelineResultTypes.none
     assert str(pwsh.commands[1]) == "Select-Object"
-    assert repr(pwsh.commands[1]) == "Command(name='Select-Object', is_script=False, use_local_scope=True)"
+    assert (
+        repr(pwsh.commands[1])
+        == "<Command command_text='Select-Object' is_script=False use_local_scope=True end_of_statement=False>"
+    )
     assert pwsh.commands[1].command_text == "Select-Object"
     assert pwsh.commands[1].end_of_statement is False
     assert pwsh.commands[1].use_local_scope is True
@@ -890,7 +953,10 @@ def test_pipeline_multiple_commands():
     assert pwsh.commands[1].merge_my == PipelineResultTypes.none
     assert pwsh.commands[1].merge_to == PipelineResultTypes.none
     assert str(pwsh.commands[2]) == "Format-List"
-    assert repr(pwsh.commands[2]) == "Command(name='Format-List', is_script=False, use_local_scope=False)"
+    assert (
+        repr(pwsh.commands[2])
+        == "<Command command_text='Format-List' is_script=False use_local_scope=False end_of_statement=True>"
+    )
     assert pwsh.commands[2].command_text == "Format-List"
     assert pwsh.commands[2].end_of_statement is True
     assert pwsh.commands[2].use_local_scope is False
@@ -1166,6 +1232,10 @@ def test_pipeline_input_output():
 
     assert server.next_event() is None
     assert isinstance(input1, psrpcore.PipelineInputEvent)
+    assert repr(input1) == (
+        f"<PipelineInputEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r} data='input 1'>"
+    )
     assert isinstance(input1.data, PSString)
     assert input1.data == "input 1"
     assert isinstance(input2, psrpcore.PipelineInputEvent)
@@ -1179,6 +1249,10 @@ def test_pipeline_input_output():
     server.receive_data(client.data_to_send())
     end_of_input = server.next_event()
     assert isinstance(end_of_input, psrpcore.EndOfPipelineInputEvent)
+    assert (
+        repr(end_of_input) == f"<EndOfPipelineInputEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r}>"
+    )
 
     s_pipeline.write_output("output")
     s_pipeline.write_output(None)
@@ -1193,6 +1267,10 @@ def test_pipeline_input_output():
 
     output_event = client.next_event()
     assert isinstance(output_event, psrpcore.PipelineOutputEvent)
+    assert repr(output_event) == (
+        f"<PipelineOutputEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r} data='output'>"
+    )
     assert isinstance(output_event.data, PSString)
     assert output_event.data == "output"
 
@@ -1201,6 +1279,10 @@ def test_pipeline_input_output():
 
     debug_event = client.next_event()
     assert isinstance(debug_event, psrpcore.DebugRecordEvent)
+    assert (
+        repr(debug_event) == f"<DebugRecordEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r} record='debug'>"
+    )
     assert isinstance(debug_event.record, DebugRecord)
     assert debug_event.record.InvocationInfo is None
     assert debug_event.record.Message == "debug"
@@ -1208,6 +1290,10 @@ def test_pipeline_input_output():
 
     error_event = client.next_event()
     assert isinstance(error_event, psrpcore.ErrorRecordEvent)
+    assert (
+        repr(error_event) == f"<ErrorRecordEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r} record='error'>"
+    )
     assert isinstance(error_event.record, ErrorRecord)
     assert str(error_event.record) == "error"
     assert isinstance(error_event.record.Exception, NETException)
@@ -1226,6 +1312,10 @@ def test_pipeline_input_output():
 
     verbose_event = client.next_event()
     assert isinstance(verbose_event, psrpcore.VerboseRecordEvent)
+    assert (
+        repr(verbose_event) == f"<VerboseRecordEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r} record='verbose'>"
+    )
     assert isinstance(verbose_event.record, VerboseRecord)
     assert verbose_event.record.InvocationInfo is None
     assert verbose_event.record.Message == "verbose"
@@ -1233,6 +1323,10 @@ def test_pipeline_input_output():
 
     warning_event = client.next_event()
     assert isinstance(warning_event, psrpcore.WarningRecordEvent)
+    assert (
+        repr(warning_event) == f"<WarningRecordEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r} record='warning'>"
+    )
     assert isinstance(warning_event.record, WarningRecord)
     assert warning_event.record.InvocationInfo is None
     assert warning_event.record.Message == "warning"
@@ -1240,6 +1334,10 @@ def test_pipeline_input_output():
 
     info_event = client.next_event()
     assert isinstance(info_event, psrpcore.InformationRecordEvent)
+    assert (
+        repr(info_event) == f"<InformationRecordEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r} record='information'>"
+    )
     assert isinstance(info_event.record, InformationRecord)
     assert info_event.record.Computer is not None
     assert info_event.record.ManagedThreadId == 0
@@ -1256,6 +1354,10 @@ def test_pipeline_input_output():
 
     progress_event = client.next_event()
     assert isinstance(progress_event, psrpcore.ProgressRecordEvent)
+    assert (
+        repr(progress_event) == f"<ProgressRecordEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r}>"
+    )
     assert isinstance(progress_event.record, ProgressRecord)
     assert progress_event.record.Activity == "activity"
     assert progress_event.record.ActivityId == 1
@@ -1268,6 +1370,10 @@ def test_pipeline_input_output():
 
     state_event = client.next_event()
     assert isinstance(state_event, psrpcore.PipelineStateEvent)
+    assert repr(state_event) == (
+        f"<PipelineStateEvent runspace_pool_id={client.runspace_pool_id!r} pipeline_id={c_pipeline.pipeline_id!r} "
+        f"state=<PSInvocationState.Completed: 4> reason=None>"
+    )
     assert state_event.state == PSInvocationState.Completed
     assert client.next_event() is None
 
@@ -1349,6 +1455,10 @@ def test_pipeline_host_call():
     client.receive_data(server.data_to_send())
     host_call = client.next_event()
     assert isinstance(host_call, psrpcore.PipelineHostCallEvent)
+    assert repr(host_call) == (
+        f"<PipelineHostCallEvent runspace_pool_id={client.runspace_pool_id!r} pipeline_id={c_pipeline.pipeline_id!r} "
+        f"ci=-100 method_identifier=<HostMethodIdentifier.WriteLine2: 16> method_parameters=['line']>"
+    )
     assert host_call.pipeline_id == c_pipeline.pipeline_id
     assert host_call.ci == -100
     assert host_call.method_identifier == HostMethodIdentifier.WriteLine2
@@ -1374,6 +1484,11 @@ def test_pipeline_host_call():
     host_resp = server.next_event()
 
     assert isinstance(host_resp, psrpcore.PipelineHostResponseEvent)
+    assert repr(host_resp) == (
+        f"<PipelineHostResponseEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r} ci={actual_ci} method_identifier=<HostMethodIdentifier.ReadLine: 11> "
+        f"result=None error='ReadLine error'>"
+    )
     assert host_call.pipeline_id == c_pipeline.pipeline_id
     assert host_resp.ci == 1
     assert host_resp.method_identifier == HostMethodIdentifier.ReadLine
@@ -1399,6 +1514,11 @@ def test_command_metadata():
     server.receive_data(create_data)
     command_meta = server.next_event()
     assert isinstance(command_meta, psrpcore.GetCommandMetadataEvent)
+    assert repr(command_meta) == (
+        f"<GetCommandMetadataEvent runspace_pool_id={client.runspace_pool_id!r} "
+        f"pipeline_id={c_pipeline.pipeline_id!r} "
+        f"pipeline=<GetMetadata name=['Invoke*'] command_type=<CommandTypes.All: 383> namespace=None arguments=None>>"
+    )
     assert isinstance(command_meta.pipeline, psrpcore.GetMetadata)
 
     s_pipeline.start()
@@ -1459,10 +1579,12 @@ def test_exchange_key_client():
     server.receive_data(client.data_to_send())
     public_key = server.next_event()
     assert isinstance(public_key, psrpcore.PublicKeyEvent)
+    assert repr(public_key) == f"<PublicKeyEvent runspace_pool_id={client.runspace_pool_id!r} pipeline_id=None>"
 
     client.receive_data(server.data_to_send())
     enc_key = client.next_event()
     assert isinstance(enc_key, psrpcore.EncryptedSessionKeyEvent)
+    assert repr(enc_key) == f"<EncryptedSessionKeyEvent runspace_pool_id={client.runspace_pool_id!r} pipeline_id=None>"
 
     c_pipeline = psrpcore.ClientPowerShell(client)
     c_pipeline.add_script("command")
@@ -1476,7 +1598,7 @@ def test_exchange_key_client():
     create_pipeline = server.next_event()
     assert isinstance(create_pipeline, psrpcore.CreatePipelineEvent)
     assert len(s_pipeline.metadata.commands) == 1
-    assert s_pipeline.metadata, commands[0].command_text == "command"
+    assert s_pipeline.metadata.commands[0].command_text == "command"
     assert s_pipeline.metadata.commands[0].parameters[0][0] is None
     assert isinstance(s_pipeline.metadata.commands[0].parameters[0][1], PSSecureString)
     assert str(s_pipeline.metadata.commands[0].parameters[0][1]) != "my secret"
@@ -1601,6 +1723,7 @@ def test_exchange_key_request():
     client.receive_data(server.data_to_send())
     pub_key_req = client.next_event()
     assert isinstance(pub_key_req, psrpcore.PublicKeyRequestEvent)
+    assert repr(pub_key_req) == f"<PublicKeyRequestEvent runspace_pool_id={client.runspace_pool_id!r} pipeline_id=None>"
 
     with pytest.raises(psrpcore.MissingCipherError):
         out.data.decrypt()
