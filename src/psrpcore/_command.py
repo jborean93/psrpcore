@@ -54,8 +54,8 @@ class Command(PSObject):
     def __repr__(self) -> str:
         cls = self.__class__
         return (
-            f"{cls.__name__}(name='{self.command_text}', is_script={self.is_script}, "
-            f"use_local_scope={self.use_local_scope!s})"
+            f"<{type(self).__name__} command_text={self.command_text!r} is_script={self.is_script} "
+            f"use_local_scope={self.use_local_scope} end_of_statement={self.end_of_statement}>"
         )
 
     def __str__(self) -> str:

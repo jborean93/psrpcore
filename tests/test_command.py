@@ -16,15 +16,21 @@ from .conftest import assert_xml_diff, deserialize, serialize
 @pytest.mark.parametrize(
     "kwds, expected",
     [
-        ({"name": "name"}, "name='name', is_script=False, use_local_scope=None"),
-        ({"name": "name", "is_script": True}, "name='name', is_script=True, use_local_scope=None"),
-        ({"name": "name", "use_local_scope": False}, "name='name', is_script=False, use_local_scope=False"),
+        ({"name": "name"}, "command_text='name' is_script=False use_local_scope=None end_of_statement=False"),
+        (
+            {"name": "name", "is_script": True},
+            "command_text='name' is_script=True use_local_scope=None end_of_statement=False",
+        ),
+        (
+            {"name": "name", "use_local_scope": False},
+            "command_text='name' is_script=False use_local_scope=False end_of_statement=False",
+        ),
     ],
     ids=["name only", "is_script", "use_local_scope"],
 )
 def test_command_repr(kwds, expected):
     cmd = psrpcore.Command(**kwds)
-    assert repr(cmd) == f"Command({expected})"
+    assert repr(cmd) == f"<Command {expected}>"
     assert str(cmd) == kwds["name"]
 
 

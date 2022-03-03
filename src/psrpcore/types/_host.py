@@ -797,6 +797,12 @@ class HostInfo(PSObject):
         https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6
     """
 
+    def __repr__(self) -> str:
+        return (
+            f"<HostInfo IsHostNull={self.IsHostNull} IsHostUINull={self.IsHostUINull} "
+            f"IsHostRawUINull={self.IsHostRawUINull} UseRunspaceHost={self.UseRunspaceHost}>"
+        )
+
     @classmethod
     def FromPSObjectForRemoting(
         cls,

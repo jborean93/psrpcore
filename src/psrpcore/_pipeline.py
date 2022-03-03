@@ -59,6 +59,14 @@ class PowerShell(PSObject):
         self.remote_stream_options = remote_stream_options
         self.redirect_shell_error_to_out = redirect_shell_error_to_out
 
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} add_to_history={self.add_to_history} apartment_state={self.apartment_state!r} "
+            f"commands={self.commands!r} history={self.history!r} host={self.host!r} is_nested={self.is_nested} "
+            f"no_input={self.no_input} remote_stream_options={self.remote_stream_options!r} "
+            f"redirect_shell_error_to_out={self.redirect_shell_error_to_out!r}>"
+        )
+
     @classmethod
     def FromPSObjectForRemoting(
         cls,
@@ -162,6 +170,12 @@ class GetMetadata(PSObject):
         self.command_type = command_type
         self.namespace = namespace
         self.arguments = arguments
+
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} name={self.name!r} command_type={self.command_type!r} "
+            f"namespace={self.namespace!r} arguments={self.arguments!r}>"
+        )
 
     @classmethod
     def FromPSObjectForRemoting(

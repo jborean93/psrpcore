@@ -250,6 +250,9 @@ class PSRPEvent(typing.Generic[T1, T2]):
         event_cls = _REGISTRY[message_type]
         return event_cls(message_type, ps_object, runspace_pool_id, pipeline_id)
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r}>"
+
 
 _REGISTRY: typing.Dict[PSRPMessageType, typing.Type[PSRPEvent]] = {}
 
@@ -299,6 +302,9 @@ class ApplicationPrivateDataEvent(PSRPEvent[ApplicationPrivateData, None]):
         """The private data dictionary returned from the server."""
         return self._ps_object.ApplicationPrivateData
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r}: {self.data!r}>"
+
 
 @RegisterEvent
 class ConnectRunspacePoolEvent(PSRPEvent[ConnectRunspacePool, None]):
@@ -331,6 +337,12 @@ class ConnectRunspacePoolEvent(PSRPEvent[ConnectRunspacePool, None]):
         """The minimum number of runspaces in the Runspace Pool."""
         return getattr(self._ps_object, "MinRunspaces", None)
 
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} "
+            f"min_runspaces={self.min_runspaces} max_runspaces={self.max_runspaces}>"
+        )
+
 
 @RegisterEvent
 class CreatePipelineEvent(PSRPEvent[CreatePipeline, uuid.UUID]):
@@ -356,6 +368,12 @@ class CreatePipelineEvent(PSRPEvent[CreatePipeline, uuid.UUID]):
         """The PowerShell pipeline details."""
         return PowerShell.FromPSObjectForRemoting(self._ps_object)
 
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"pipeline={self.pipeline!r}>"
+        )
+
 
 @RegisterEvent
 class DebugRecordEvent(PSRPEvent[DebugRecordMsg, _OptionalPipelineType]):
@@ -379,6 +397,12 @@ class DebugRecordEvent(PSRPEvent[DebugRecordMsg, _OptionalPipelineType]):
     def record(self) -> DebugRecord:
         """The DebugRecord emitted by the peer."""
         return self._ps_object
+
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"record={self.record.Message!r}>"
+        )
 
 
 @RegisterEvent
@@ -450,6 +474,13 @@ class ErrorRecordEvent(PSRPEvent[ErrorRecordMsg, _OptionalPipelineType]):
         """The ErrorRecord emitted by the peer."""
         return self._ps_object
 
+    def __repr__(self) -> str:
+        err = str(self.record)
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"record={err!r}>"
+        )
+
 
 @RegisterEvent
 class GetAvailableRunspacesEvent(PSRPEvent[GetAvailableRunspaces, None]):
@@ -474,6 +505,9 @@ class GetAvailableRunspacesEvent(PSRPEvent[GetAvailableRunspaces, None]):
     def ci(self) -> int:
         """The call id associated with the request."""
         return self._ps_object.ci
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} ci={self.ci}>"
 
 
 @RegisterEvent
@@ -500,6 +534,12 @@ class GetCommandMetadataEvent(PSRPEvent[GetCommandMetadata, uuid.UUID]):
     def pipeline(self) -> GetMetadata:
         """The GetCommandMetadata pipeline details."""
         return GetMetadata.FromPSObjectForRemoting(self._ps_object)
+
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"pipeline={self.pipeline!r}>"
+        )
 
 
 @RegisterEvent
@@ -531,6 +571,12 @@ class InformationRecordEvent(PSRPEvent[InformationRecordMsg, _OptionalPipelineTy
         info.PSObject.adapted_properties = self._ps_object.PSObject.extended_properties
 
         return info
+
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"record={self.record.MessageData!r}>"
+        )
 
 
 @RegisterEvent
@@ -583,6 +629,22 @@ class InitRunspacePoolEvent(PSRPEvent[InitRunspacePool, None]):
         """Higher layer application arguments provided by the peer."""
         return self._ps_object.ApplicationArguments
 
+    def __repr__(self) -> str:
+        kw = " ".join(
+            [
+                f"{k}={getattr(self, k)!r}"
+                for k in [
+                    "min_runspaces",
+                    "max_runspaces",
+                    "ps_thread_options",
+                    "apartment_state",
+                    "host_info",
+                    "application_arguments",
+                ]
+            ]
+        )
+        return f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} {kw}>"
+
 
 @RegisterEvent
 class PipelineHostCallEvent(PSRPEvent[PipelineHostCall, uuid.UUID]):
@@ -618,6 +680,12 @@ class PipelineHostCallEvent(PSRPEvent[PipelineHostCall, uuid.UUID]):
     def method_parameters(self) -> typing.List[typing.Any]:
         """List of parameters to invoke the method with."""
         return _decode_host_call_parameters(self._ps_object.mi, self._ps_object.mp or [])
+
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"ci={self.ci} method_identifier={self.method_identifier!r} method_parameters={self.method_parameters!r}>"
+        )
 
 
 @RegisterEvent
@@ -663,6 +731,13 @@ class PipelineHostResponseEvent(PSRPEvent[PipelineHostResponse, uuid.UUID]):
         else:
             return me
 
+    def __repr__(self) -> str:
+        error = str(self.error) if self.error else None
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"ci={self.ci} method_identifier={self.method_identifier!r} result={self.result!r} error={error!r}>"
+        )
+
 
 @RegisterEvent
 class PipelineInputEvent(PSRPEvent[typing.Any, uuid.UUID]):
@@ -687,6 +762,12 @@ class PipelineInputEvent(PSRPEvent[typing.Any, uuid.UUID]):
         """The data sent as input."""
         return self._ps_object
 
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"data={self.data!r}>"
+        )
+
 
 @RegisterEvent
 class PipelineOutputEvent(PSRPEvent[typing.Any, uuid.UUID]):
@@ -710,6 +791,12 @@ class PipelineOutputEvent(PSRPEvent[typing.Any, uuid.UUID]):
     def data(self) -> typing.Any:
         """The data sent as output."""
         return self._ps_object
+
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"data={self.data!r}>"
+        )
 
 
 @RegisterEvent
@@ -740,6 +827,13 @@ class PipelineStateEvent(PSRPEvent[PipelineState, uuid.UUID]):
     def reason(self) -> typing.Optional[ErrorRecord]:
         """An error record containing the reason why the pipeline is ``Failed``."""
         return getattr(self._ps_object, "ExceptionAsErrorRecord", None)
+
+    def __repr__(self) -> str:
+        reason = str(self.reason) if self.reason else None
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"state={self.state!r} reason={reason!r}>"
+        )
 
 
 @RegisterEvent
@@ -846,6 +940,9 @@ class ResetRunspaceStateEvent(PSRPEvent[ResetRunspaceState, None]):
         """The call id associated with the request."""
         return self._ps_object.ci
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} ci={self.ci}>"
+
 
 @RegisterEvent
 class RunspaceAvailabilityEvent(PSRPEvent[RunspaceAvailability, None]):
@@ -895,6 +992,9 @@ class SetRunspaceAvailabilityEvent(RunspaceAvailabilityEvent):
         """Whether the request suceeded or not."""
         return self._ps_object.SetMinMaxRunspacesResponse
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} ci={self.ci} success={self.success}>"
+
 
 class GetRunspaceAvailabilityEvent(RunspaceAvailabilityEvent):
     """Get Runspace Availability Event.
@@ -917,6 +1017,9 @@ class GetRunspaceAvailabilityEvent(RunspaceAvailabilityEvent):
     def count(self) -> int:
         """The available runspaces specified by the server."""
         return int(self._ps_object.SetMinMaxRunspacesResponse)
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} ci={self.ci} count={self.count}>"
 
 
 @RegisterEvent
@@ -953,6 +1056,12 @@ class RunspacePoolHostCallEvent(PSRPEvent[RunspacePoolHostCall, None]):
     def method_parameters(self) -> typing.List[typing.Any]:
         """List of parameters to invoke the method with."""
         return _decode_host_call_parameters(self._ps_object.mi, self._ps_object.mp or [])
+
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} ci={self.ci} "
+            f"method_identifier={self.method_identifier!r} method_parameters={self.method_parameters!r}>"
+        )
 
 
 @RegisterEvent
@@ -994,6 +1103,13 @@ class RunspacePoolHostResponseEvent(PSRPEvent[RunspacePoolHostResponse, None]):
         """The error record if the host call failed."""
         return getattr(self._ps_object, "me", None)
 
+    def __repr__(self) -> str:
+        error = str(self.error) if self.error else None
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} ci={self.ci} "
+            f"method_identifier={self.method_identifier!r} result={self.result!r} error={error!r}>"
+        )
+
 
 @RegisterEvent
 class RunspacePoolInitDataEvent(PSRPEvent[RunspacePoolInitData, None]):
@@ -1025,6 +1141,12 @@ class RunspacePoolInitDataEvent(PSRPEvent[RunspacePoolInitData, None]):
         """The minimum number of runspaces in the Runspace Pool."""
         return self._ps_object.MinRunspaces
 
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} "
+            f"min_runspaces={self.min_runspaces} max_runspaces={self.max_runspaces}>"
+        )
+
 
 @RegisterEvent
 class RunspacePoolStateEvent(PSRPEvent[RunspacePoolStateMsg, None]):
@@ -1054,6 +1176,13 @@ class RunspacePoolStateEvent(PSRPEvent[RunspacePoolStateMsg, None]):
     def reason(self) -> typing.Optional[ErrorRecord]:
         """An error record containing the reason why the runspace is ``Broken``."""
         return getattr(self._ps_object, "ExceptionAsErrorRecord", None)
+
+    def __repr__(self) -> str:
+        reason = str(self.reason) if self.reason else None
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} state={self.state!r} "
+            f"reason={reason!r}>"
+        )
 
 
 @RegisterEvent
@@ -1091,6 +1220,12 @@ class SessionCapabilityEvent(PSRPEvent[SessionCapability, None]):
         """The version of the peer's serializer."""
         return self._ps_object.SerializationVersion
 
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} ps_version={self.ps_version} "
+            f"protocol_version={self.protocol_version} serialization_version={self.serialization_version}>"
+        )
+
 
 @RegisterEvent
 class SetMaxRunspacesEvent(PSRPEvent[SetMaxRunspaces, None]):
@@ -1120,6 +1255,9 @@ class SetMaxRunspacesEvent(PSRPEvent[SetMaxRunspaces, None]):
         """The maximum runspace count to set."""
         return self._ps_object.MaxRunspaces
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} ci={self.ci} count={self.count}>"
+
 
 @RegisterEvent
 class SetMinRunspacesEvent(PSRPEvent[SetMinRunspaces, None]):
@@ -1148,6 +1286,9 @@ class SetMinRunspacesEvent(PSRPEvent[SetMinRunspaces, None]):
     def count(self) -> int:
         """The minimum runspace count to set."""
         return self._ps_object.MinRunspaces
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} ci={self.ci} count={self.count}>"
 
 
 @RegisterEvent
@@ -1197,6 +1338,12 @@ class VerboseRecordEvent(PSRPEvent[VerboseRecordMsg, _OptionalPipelineType]):
         """The VerboseRecord emitted by the peer."""
         return self._ps_object
 
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"record={self.record.Message!r}>"
+        )
+
 
 @RegisterEvent
 class WarningRecordEvent(PSRPEvent[WarningRecordMsg, _OptionalPipelineType]):
@@ -1220,3 +1367,9 @@ class WarningRecordEvent(PSRPEvent[WarningRecordMsg, _OptionalPipelineType]):
     def record(self) -> WarningRecord:
         """The WarningRecord emitted by the peer."""
         return self._ps_object
+
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__} runspace_pool_id={self.runspace_pool_id!r} pipeline_id={self.pipeline_id!r} "
+            f"record={self.record.Message!r}>"
+        )
