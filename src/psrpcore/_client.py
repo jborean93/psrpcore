@@ -149,7 +149,7 @@ class ClientRunspacePool(RunspacePool["_ClientPipeline"]):
         """
         if self.state == RunspacePoolState.Opened:
             return
-        if self.state != RunspacePoolState.BeforeOpen:
+        if self.state != RunspacePoolState.BeforeOpen and self.state != RunspacePoolState.Disconnected:
             raise InvalidRunspacePoolState("connect to Runspace Pool", self.state, [RunspacePoolState.BeforeOpen])
 
         self._change_state(RunspacePoolState.Connecting)
