@@ -213,7 +213,7 @@ class PSStringBase(PSObject, str):
     def __str__(self) -> str:
         return str.__str__(self)
 
-    def __getitem__(self, item: typing.Union[int, str, typing.SupportsIndex, slice]) -> "PSStringBase":
+    def __getitem__(self, item: typing.Union[int, str, "typing.SupportsIndex", slice]) -> "PSStringBase":
         # Allows slicing alongside getting extended properties which preserves the underlying type.
         if isinstance(item, str):
             return super().__getitem__(item)

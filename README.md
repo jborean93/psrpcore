@@ -32,12 +32,8 @@ pip install psrpcore
 
 ### From Source
 
-_Note: Requires [poetry](https://python-poetry.org/)._
-
 ```bash
 git clone https://github.com/jborean93/psrpcore.git
 cd psrpcore
-poetry build
-
-pip install dist/psrpcore-*.whl
+pip install -e .
 ```
