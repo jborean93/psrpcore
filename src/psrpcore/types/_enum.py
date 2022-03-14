@@ -58,7 +58,12 @@ class PSEnumMeta(enum.EnumMeta):
 
         namespace["__new__"] = new
 
-        return super().__new__(mcls, name, bases, namespace)
+        return super().__new__(
+            mcls,
+            name,
+            bases,
+            namespace,  # type: ignore[arg-type] # _EnumDict is private so cannot be used properly
+        )
 
 
 @PSType(["System.Enum", "System.ValueType"], rehydrate=False)
