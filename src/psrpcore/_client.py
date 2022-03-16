@@ -444,8 +444,9 @@ class _ClientPipeline(Pipeline["ClientRunspacePool"]):
     def __init__(
         self,
         runspace_pool: "ClientRunspacePool",
+        pipeline_id: typing.Optional[uuid.UUID] = None,
     ) -> None:
-        super().__init__(runspace_pool, uuid.uuid4())
+        super().__init__(runspace_pool, pipeline_id or uuid.uuid4())
         self._message_type: typing.Optional[PSRPMessageType] = None
 
     def start(self) -> None:
@@ -531,6 +532,8 @@ class ClientPowerShell(_ClientPipeline):
             streams or not.
         redirect_shell_error_to_out: Redirects the global error output pipe to
             the commands error output pipe.
+        pipeline_id: Manually set the Pipeline ID, used when reconnecting to an
+            existing Pipeline.
     """
 
     def __init__(
@@ -544,8 +547,9 @@ class ClientPowerShell(_ClientPipeline):
         no_input: bool = True,
         remote_stream_options: RemoteStreamOptions = RemoteStreamOptions.none,
         redirect_shell_error_to_out: bool = True,
+        pipeline_id: typing.Optional[uuid.UUID] = None,
     ) -> None:
-        super().__init__(runspace_pool=runspace_pool)
+        super().__init__(runspace_pool=runspace_pool, pipeline_id=pipeline_id)
         self.metadata: PowerShell = PowerShell(
             add_to_history=add_to_history,
             apartment_state=apartment_state or runspace_pool.apartment_state,
@@ -699,6 +703,8 @@ class ClientGetCommandMetadata(_ClientPipeline):
         namespace: Wildcard patterns describbing the command namespace to filter
             by.
         arguments: Extra arguments passed to the higher-layer above PSRP.
+        pipeline_id: Manually set the Pipeline ID, used when reconnecting to an
+            existing Pipeline.
     """
 
     def __init__(
@@ -708,8 +714,9 @@ class ClientGetCommandMetadata(_ClientPipeline):
         command_type: CommandTypes = CommandTypes.All,
         namespace: typing.Optional[typing.List[str]] = None,
         arguments: typing.Optional[typing.List[typing.Any]] = None,
+        pipeline_id: typing.Optional[uuid.UUID] = None,
     ) -> None:
-        super().__init__(runspace_pool=runspace_pool)
+        super().__init__(runspace_pool=runspace_pool, pipeline_id=pipeline_id)
         self.metadata: GetMetadata = GetMetadata(
             name=name,
             command_type=command_type,
