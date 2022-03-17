@@ -213,7 +213,7 @@ class ClientRunspacePool(RunspacePool["_ClientPipeline"]):
             raise InvalidRunspacePoolState("respond to host call", self.state, [RunspacePoolState.Opened])
 
         call_event = typing.cast(
-            typing.Union[RunspacePoolHostResponseEvent, PipelineHostResponseEvent], self._ci_events.pop(ci)
+            typing.Union[RunspacePoolHostResponseEvent, PipelineHostResponseEvent], self._ci_events[ci]
         )
         method_identifier = call_event.method_identifier
         pipeline_id = call_event.pipeline_id
@@ -228,6 +228,11 @@ class ClientRunspacePool(RunspacePool["_ClientPipeline"]):
             host_call.me = error_record
 
         self.prepare_message(host_call, pipeline_id=pipeline_id, stream_type=StreamType.prompt_response)
+
+        # Any of the above may fail causing the ci record to be dropped.
+        # Instead only remove it once a response has been serialized and is
+        # ready to send.
+        del self._ci_events[ci]
 
     def reset_runspace_state(self) -> int:
         """Reset the Runspace Pool state.
