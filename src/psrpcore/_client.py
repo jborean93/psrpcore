@@ -201,7 +201,9 @@ class ClientRunspacePool(RunspacePool["_ClientPipeline"]):
         """Respond to a host call.
 
         Respond to a host call event with either a return value or an error
-        record.
+        record. It is recommended to use :class:`psrpcore.ClientHostResponder`
+        to respond to host calls as it will format the return values from a
+        .NET type
 
         Args:
             ci: The call ID associated with the host call to response to.
