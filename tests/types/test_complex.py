@@ -561,9 +561,11 @@ def test_error_record_with_invocation_info():
         "</TN>"
         "<MS>"
         '<Obj RefId="1" N="Exception">'
-        '<TN RefId="1"><T>System.Exception</T>'
+        '<TN RefId="1">'
+        "<T>System.Exception</T>"
         "<T>System.Object</T>"
-        "</TN><Props>"
+        "</TN>"
+        "<Props>"
         '<S N="Message">Exception</S>'
         '<Nil N="Data" />'
         '<Nil N="HelpLink" />'
@@ -626,22 +628,28 @@ def test_error_record_with_invocation_info():
         "</Obj>"
         "</Props>"
         "</Obj>"
-        '<I32 N="ErrorCategory_Category">0</I32'
-        '><Nil N="ErrorCategory_Activity" />'
+        '<I32 N="ErrorCategory_Category">0</I32>'
+        '<Nil N="ErrorCategory_Activity" />'
         '<Nil N="ErrorCategory_Reason" />'
         '<Nil N="ErrorCategory_TargetName" />'
         '<Nil N="ErrorCategory_TargetType" />'
         '<S N="ErrorCategory_Message">NotSpecified (:) [], </S>'
         '<B N="SerializeExtendedInfo">true</B>'
-        '<Ref RefId="3" N="InvocationInfo_BoundParameters" />'
+        '<Obj RefId="6" N="InvocationInfo_BoundParameters">'
+        '<TNRef RefId="3" />'
+        "<DCT>"
+        '<En><S N="Key">Path</S><S N="Value">C:\\temp\\file.txt</S></En>'
+        "</DCT>"
+        "</Obj>"
         '<Ref RefId="4" N="InvocationInfo_CommandOrigin" />'
         '<B N="InvocationInfo_ExpectingInput">false</B>'
         '<S N="InvocationInfo_InvocationName">Remove-Item</S>'
         '<S N="InvocationInfo_Line">10</S>'
         '<I32 N="InvocationInfo_OffsetInLine">20</I32>'
         '<I64 N="InvocationInfo_HistoryId">10</I64>'
-        '<Obj RefId="6" N="InvocationInfo_PipelineIterationInfo">'
-        '<TNRef RefId="5" /><LST />'
+        '<Obj RefId="7" N="InvocationInfo_PipelineIterationInfo">'
+        '<TNRef RefId="5" />'
+        "<LST />"
         "</Obj>"
         '<I32 N="InvocationInfo_PipelineLength">30</I32>'
         '<I32 N="InvocationInfo_PipelinePosition">40</I32>'
@@ -650,9 +658,11 @@ def test_error_record_with_invocation_info():
         '<S N="InvocationInfo_PositionMessage">position message</S>'
         '<Nil N="InvocationInfo_ScriptLineNumber" />'
         '<Nil N="InvocationInfo_ScriptName" />'
-        '<Ref RefId="5" N="InvocationInfo_UnboundArguments" />'
-        '<B N="SerializeExtent">false</B>'
-        '<Obj RefId="7" N="PipelineIterationInfo">'
+        '<Obj RefId="8" N="InvocationInfo_UnboundArguments">'
+        '<TNRef RefId="5" />'
+        "<LST><B>true</B></LST>"
+        '</Obj><B N="SerializeExtent">false</B>'
+        '<Obj RefId="9" N="PipelineIterationInfo">'
         '<TNRef RefId="5" />'
         "<LST><I32>1</I32></LST>"
         "</Obj>"
