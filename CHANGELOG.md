@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.2.0 - TBD
+
 ## 0.1.1 - 2022-04-06
 
 + Do not use references for lists and dict types when serializing
