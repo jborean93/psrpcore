@@ -1006,7 +1006,7 @@ class _Serializer:
             ref_id = self._obj_ref.setdefault(value, next_ref_id)
         except TypeError as e:
             # Some objects cannot have a weakref, try id() only when dealing with known workable types.
-            if isinstance(value, (dict, enum.Enum, list)):
+            if isinstance(value, enum.Enum):
                 ref_id = self._obj_ref_enum.setdefault(id(value), next_ref_id)
 
             else:
