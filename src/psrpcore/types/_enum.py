@@ -28,7 +28,7 @@ class PSEnumMeta(enum.EnumMeta):
     """
 
     @classmethod
-    def __prepare__(
+    def __prepare__(  # type: ignore[override]  # Uses internal class for annotation
         metacls,
         __name: str,
         __bases: typing.Tuple[type, ...],

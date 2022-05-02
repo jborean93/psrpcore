@@ -1,3 +1,4 @@
+attrs
 myst-parser == 0.16.1
 Pygments
 Sphinx
