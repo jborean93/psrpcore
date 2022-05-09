@@ -74,7 +74,8 @@ def test_runspace_with_pipeline_output(client_pwsh: ClientTransport):
 $DebugPreference = 'Continue'
 $WarningPreference = 'Continue'
 
-$complexString = "treble clef\n _x0000_ _X0000_ $([Char]::ConvertFromUtf32(0x0001D11E)) café"
+$musicalNote = [Char]::ConvertFromUtf32(0x0001F3B5)
+$complexString = "treble clef\n _x0000_ _X0000_ $([Char]::ConvertFromUtf32(0x0001D11E)) café $($musicalNote[0])"
 
 # Test out the streams
 "output"
@@ -108,7 +109,7 @@ $null
 [Version]"1.2.3.4"
 [xml]"<obj>test</obj>"
 { echo "scriptblock" }
-ConvertTo-SecureString -AsPlainText -Force -String "test"
+ConvertTo-SecureString -AsPlainText -Force -String $complexString
 [IO.FileMode]::Open
 
 $obj = [PSCustomObject]@{
@@ -333,7 +334,7 @@ public class PSRPCore
     client_pwsh.data()
     enc_key = client_pwsh.next_event()
     assert isinstance(enc_key, psrpcore.EncryptedSessionKeyEvent)
-    assert events[28].data.decrypt() == "test"
+    assert events[28].data.decrypt() == COMPLEX_STRING
 
     with pytest.raises(psrpcore.PSRPCoreError, match="Must close existing pipelines before closing the pool"):
         runspace.close()

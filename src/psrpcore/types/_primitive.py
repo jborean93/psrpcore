@@ -1349,7 +1349,7 @@ class PSSecureString(PSObject):
         if self._cipher:
             b_enc = base64.b64decode(self._value)
             b_dec = self._cipher.decrypt(b_enc)
-            raw = b_dec.decode("utf-16-le")
+            raw = b_dec.decode("utf-16-le", errors="surrogatepass")
 
         else:
             raw = self._value
@@ -1374,7 +1374,7 @@ class PSSecureString(PSObject):
         if not instance._encrypted:
             # The value was provided by the user without a cipher. Use the one passed in by the serializer to encrypt
             # the value and return that for serialization.
-            b_value = instance._value.encode("utf-16-le")
+            b_value = instance._value.encode("utf-16-le", errors="surrogatepass")
             b_enc = cipher.encrypt(b_value)
             enc_value = base64.b64encode(b_enc).decode()
 

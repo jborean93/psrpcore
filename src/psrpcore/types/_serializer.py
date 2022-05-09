@@ -69,7 +69,7 @@ log = logging.getLogger(__name__)
 _STRING_SERIAL_ESCAPE_ESCAPE = re.compile("(?i)_(x)")
 
 # Finds C0, C1, and surrogate pairs in a unicode string for us to encode according to the PSRP rules.
-_STRING_SERIAL_ESCAPE = re.compile("[\u0000-\u001F\u007F-\u009F\U00010000-\U0010FFFF]")
+_STRING_SERIAL_ESCAPE = re.compile("[\u0000-\u001F\u007F-\u009F\uD800-\uD8FF\uDC00-\uDFFF\U00010000-\U0010FFFF]")
 
 # To support surrogate UTF-16 pairs we need to use a UTF-16 regex so we can replace the UTF-16 string representation
 # with the actual UTF-16 byte value and then decode that.
@@ -303,6 +303,8 @@ def _deserialize_string(
             represented by the CLIXML.
     """
 
+    # test '_xD83C_'
+
     def rplcr(matchobj: typing.Any) -> bytes:
         # The matched object is the UTF-16 byte representation of the UTF-8 hex string value. We need to decode the
         # byte str to unicode and then unhexlify that hex string to get the actual bytes of the _x****_ value, e.g.
@@ -319,7 +321,7 @@ def _deserialize_string(
     b_value = value.encode("utf-16-be")
     b_escaped = re.sub(_STRING_DESERIAL_FIND, rplcr, b_value)
 
-    return b_escaped.decode("utf-16-be")
+    return b_escaped.decode("utf-16-be", errors="surrogatepass")
 
 
 def _serialize_datetime(
@@ -436,7 +438,7 @@ def _serialize_string(
 
     def rplcr(matchobj: typing.Any) -> str:
         surrogate_char = matchobj.group(0)
-        byte_char = surrogate_char.encode("utf-16-be")
+        byte_char = surrogate_char.encode("utf-16-be", errors="surrogatepass")
         hex_char = binascii.hexlify(byte_char).decode().upper()
         hex_split = [hex_char[i : i + 4] for i in range(0, len(hex_char), 4)]
 
