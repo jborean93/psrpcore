@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.2.0 - TBD
+## 0.1.2 - TBD
+
++ Fix serialization of strings that include half surrogate pair `[char]` values
 
 ## 0.1.1 - 2022-04-06
 
