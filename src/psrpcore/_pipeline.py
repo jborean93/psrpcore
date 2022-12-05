@@ -41,7 +41,7 @@ class PowerShell(PSObject):
     def __init__(
         self,
         add_to_history: bool = False,
-        apartment_state: ApartmentState = None,
+        apartment_state: typing.Optional[ApartmentState] = None,
         history: typing.Optional[str] = None,
         host: typing.Optional[HostInfo] = None,
         is_nested: bool = False,

@@ -143,3 +143,12 @@ class PSRemotingCrypto(PSCryptoProvider):
         algorithm = algorithms.AES(key)
         mode = modes.CBC(b"\x00" * 16)  # PSRP doesn't use an IV
         self._cipher = Cipher(algorithm, mode, default_backend())
+
+
+__all__ = [
+    "create_keypair",
+    "decrypt_session_key",
+    "encrypt_session_key",
+    "rsa",
+    "PSRemotingCrypto",
+]

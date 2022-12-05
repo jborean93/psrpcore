@@ -409,7 +409,7 @@ def _serialize_enum_to_string(
     flags: typing.List[enum.Enum]
 
     if isinstance(value, enum.Flag):
-        flags = [f for f in type(value) if f in value]
+        flags = [getattr(value, f) for f in type(value).__members__ if getattr(value, f) in value]
     else:
         flags = [value]
 

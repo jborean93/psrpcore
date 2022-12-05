@@ -1,6 +1,6 @@
-black
-isort
-mypy == 0.950
+black == 22.10.0
+isort == 5.10.1
+mypy == 0.991
 pre-commit
 pytest
 pytest-cov

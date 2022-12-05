@@ -2,6 +2,7 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+import sys
 import xml.etree.ElementTree as ElementTree
 
 import psrpcore.types._complex as complex
@@ -92,7 +93,7 @@ def test_ps_custom_object_properties():
 def test_psrp_pipeline_result_types():
     value = complex.PipelineResultTypes.Output | complex.PipelineResultTypes.Error
     assert value.value == 3
-    assert str(value) == "PipelineResultTypes.Warning"
+    assert value.name == "Warning"
 
     element = serialize(value)
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
@@ -188,7 +189,10 @@ def test_remote_stream_options():
         complex.RemoteStreamOptions.AddInvocationInfoToDebugRecord
         | complex.RemoteStreamOptions.AddInvocationInfoToErrorRecord
     )
-    assert str(options) == "RemoteStreamOptions.AddInvocationInfoToDebugRecord|AddInvocationInfoToErrorRecord"
+    if sys.version_info[:2] < (3, 11):
+        assert str(options) == "RemoteStreamOptions.AddInvocationInfoToDebugRecord|AddInvocationInfoToErrorRecord"
+    else:
+        assert options.name == "AddInvocationInfoToErrorRecord|AddInvocationInfoToDebugRecord"
 
     element = serialize(options)
     actual = ElementTree.tostring(element, encoding="utf-8").decode()

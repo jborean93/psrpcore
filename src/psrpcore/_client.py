@@ -547,7 +547,7 @@ class ClientPowerShell(_ClientPipeline):
         self,
         runspace_pool: "ClientRunspacePool",
         add_to_history: bool = False,
-        apartment_state: ApartmentState = None,
+        apartment_state: typing.Optional[ApartmentState] = None,
         history: typing.Optional[str] = None,
         host: typing.Optional[HostInfo] = None,
         is_nested: bool = False,
