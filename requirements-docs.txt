@@ -1,6 +1,6 @@
 attrs
 myst-parser == 0.16.1
-Pygments
+Pygments >= 2.9.0
 Sphinx
 sphinx-rtd-theme
 sphinxcontrib-apidoc

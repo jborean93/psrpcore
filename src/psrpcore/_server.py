@@ -703,7 +703,7 @@ class ServerPipeline(Pipeline["ServerRunspacePool"]):
         computer: typing.Optional[str] = None,
         process_id: typing.Optional[int] = None,
         native_thread_id: typing.Optional[int] = None,
-        managed_thread_id: int = None,
+        managed_thread_id: typing.Optional[int] = None,
     ) -> None:
         """Write an information record.
 

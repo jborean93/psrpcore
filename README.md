@@ -18,7 +18,7 @@ Documentation is available at https://psrpcore.readthedocs.io/.
 
 ## Requirements
 
-* CPython 3.6+
+* CPython 3.7+
 * [cryptography](https://github.com/pyca/cryptography)
 
 

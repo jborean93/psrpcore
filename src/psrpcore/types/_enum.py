@@ -8,6 +8,7 @@ The base classes for any .NET enum type.
 """
 
 import enum
+import sys
 import typing
 
 from psrpcore.types._base import PSType
@@ -132,15 +133,16 @@ class PSFlagBase(PSIntegerBase, enum.Flag, metaclass=PSEnumMeta):
 
     # We ignore most of these mypy errors due to the weird __mro__ setup
 
-    @classmethod
-    def _missing_(cls, value):  # type: ignore[no-untyped-def]
-        # Calls the unbound func so it runs the operations against our class.
-        return enum.IntFlag._missing_.__func__(cls, value)  # type: ignore[attr-defined]
+    if sys.version_info[:2] < (3, 11):
 
-    @classmethod
-    def _create_pseudo_member_(cls, value):  # type: ignore[no-untyped-def]
-        # Calls the unbound func so it runs the operations against our class.
-        return enum.IntFlag._create_pseudo_member_.__func__(cls, value)  # type: ignore[attr-defined]
+        @classmethod
+        def _missing_(cls, value):  # type: ignore[no-untyped-def]
+            # Calls the unbound func so it runs the operations against our class.
+            return enum.IntFlag._missing_.__func__(cls, value)  # type: ignore[attr-defined]
+
+        @classmethod
+        def _create_pseudo_member_(cls, value):  # type: ignore[no-untyped-def]
+            return enum.IntFlag._create_pseudo_member_.__func__(cls, value)  # type: ignore[attr-defined]
 
     def __or__(self, other):  # type: ignore[no-untyped-def]
         return enum.IntFlag.__or__(self, other)

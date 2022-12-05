@@ -464,7 +464,7 @@ class RunspacePool(typing.Generic[T1]):
             process_func(event)
 
         else:
-            log.warning(f"Received {message.message_type!s} but could not process it")
+            log.warning(f"Received {message.message_type.name} but could not process it")
 
         return event
 

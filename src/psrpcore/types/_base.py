@@ -762,9 +762,9 @@ class PSType:
 
     def __init__(
         self,
-        type_names: typing.List[str] = None,
-        adapted_properties: typing.List[PSPropertyInfo] = None,
-        extended_properties: typing.List[PSPropertyInfo] = None,
+        type_names: typing.Optional[typing.List[str]] = None,
+        adapted_properties: typing.Optional[typing.List[PSPropertyInfo]] = None,
+        extended_properties: typing.Optional[typing.List[PSPropertyInfo]] = None,
         *,
         skip_inheritance: bool = False,
         rehydrate: bool = True,

@@ -4,6 +4,7 @@
 
 import enum
 import re
+import sys
 import xml.etree.ElementTree as ElementTree
 
 import pytest
@@ -254,14 +255,23 @@ def test_ps_flags(rehydrate):
         Flag2 = 2
         Flag3 = 4
 
-    assert str(FlagTest.none) == "FlagTest.none"
-    assert repr(FlagTest.none) == "<FlagTest.none: 0>"
-    assert str(FlagTest.Flag1) == "FlagTest.Flag1"
-    assert repr(FlagTest.Flag1) == "<FlagTest.Flag1: 1>"
-    assert str(FlagTest.Flag2) == "FlagTest.Flag2"
-    assert str(FlagTest.Flag3) == "FlagTest.Flag3"
-    assert str(FlagTest.Flag1 | FlagTest.Flag3) == "FlagTest.Flag3|Flag1"
-    assert repr(FlagTest.Flag1 | FlagTest.Flag3) == "<FlagTest.Flag3|Flag1: 5>"
+    if sys.version_info[:2] < (3, 11):
+        assert str(FlagTest.none) == "FlagTest.none"
+        assert repr(FlagTest.none) == "<FlagTest.none: 0>"
+        assert str(FlagTest.Flag1) == "FlagTest.Flag1"
+        assert repr(FlagTest.Flag1) == "<FlagTest.Flag1: 1>"
+        assert str(FlagTest.Flag2) == "FlagTest.Flag2"
+        assert str(FlagTest.Flag3) == "FlagTest.Flag3"
+        assert str(FlagTest.Flag1 | FlagTest.Flag3) == "FlagTest.Flag3|Flag1"
+        assert repr(FlagTest.Flag1 | FlagTest.Flag3) == "<FlagTest.Flag3|Flag1: 5>"
+    else:
+        assert repr(FlagTest.none) == "<FlagTest.none: 0>"
+        assert FlagTest.Flag1.name == "Flag1"
+        assert repr(FlagTest.Flag1) == "<FlagTest.Flag1: 1>"
+        assert FlagTest.Flag2.name == "Flag2"
+        assert FlagTest.Flag3.name == "Flag3"
+        assert (FlagTest.Flag1 | FlagTest.Flag3).name == "Flag1|Flag3"
+        assert repr(FlagTest.Flag1 | FlagTest.Flag3) == "<FlagTest.Flag1|Flag3: 5>"
 
     val = FlagTest.Flag1 | FlagTest.Flag3
     assert isinstance(val, PSObject)
@@ -293,7 +303,10 @@ def test_ps_flags(rehydrate):
 
     if rehydrate:
         assert actual == val
-        assert str(actual) == "FlagTest.Flag3|Flag1"
+        if sys.version_info[:2] < (3, 11):
+            assert str(actual) == "FlagTest.Flag3|Flag1"
+        else:
+            assert actual.name == "Flag1|Flag3"
         assert isinstance(actual, int)
         assert isinstance(actual, PSObject)
         assert not isinstance(actual, PSInt)
@@ -346,7 +359,8 @@ def test_ps_flags(rehydrate):
     )
 
 
-def test_ps_flags_operators():
+@pytest.mark.skipif(sys.version_info[:2] >= (3, 11), reason="Change in enum behaviour")
+def test_ps_flags_operators_pre_py311():
     @PSType(type_names=["System.FlagTest"])
     class FlagTest(ps_enum.PSFlagBase):
 
@@ -397,6 +411,54 @@ def test_ps_flags_operators():
     assert str(val) == "FlagTest.Flag4|Flag3|Flag1"
     assert val.name is None
     assert val.value == -3
+
+
+@pytest.mark.skipif(sys.version_info[:2] < (3, 11), reason="Change in enum behaviour")
+def test_ps_flags_operators_py311():
+    @PSType(type_names=["System.FlagTest"])
+    class FlagTest(ps_enum.PSFlagBase):
+
+        none = 0
+        Flag1 = 1
+        Flag2 = 2
+        Flag3 = 4
+        Flag4 = 8
+
+    val = FlagTest.none
+    assert val == FlagTest.none
+    assert val != FlagTest.Flag1
+    assert val.name == "none"
+    assert val.value == 0
+
+    val |= FlagTest.Flag1 | FlagTest.Flag2
+    assert isinstance(val, FlagTest)
+    assert val.name == "Flag1|Flag2"
+    assert val.value == 3
+
+    val &= FlagTest.Flag1
+    assert isinstance(val, FlagTest)
+    assert val.name == "Flag1"
+    assert val.value == 1
+
+    val = (FlagTest.Flag1 | FlagTest.Flag2) ^ FlagTest.Flag1
+    assert isinstance(val, FlagTest)
+    assert val.name == "Flag2"
+    assert val.value == 2
+
+    val = val << 2
+    assert val == FlagTest.Flag4
+    assert val.name == "Flag4"
+    assert val.value == 8
+
+    val = val >> 2
+    assert val == FlagTest.Flag2
+    assert val.name == "Flag2"
+    assert val.value == 2
+
+    val = ~val
+    assert isinstance(val, FlagTest)
+    assert val.name == "Flag1|Flag3|Flag4"
+    assert val.value == 13
 
 
 def test_ps_enum_not_inheriting_int_base():

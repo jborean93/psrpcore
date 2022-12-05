@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0 - TBD
+
++ Bump minimum Python version to 3.7 and fix Python 3.11 enum issues
+
 ## 0.1.2 - 2022-05-18
 
 + Fix serialization of strings that include half surrogate pair `[char]` values

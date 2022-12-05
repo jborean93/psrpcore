@@ -244,7 +244,7 @@ class PSRPEvent(typing.Generic[T1, T2]):
         message_type: PSRPMessageType,
         ps_object: T1,
         runspace_pool_id: uuid.UUID,
-        pipeline_id: T2 = None,
+        pipeline_id: typing.Optional[T2] = None,
     ) -> "PSRPEvent":
         """Creates an event for the specific message types - used internally."""
         event_cls = _REGISTRY[message_type]
