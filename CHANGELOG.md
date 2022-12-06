@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 - TBD
+## 0.2.0 - 2022-12-06
 
 + Bump minimum Python version to 3.7 and fix Python 3.11 enum issues
 
