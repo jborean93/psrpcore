@@ -351,7 +351,7 @@ def test_user_event():
         "<MS>"
         '<I32 N="PSEventArgs.EventIdentifier">1</I32>'
         '<S N="PSEventArgs.SourceIdentifier">source id</S>'
-        '<DT N="PSEventArgs.TimeGenerated">1970-01-01T00:00:00Z</DT>'
+        '<DT N="PSEventArgs.TimeGenerated">1970-01-01T00:00:00</DT>'
         '<S N="PSEventArgs.Sender">sender</S>'
         '<S N="PSEventArgs.SourceArgs">source args</S>'
         '<S N="PSEventArgs.MessageData">message data</S>'
@@ -366,7 +366,7 @@ def test_user_event():
     assert not isinstance(ps_value, psrp.UserEvent)
     assert ps_value["PSEventArgs.EventIdentifier"] == 1
     assert ps_value["PSEventArgs.SourceIdentifier"] == "source id"
-    assert ps_value["PSEventArgs.TimeGenerated"] == PSDateTime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+    assert ps_value["PSEventArgs.TimeGenerated"] == PSDateTime(1970, 1, 1)
     assert ps_value["PSEventArgs.Sender"] == "sender"
     assert ps_value["PSEventArgs.SourceArgs"] == "source args"
     assert ps_value["PSEventArgs.MessageData"] == "message data"

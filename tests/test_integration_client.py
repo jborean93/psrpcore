@@ -89,7 +89,9 @@ $complexString
 [char]"é"
 $true
 # Ticks for EPOCH (1970-01-01)
+[DateTime]::new(621355968000000000, 'Unspecified')
 [DateTime]::new(621355968000000000, 'Utc')
+[DateTime]::new(621355968000000000, 'Local')
 [TimeSpan]::new(131249435)
 [Byte]129
 [SByte]-29
@@ -162,7 +164,7 @@ public class PSRPCore
         events.append(client_pwsh.next_event())
 
     assert ps.state == psrpcore.types.PSInvocationState.Completed
-    assert len(events) == 38
+    assert len(events) == 40
 
     assert isinstance(events[0], psrpcore.PipelineOutputEvent)
     assert events[0].data == "output"
@@ -199,142 +201,157 @@ public class PSRPCore
 
     assert isinstance(events[8], psrpcore.PipelineOutputEvent)
     assert isinstance(events[8].data, psrpcore.types.PSDateTime)
-    assert events[8].data == psrpcore.types.PSDateTime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc, nanosecond=0)
+    assert events[8].data == psrpcore.types.PSDateTime(1970, 1, 1, 0, 0, tzinfo=None, nanosecond=0)
 
     assert isinstance(events[9], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[9].data, psrpcore.types.PSDuration)
-    events[9].data == psrpcore.types.PSDuration(seconds=13, microseconds=124943, nanoseconds=500)
+    assert isinstance(events[9].data, psrpcore.types.PSDateTime)
+    assert events[9].data == psrpcore.types.PSDateTime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc, nanosecond=0)
 
     assert isinstance(events[10], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[10].data, psrpcore.types.PSByte)
-    assert events[10].data == 129
+    assert isinstance(events[10].data, psrpcore.types.PSDateTime)
+    assert events[10].data.year == 1970
+    assert events[10].data.month == 1
+    assert events[10].data.day == 1
+    assert events[10].data.hour == 0
+    assert events[10].data.minute == 0
+    assert events[10].data.second == 0
+    assert events[10].data.nanosecond == 0
+    assert events[10].data.tzinfo is not None
 
     assert isinstance(events[11], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[11].data, psrpcore.types.PSSByte)
-    assert events[11].data == -29
+    assert isinstance(events[11].data, psrpcore.types.PSDuration)
+    events[11].data == psrpcore.types.PSDuration(seconds=13, microseconds=124943, nanoseconds=500)
 
     assert isinstance(events[12], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[12].data, psrpcore.types.PSUInt16)
-    assert events[12].data == 2393
+    assert isinstance(events[12].data, psrpcore.types.PSByte)
+    assert events[12].data == 129
 
     assert isinstance(events[13], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[13].data, psrpcore.types.PSInt16)
-    assert events[13].data == -2393
+    assert isinstance(events[13].data, psrpcore.types.PSSByte)
+    assert events[13].data == -29
 
     assert isinstance(events[14], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[14].data, psrpcore.types.PSUInt)
-    assert events[14].data == 2147383648
+    assert isinstance(events[14].data, psrpcore.types.PSUInt16)
+    assert events[14].data == 2393
 
     assert isinstance(events[15], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[15].data, psrpcore.types.PSInt)
-    assert events[15].data == -2147383648
+    assert isinstance(events[15].data, psrpcore.types.PSInt16)
+    assert events[15].data == -2393
 
     assert isinstance(events[16], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[16].data, psrpcore.types.PSUInt64)
-    assert events[16].data == 9223036854775808
+    assert isinstance(events[16].data, psrpcore.types.PSUInt)
+    assert events[16].data == 2147383648
 
     assert isinstance(events[17], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[17].data, psrpcore.types.PSInt64)
-    assert events[17].data == -9223036854775808
+    assert isinstance(events[17].data, psrpcore.types.PSInt)
+    assert events[17].data == -2147383648
 
     assert isinstance(events[18], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[18].data, psrpcore.types.PSSingle)
-    assert events[18].data == psrpcore.types.PSSingle(11020.101)
+    assert isinstance(events[18].data, psrpcore.types.PSUInt64)
+    assert events[18].data == 9223036854775808
 
     assert isinstance(events[19], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[19].data, psrpcore.types.PSDouble)
-    assert events[19].data == psrpcore.types.PSDouble(129320202.223)
+    assert isinstance(events[19].data, psrpcore.types.PSInt64)
+    assert events[19].data == -9223036854775808
 
     assert isinstance(events[20], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[20].data, psrpcore.types.PSDecimal)
-    assert events[20].data == psrpcore.types.PSDecimal("1291921.101291")
+    assert isinstance(events[20].data, psrpcore.types.PSSingle)
+    assert events[20].data == psrpcore.types.PSSingle(11020.101)
 
     assert isinstance(events[21], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[21].data, psrpcore.types.PSByteArray)
-    assert events[21].data == b"abcdef"
+    assert isinstance(events[21].data, psrpcore.types.PSDouble)
+    assert events[21].data == psrpcore.types.PSDouble(129320202.223)
 
     assert isinstance(events[22], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[22].data, psrpcore.types.PSGuid)
-    assert events[22].data == psrpcore.types.PSGuid(int=0)
+    assert isinstance(events[22].data, psrpcore.types.PSDecimal)
+    assert events[22].data == psrpcore.types.PSDecimal("1291921.101291")
 
     assert isinstance(events[23], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[23].data, psrpcore.types.PSUri)
-    assert events[23].data == "https://github.com/"
+    assert isinstance(events[23].data, psrpcore.types.PSByteArray)
+    assert events[23].data == b"abcdef"
 
     assert isinstance(events[24], psrpcore.PipelineOutputEvent)
-    assert events[24].data is None
+    assert isinstance(events[24].data, psrpcore.types.PSGuid)
+    assert events[24].data == psrpcore.types.PSGuid(int=0)
 
     assert isinstance(events[25], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[25].data, psrpcore.types.PSVersion)
-    assert events[25].data == psrpcore.types.PSVersion("1.2.3.4")
+    assert isinstance(events[25].data, psrpcore.types.PSUri)
+    assert events[25].data == "https://github.com/"
 
     assert isinstance(events[26], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[26].data, psrpcore.types.PSXml)
-    assert events[26].data == "<obj>test</obj>"
+    assert events[26].data is None
 
     assert isinstance(events[27], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[27].data, psrpcore.types.PSScriptBlock)
-    assert events[27].data == ' echo "scriptblock" '
+    assert isinstance(events[27].data, psrpcore.types.PSVersion)
+    assert events[27].data == psrpcore.types.PSVersion("1.2.3.4")
 
     assert isinstance(events[28], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[28].data, psrpcore.types.PSSecureString)
-    with pytest.raises(psrpcore.MissingCipherError):
-        events[28].data.decrypt()
+    assert isinstance(events[28].data, psrpcore.types.PSXml)
+    assert events[28].data == "<obj>test</obj>"
 
     assert isinstance(events[29], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[29].data, psrpcore.types.PSInt)
-    assert events[29].data == 3
-    assert str(events[29].data) == "Open"
+    assert isinstance(events[29].data, psrpcore.types.PSScriptBlock)
+    assert events[29].data == ' echo "scriptblock" '
 
     assert isinstance(events[30], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[30].data, psrpcore.types.PSCustomObject)
-    assert events[30].data["Property"] == "value"
-    assert events[30].data["OtherProp"] == 1
+    assert isinstance(events[30].data, psrpcore.types.PSSecureString)
+    with pytest.raises(psrpcore.MissingCipherError):
+        events[30].data.decrypt()
 
     assert isinstance(events[31], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[31].data, psrpcore.types.PSDict)
-    assert events[31].data.PSTypeNames[0] == "System.Collections.Hashtable"
-    assert events[31].data["hash"] == "value"
+    assert isinstance(events[31].data, psrpcore.types.PSInt)
+    assert events[31].data == 3
+    assert str(events[31].data) == "Open"
 
     assert isinstance(events[32], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[32].data, psrpcore.types.PSDict)
-    assert events[32].data.PSTypeNames[0].startswith("Deserialized.System.Collections.Generic.Dictionary`2")
-    assert events[32].data["key"] == 1
+    assert isinstance(events[32].data, psrpcore.types.PSCustomObject)
+    assert events[32].data["Property"] == "value"
+    assert events[32].data["OtherProp"] == 1
 
     assert isinstance(events[33], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[33].data, psrpcore.types.PSList)
-    assert events[33].data.PSTypeNames[0] == "Deserialized.System.Object[]"
-    assert events[33].data == [1, "string"]
+    assert isinstance(events[33].data, psrpcore.types.PSDict)
+    assert events[33].data.PSTypeNames[0] == "System.Collections.Hashtable"
+    assert events[33].data["hash"] == "value"
 
     assert isinstance(events[34], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[34].data, psrpcore.types.PSList)
-    assert events[34].data.PSTypeNames[0].startswith("Deserialized.System.Collections.Generic.List`1")
-    assert events[34].data == [2, "string"]
+    assert isinstance(events[34].data, psrpcore.types.PSDict)
+    assert events[34].data.PSTypeNames[0].startswith("Deserialized.System.Collections.Generic.Dictionary`2")
+    assert events[34].data["key"] == 1
 
     assert isinstance(events[35], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[35].data, psrpcore.types.ProgressRecord)
-    assert events[35].data.Activity == COMPLEX_STRING + " - activity"
-    assert events[35].data.ActivityId == 10
-    assert events[35].data.CurrentOperation is None
-    assert events[35].data.ParentActivityId == -1
-    assert events[35].data.PercentComplete == -1
-    assert events[35].data.RecordType == psrpcore.types.ProgressRecordType.Processing
-    assert events[35].data.SecondsRemaining == -1
-    assert events[35].data.StatusDescription == COMPLEX_STRING + " - status"
+    assert isinstance(events[35].data, psrpcore.types.PSList)
+    assert events[35].data.PSTypeNames[0] == "Deserialized.System.Object[]"
+    assert events[35].data == [1, "string"]
 
     assert isinstance(events[36], psrpcore.PipelineOutputEvent)
-    assert isinstance(events[36].data, psrpcore.types.PSIEnumerable)
-    assert events[36].data == [0, 1, 2, 3, 4]
+    assert isinstance(events[36].data, psrpcore.types.PSList)
+    assert events[36].data.PSTypeNames[0].startswith("Deserialized.System.Collections.Generic.List`1")
+    assert events[36].data == [2, "string"]
 
-    assert isinstance(events[37], psrpcore.PipelineStateEvent)
-    assert events[37].state == psrpcore.types.PSInvocationState.Completed
+    assert isinstance(events[37], psrpcore.PipelineOutputEvent)
+    assert isinstance(events[37].data, psrpcore.types.ProgressRecord)
+    assert events[37].data.Activity == COMPLEX_STRING + " - activity"
+    assert events[37].data.ActivityId == 10
+    assert events[37].data.CurrentOperation is None
+    assert events[37].data.ParentActivityId == -1
+    assert events[37].data.PercentComplete == -1
+    assert events[37].data.RecordType == psrpcore.types.ProgressRecordType.Processing
+    assert events[37].data.SecondsRemaining == -1
+    assert events[37].data.StatusDescription == COMPLEX_STRING + " - status"
+
+    assert isinstance(events[38], psrpcore.PipelineOutputEvent)
+    assert isinstance(events[38].data, psrpcore.types.PSIEnumerable)
+    assert events[38].data == [0, 1, 2, 3, 4]
+
+    assert isinstance(events[39], psrpcore.PipelineStateEvent)
+    assert events[39].state == psrpcore.types.PSInvocationState.Completed
     assert ps.state == psrpcore.types.PSInvocationState.Completed
 
     runspace.exchange_key()
     client_pwsh.data()
     enc_key = client_pwsh.next_event()
     assert isinstance(enc_key, psrpcore.EncryptedSessionKeyEvent)
-    assert events[28].data.decrypt() == COMPLEX_STRING
+    assert events[30].data.decrypt() == COMPLEX_STRING
 
     with pytest.raises(psrpcore.PSRPCoreError, match="Must close existing pipelines before closing the pool"):
         runspace.close()
