@@ -277,15 +277,15 @@ def test_ps_bool_deserialize_extended():
     [
         (
             datetime.datetime(1970, 1, 1, 0, 0, 0),
+            "<DT>1970-01-01T00:00:00</DT>",
+            "1970-01-01 00:00:00",
+            "PSDateTime(1970, 1, 1, 0, 0, nanosecond=0)",
+        ),
+        (
+            datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
             "<DT>1970-01-01T00:00:00Z</DT>",
             "1970-01-01 00:00:00+00:00",
             "PSDateTime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc, nanosecond=0)",
-        ),
-        (
-            datetime.datetime(1970, 1, 1, 0, 0, 0, microsecond=999999),
-            "<DT>1970-01-01T00:00:00.999999Z</DT>",
-            "1970-01-01 00:00:00.999999+00:00",
-            "PSDateTime(1970, 1, 1, 0, 0, 0, 999999, tzinfo=datetime.timezone.utc, nanosecond=0)",
         ),
         (
             datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=datetime.timezone(offset=datetime.timedelta(hours=10))),
@@ -294,19 +294,30 @@ def test_ps_bool_deserialize_extended():
             "PSDateTime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=36000)), nanosecond=0)",
         ),
         (
+            datetime.datetime(1970, 1, 1, 0, 0, 0, microsecond=999999),
+            "<DT>1970-01-01T00:00:00.999999</DT>",
+            "1970-01-01 00:00:00.999999",
+            "PSDateTime(1970, 1, 1, 0, 0, 0, 999999, nanosecond=0)",
+        ),
+        (
+            datetime.datetime(1970, 1, 1, 0, 0, 0, microsecond=999999, tzinfo=datetime.timezone.utc),
+            "<DT>1970-01-01T00:00:00.999999Z</DT>",
+            "1970-01-01 00:00:00.999999+00:00",
+            "PSDateTime(1970, 1, 1, 0, 0, 0, 999999, tzinfo=datetime.timezone.utc, nanosecond=0)",
+        ),
+        (
             datetime.datetime(
-                1970, 1, 1, 0, 0, 0, microsecond=999999, tzinfo=datetime.timezone(offset=datetime.timedelta(hours=10))
+                1970, 1, 1, 0, 0, 0, microsecond=999999, tzinfo=datetime.timezone(offset=datetime.timedelta(hours=-10))
             ),
-            "<DT>1970-01-01T00:00:00.999999+10:00</DT>",
-            "1970-01-01 00:00:00.999999+10:00",
-            "PSDateTime(1970, 1, 1, 0, 0, 0, 999999, tzinfo=datetime.timezone(datetime.timedelta(seconds=36000)), "
-            "nanosecond=0)",
+            "<DT>1970-01-01T00:00:00.999999-10:00</DT>",
+            "1970-01-01 00:00:00.999999-10:00",
+            "PSDateTime(1970, 1, 1, 0, 0, 0, 999999, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=50400)), nanosecond=0)",
         ),
         (
             datetime.datetime(1600, 12, 12, 23, 59, 59),
-            "<DT>1600-12-12T23:59:59Z</DT>",
-            "1600-12-12 23:59:59+00:00",
-            "PSDateTime(1600, 12, 12, 23, 59, 59, tzinfo=datetime.timezone.utc, nanosecond=0)",
+            "<DT>1600-12-12T23:59:59</DT>",
+            "1600-12-12 23:59:59",
+            "PSDateTime(1600, 12, 12, 23, 59, 59, nanosecond=0)",
         ),
     ],
 )
@@ -338,7 +349,7 @@ def test_ps_datetime_from_datetime():
     element = serialize(datetime.datetime(1970, 1, 1, 0, 0, 0, microsecond=999999))
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
 
-    assert actual == "<DT>1970-01-01T00:00:00.999999Z</DT>"
+    assert actual == "<DT>1970-01-01T00:00:00.999999</DT>"
 
 
 @pytest.mark.parametrize("nanosecond, fraction", [(7, 0), (70, 0), (700, 7)])
@@ -349,9 +360,32 @@ def test_ps_datetime_nanosecond(nanosecond, fraction):
 
     element = serialize(ps_datetime)
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
-    assert actual == "<DT>1970-06-11T04:08:23.123456%sZ</DT>" % fraction
+    assert actual == "<DT>1970-06-11T04:08:23.123456%s</DT>" % fraction
 
     assert str(ps_datetime) == f"1970-06-11 04:08:23.123456{nanosecond:03d}"
+
+
+@pytest.mark.parametrize("nanosecond, fraction", [(7, 0), (70, 0), (700, 7)])
+def test_ps_datetime_nanosecond_utc(nanosecond, fraction):
+    ps_datetime = primitive.PSDateTime(
+        1970,
+        6,
+        11,
+        4,
+        8,
+        23,
+        microsecond=123456,
+        nanosecond=nanosecond,
+        tzinfo=datetime.timezone.utc,
+    )
+    assert isinstance(ps_datetime, primitive.PSDateTime)
+    assert isinstance(ps_datetime, datetime.datetime)
+
+    element = serialize(ps_datetime)
+    actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
+    assert actual == "<DT>1970-06-11T04:08:23.123456%sZ</DT>" % fraction
+
+    assert str(ps_datetime) == f"1970-06-11 04:08:23.123456{nanosecond:03d}+00:00"
 
 
 def test_ps_datetime_nanosecond_timezone():
@@ -375,9 +409,7 @@ def test_ps_datetime_with_properties():
     element = serialize(ps_datetime)
 
     actual = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert (
-        actual == '<Obj RefId="0"><DT>2000-02-29T15:43:10.000010Z</DT>' '<MS><I32 N="Test Property">1</I32></MS></Obj>'
-    )
+    assert actual == '<Obj RefId="0"><DT>2000-02-29T15:43:10.000010</DT><MS><I32 N="Test Property">1</I32></MS></Obj>'
 
     actual = deserialize(element)
     assert isinstance(actual, primitive.PSDateTime)
@@ -389,7 +421,7 @@ def test_ps_datetime_with_properties():
     assert actual.minute == ps_datetime.minute
     assert actual.second == ps_datetime.second
     assert actual.microsecond == ps_datetime.microsecond
-    assert str(actual) == "2000-02-29 15:43:10.000010+00:00"
+    assert str(actual) == "2000-02-29 15:43:10.000010"
     assert actual["Test Property"] == 1
     assert isinstance(actual["Test Property"], primitive.PSInt)
     assert actual.PSTypeNames == ["System.DateTime", "System.ValueType", "System.Object"]
@@ -414,7 +446,7 @@ def test_ps_datetime_add_duration():
 
     element = serialize(actual)
     actual_str = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert actual_str == "<DT>2001-04-05T02:04:05.0001111Z</DT>"
+    assert actual_str == "<DT>2001-04-05T02:04:05.0001111</DT>"
 
 
 def test_ps_datetime_sub_duration():
@@ -436,7 +468,7 @@ def test_ps_datetime_sub_duration():
 
     element = serialize(actual)
     actual_str = ElementTree.tostring(element, encoding="utf-8").decode()
-    assert actual_str == "<DT>1999-01-25T05:22:14.9999103Z</DT>"
+    assert actual_str == "<DT>1999-01-25T05:22:14.9999103</DT>"
 
 
 def test_ps_datetime_sub_datetime():

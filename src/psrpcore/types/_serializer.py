@@ -183,6 +183,7 @@ def _deserialize_datetime(
         datetime_str = value
 
     offset_match = _DATETIME_TZ_OFFSET_PATTERN.search(datetime_str)
+    time_zone_format = "%z"
     if offset_match:
         matches = offset_match.groupdict()
         offset = matches["offset"]
@@ -195,11 +196,14 @@ def _deserialize_datetime(
         # Python 3.6 doesn't support '%z' matching 'Z' at the end of a string.
         datetime_str = datetime_str[:-1] + "+0000"
 
+    else:
+        time_zone_format = ""
+
     try:
-        dt = PSDateTime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S.%f%z")
+        dt = PSDateTime.strptime(datetime_str, f"%Y-%m-%dT%H:%M:%S.%f{time_zone_format}")
     except ValueError:
         # Try without fractional seconds
-        dt = PSDateTime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%S%z")
+        dt = PSDateTime.strptime(datetime_str, f"%Y-%m-%dT%H:%M:%S{time_zone_format}")
     dt.nanosecond = nanoseconds
 
     return dt
@@ -347,8 +351,11 @@ def _serialize_datetime(
         if nanoseconds:
             fraction_seconds += str(nanoseconds // 100)
 
-    timezone = "Z"
-    if value.tzinfo:
+    timezone = ""
+    if value.tzinfo == datetime.timezone.utc:
+        timezone = "Z"
+
+    elif value.tzinfo:
         # Python's timezone strftime format doesn't quite match up with the .NET one.
         utc_offset = value.strftime("%z")
         timezone = f"{utc_offset[:3]}:{utc_offset[3:]}"
