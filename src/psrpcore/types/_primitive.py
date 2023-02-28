@@ -128,9 +128,11 @@ class PSIntegerBase(PSObject, int):
             # If the value is not the exact instance recreate it from an actual int.
             return super().__new__(cls, int(num))
 
-        if num < cls.MinValue or num > cls.MaxValue:
+        int_num = int(num)
+
+        if int_num < cls.MinValue or int_num > cls.MaxValue:
             raise ValueError(
-                f"Cannot create {cls.__qualname__} with value '{num}': Value must be between "
+                f"Cannot create {cls.__qualname__} with value '{int_num}': Value must be between "
                 f"{cls.MinValue} and {cls.MaxValue}."
             )
 

@@ -84,8 +84,6 @@ jobs:
         exclude:
         - os: ubuntu-latest
           python-arch: x86
-        - os: windows-latest
-          python-version: '3.11'  # Doesn't have an lxml cp311 wheel yet
 
     steps:
     - uses: actions/checkout@v3
