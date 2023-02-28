@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2 - 2023-03-01
+
+* Fix up Python 3.11.2 flag enum issues when doing bit operations like `|` and `&`
+
 ## 0.2.1 - 2022-12-19
 
 + Fix up DateTime serialization
