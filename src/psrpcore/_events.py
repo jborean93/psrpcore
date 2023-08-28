@@ -187,7 +187,6 @@ def _unpack_multi_dimensional_array(
     obj: PSObject,
     unpack_obj: typing.Callable[[PSObject], typing.Any],
 ) -> typing.List:
-
     final_list: typing.List[typing.Any] = [unpack_obj(o) for o in obj.mae]
     for count in reversed(obj.mal):
         to_enumerate = final_list

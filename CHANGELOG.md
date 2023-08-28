@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3 - TBD
+
+* Tested with Python 3.12
+
 ## 0.2.2 - 2023-03-01
 
 * Fix up Python 3.11.2 flag enum issues when doing bit operations like `|` and `&`

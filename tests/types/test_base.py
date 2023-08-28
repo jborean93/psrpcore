@@ -846,7 +846,6 @@ def test_ps_instance_with_deserialized_object():
 
 
 def test_fail_to_create_ps_type_without_ps_object():
-
     with pytest.raises(TypeError, match=r"PSType class [\w_\.<>]+ must be a subclass of PSObject"):
 
         @ps_base.PSType()

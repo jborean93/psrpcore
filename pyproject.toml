@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "psrpcore"
-version = "0.2.2"
+version = "0.2.3"
 description = "Core components for the PowerShell Remoting Protocol"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -23,7 +23,8 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11"
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12"
 ]
 dependencies = [
     "cryptography",
@@ -89,7 +90,7 @@ junit_family = "xunit2"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = sanity,py37,py38,py39,py310,py311
+envlist = sanity,py37,py38,py39,py310,py311,py312
 skip_missing_interpreters = true
 isolated_build = True
 

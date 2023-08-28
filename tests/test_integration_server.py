@@ -221,7 +221,6 @@ def test_pipe_output(server_pwsh: ServerTransport, client_opened_pwsh: ClientTra
         Name=server_pwsh.pipe_name,
         Script="my script",
     ) as ps:
-
         runspace = server_pwsh.runspace
         open_runspace(server_pwsh)
 
@@ -293,7 +292,6 @@ def test_merge_unclaimed(server_pwsh: ServerTransport, client_opened_pwsh: Clien
         cmd,
         Name=server_pwsh.pipe_name,
     ):
-
         runspace = server_pwsh.runspace
         open_runspace(server_pwsh)
 
@@ -383,7 +381,6 @@ Write-Information -MessageData "information"
         cmd,
         Name=server_pwsh.pipe_name,
     ):
-
         runspace = server_pwsh.runspace
         open_runspace(server_pwsh)
 
@@ -454,7 +451,6 @@ def test_progress_record(server_pwsh: ServerTransport, client_opened_pwsh: Clien
         cmd,
         Name=server_pwsh.pipe_name,
     ) as ps:
-
         runspace = server_pwsh.runspace
         open_runspace(server_pwsh)
 
@@ -539,7 +535,6 @@ def test_pipe_input_data(server_pwsh: ServerTransport, client_opened_pwsh: Clien
         cmd,
         Name=server_pwsh.pipe_name,
     ):
-
         runspace = server_pwsh.runspace
         open_runspace(server_pwsh)
 
@@ -625,7 +620,6 @@ def test_stop_pipe(server_pwsh: ServerTransport, client_opened_pwsh: ClientTrans
         cmd,
         Name=server_pwsh.pipe_name,
     ) as ps:
-
         runspace = server_pwsh.runspace
         open_runspace(server_pwsh)
 

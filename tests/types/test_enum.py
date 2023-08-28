@@ -29,7 +29,6 @@ def test_ps_enum(rehydrate):
 
     @PSType(type_names=[f"System.{type_name}"], rehydrate=rehydrate)
     class EnumTest(ps_enum.PSEnumBase):
-
         none = 0
         Value1 = 1
         Value2 = 2
@@ -100,7 +99,6 @@ def test_ps_enum_unsigned_type(rehydrate):
 
     @PSType(type_names=[f"System.{type_name}"], rehydrate=rehydrate)
     class EnumTest(ps_enum.PSEnumBase, base_type=PSUInt):
-
         none = 0
         Value1 = 1
         Value2 = 2
@@ -171,7 +169,6 @@ def test_ps_enum_extended_properties(rehydrate):
 
     @PSType(type_names=[f"System.{type_name}"], rehydrate=rehydrate)
     class EnumTest(ps_enum.PSEnumBase, base_type=PSInt64):
-
         none = 0
         Value1 = 1
         Value2 = 2
@@ -249,7 +246,6 @@ def test_ps_flags(rehydrate):
 
     @PSType(type_names=[f"System.{type_name}"], rehydrate=rehydrate)
     class FlagTest(ps_enum.PSFlagBase):
-
         none = 0
         Flag1 = 1
         Flag2 = 2
@@ -363,7 +359,6 @@ def test_ps_flags(rehydrate):
 def test_ps_flags_operators_pre_py311():
     @PSType(type_names=["System.FlagTest"])
     class FlagTest(ps_enum.PSFlagBase):
-
         none = 0
         Flag1 = 1
         Flag2 = 2
@@ -417,7 +412,6 @@ def test_ps_flags_operators_pre_py311():
 def test_ps_flags_operators_py311():
     @PSType(type_names=["System.FlagTest"])
     class FlagTest(ps_enum.PSFlagBase):
-
         none = 0
         Flag1 = 1
         Flag2 = 2
@@ -473,7 +467,6 @@ def test_ps_enum_not_inheriting_int_base():
 def test_ps_enum_to_ps_ps_baseint():
     @PSType(type_names=["System.EnumToInt"])
     class EnumToInt(ps_enum.PSEnumBase):
-
         none = 0
         Value1 = 1
 

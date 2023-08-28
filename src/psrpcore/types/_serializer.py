@@ -788,7 +788,7 @@ class _Serializer:
                     ):
                         continue
 
-                    elif not attr_element:
+                    elif attr_element is None:
                         attr_element = ElementTree.SubElement(element, "MS")
 
                     sub_element = self.serialize(prop_value)

@@ -218,7 +218,6 @@ def autodoc_skip_member_handler(
 def setup(
     app: Sphinx,
 ) -> None:
-
     app.connect("autodoc-process-docstring", autodoc_process_docstring)
     app.connect("autodoc-process-signature", autodoc_process_signature)
     app.connect("autodoc-skip-member", autodoc_skip_member_handler)
