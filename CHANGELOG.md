@@ -2,6 +2,7 @@
 
 ## 0.3.0 - TBD
 
+* Dropped support for Python 3.7
 * Tested with Python 3.12
 * Added `psrpcore.types.deserialize_clixml` and `psrpcore.types.serialize_clixml`
   * These methods can deserialize and serialize CLIXML strings directly

@@ -5,8 +5,9 @@
     ],
     "files.trimTrailingWhitespace": true,
     "editor.trimAutoWhitespace": true,
-    "python.formatting.provider": "black",
-    "python.linting.mypyEnabled": true,
+    "mypy-type-checker.ignorePatterns": [
+        "tests/**"
+    ],
     "python.analysis.extraPaths": [
         "src",
     ],
@@ -21,7 +22,4 @@
             "source.organizeImports": "explicit"
         },
     },
-    "python.linting.ignorePatterns": [
-        "tests/**"
-    ]
 }
