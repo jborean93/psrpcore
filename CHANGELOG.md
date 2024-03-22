@@ -1,8 +1,11 @@
 # Changelog
 
-## 0.2.3 - TBD
+## 0.3.0 - TBD
 
 * Tested with Python 3.12
+* Added `psrpcore.types.deserialize_clixml` and `psrpcore.types.serialize_clixml`
+  * These methods can deserialize and serialize CLIXML strings directly
+* Removed invalid `__init__.py` entries `ps_data_packet` and `ps_guid_packet` as they were never defined
 
 ## 0.2.2 - 2023-03-01
 

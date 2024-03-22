@@ -15,6 +15,7 @@ from psrpcore._client import (
     ClientRunspacePool,
 )
 from psrpcore._command import Command
+from psrpcore._crypto import PSRemotingCrypto
 from psrpcore._events import (
     ApplicationPrivateDataEvent,
     ConnectRunspacePoolEvent,
@@ -95,10 +96,9 @@ __all__ = [
     "PipelineStateEvent",
     "PowerShell",
     "ProgressRecordEvent",
-    "ps_data_packet",
-    "ps_guid_packet",
     "PublicKeyEvent",
     "PublicKeyRequestEvent",
+    "PSRemotingCrypto",
     "ResetRunspaceStateEvent",
     "RunspacePoolHostCallEvent",
     "RunspacePoolHostResponseEvent",
