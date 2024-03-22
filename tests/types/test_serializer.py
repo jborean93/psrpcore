@@ -27,6 +27,7 @@ from psrpcore.types import (
     PSInt,
     PSInt16,
     PSInt64,
+    PSList,
     PSQueue,
     PSSByte,
     PSScriptBlock,
@@ -371,3 +372,84 @@ def test_serialize_circular_reference():
     assert obj.Dict["test"] == 1
     assert obj.Dict["obj"] == obj
     assert obj.CircularRef == obj
+
+
+def test_serialize_clixml_single() -> None:
+    expected = '<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S>foo</S></Objs>'
+    actual = serializer.serialize_clixml("foo", FakeCryptoProvider())
+
+    assert actual == expected
+
+
+def test_serialize_clixml_list() -> None:
+    expected = (
+        '<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S>foo</S><S>bar</S></Objs>'
+    )
+    actual = serializer.serialize_clixml(["foo", "bar"], FakeCryptoProvider())
+
+    assert actual == expected
+
+
+def test_serialize_clixml_list_of_lists() -> None:
+    expected = (
+        '<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">'
+        '<Obj RefId="0"><TN RefId="0"><T>System.Collections.ArrayList</T><T>System.Object</T></TN><LST><S>foo</S><S>bar</S></LST></Obj>'
+        "<S>final</S></Objs>"
+    )
+    actual = serializer.serialize_clixml([["foo", "bar"], "final"], FakeCryptoProvider())
+
+    assert actual == expected
+
+
+@pytest.mark.parametrize("newline", ("\n", "\r\n"))
+def test_deserialize_clixml_with_header(newline: str) -> None:
+    value = f'#< CLIXML{newline}<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S>foo</S></Objs>'
+
+    actual = serializer.deserialize_clixml(value, FakeCryptoProvider())
+    assert isinstance(actual, list)
+    assert len(actual) == 1
+    assert isinstance(actual[0], PSString)
+    assert actual[0] == "foo"
+
+
+def test_deserialize_clixml_without_header() -> None:
+    value = f'<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S>foo</S></Objs>'
+
+    actual = serializer.deserialize_clixml(value, FakeCryptoProvider())
+    assert isinstance(actual, list)
+    assert len(actual) == 1
+    assert isinstance(actual[0], PSString)
+    assert actual[0] == "foo"
+
+
+def test_deserialize_clixml_multiple_values() -> None:
+    value = (
+        f'<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S>foo</S><I64>1</I64></Objs>'
+    )
+
+    actual = serializer.deserialize_clixml(value, FakeCryptoProvider())
+    assert isinstance(actual, list)
+    assert len(actual) == 2
+    assert isinstance(actual[0], PSString)
+    assert actual[0] == "foo"
+    assert isinstance(actual[1], PSInt64)
+    assert actual[1] == 1
+
+
+def test_deserialize_clixml_list_value() -> None:
+    value = (
+        '<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">'
+        '<Obj RefId="0"><TN RefId="0"><T>System.Collections.ArrayList</T><T>System.Object</T></TN><LST><S>foo</S><S>bar</S></LST></Obj>'
+        "<S>final</S></Objs>"
+    )
+    actual = serializer.deserialize_clixml(value, FakeCryptoProvider())
+    assert isinstance(actual, list)
+    assert len(actual) == 2
+    assert isinstance(actual[0], PSList)
+    assert len(actual[0]) == 2
+    assert isinstance(actual[0][0], PSString)
+    assert actual[0][0] == "foo"
+    assert isinstance(actual[0][1], PSString)
+    assert actual[0][1] == "bar"
+    assert isinstance(actual[1], PSString)
+    assert actual[1] == "final"

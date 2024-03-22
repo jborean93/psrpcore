@@ -2,6 +2,8 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+from __future__ import annotations
+
 import base64
 import binascii
 import datetime
@@ -123,6 +125,52 @@ def deserialize(
     return _Serializer(cipher, **kwargs).deserialize(value)
 
 
+def deserialize_clixml(
+    clixml: str,
+    cipher: PSCryptoProvider,
+) -> list[typing.Any]:
+    """Deserialize a CLIXML string to Python objects.
+
+    Deserializes a CLIXML CML string produced by pwsh -OutputFormat xml into
+    the Python objects they represent. The string can start with the known
+    CLIXML prefix '#< CLIXML\\n' as the code will strip it out if present.
+
+    The raw CLIXML string can be from stdout of ``pwsh -OutputFormat xml``
+    or from output of:
+
+    .. code-block:: powershell
+
+        [System.Management.Automation.PSSerialize]::Serialize($value)
+
+    Args:
+        clixml: The CLIXML string from PowerShell.
+        cipher: The RUnspace Pool cipher to use for SecureStrings.
+
+    Returns:
+        list[typing.Any]: The list of Python objects that were created from the
+        CLIXML string.
+    """
+    serializer = _Serializer(cipher)
+
+    # Strip out the CLIXML header if it is present
+    if clixml.startswith("#< CLIXML"):
+        clixml = clixml[9:].lstrip("\r\n")
+
+    # ElementTree will process the xmlns value and apply it to each element
+    # breaking our parser. It is easier to just strip it from the root Objs
+    # element.
+    objs_header_end_idx = clixml.find(">")
+    clixml = "<Objs" + clixml[objs_header_end_idx:]
+
+    raw_clixml = ElementTree.fromstring(clixml)
+    values = []
+    for raw in raw_clixml:
+        v = serializer.deserialize(raw)
+        values.append(v)
+
+    return values
+
+
 def serialize(
     value: typing.Optional[typing.Any],
     cipher: PSCryptoProvider,
@@ -142,6 +190,54 @@ def serialize(
         ElementTree.Element: The CLIXML as an XML Element object.
     """
     return _Serializer(cipher, **kwargs).serialize(value)
+
+
+def serialize_clixml(
+    value: typing.Optional[typing.Any],
+    cipher: PSCryptoProvider,
+) -> str:
+    """Serializes the Python object(s) to a CLIXML string.
+
+    Serializes the provided value to a CLIXML string that can be used
+    independently to PSRemoting. The value provided can be used with:
+
+    .. code-block:: powershell
+
+        [System.Management.Automation.PSSerialize]::Deserialize($value)
+
+    If the provided value is a list each entry will be appended to the root
+    ``Objs`` element. To serialize the list as a PowerShell list/array object
+    in the ``Objs`` element, wrap the value inside another list.
+
+    .. code-block:: python
+
+        value = [1, 2, 3]
+        serialize_clixml([value], cipher)
+
+    Args:
+        value: The value(s) to serialize.
+        cipher: The Runspace Pool cipher to use for SecureStrings.
+
+    Returns:
+        str: The CLIXML string.
+    """
+    objs = ElementTree.Element(
+        "Objs",
+        attrib={
+            "Version": "1.1.0.1",
+            "xmlns": "http://schemas.microsoft.com/powershell/2004/04",
+        },
+    )
+
+    serializer = _Serializer(cipher)
+    if isinstance(value, list):
+        objs.extend([serializer.serialize(o) for o in value])
+    else:
+        objs.append(serializer.serialize(value))
+
+    clixml = ElementTree.tostring(objs, encoding="unicode")
+
+    return clixml
 
 
 def _deserialize_datetime(

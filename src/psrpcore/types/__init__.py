@@ -144,7 +144,12 @@ from psrpcore.types._psrp import (
     VerboseRecordMsg,
     WarningRecordMsg,
 )
-from psrpcore.types._serializer import deserialize, serialize
+from psrpcore.types._serializer import (
+    deserialize,
+    deserialize_clixml,
+    serialize,
+    serialize_clixml,
+)
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
@@ -272,6 +277,8 @@ __all__ = [
     "add_note_property",
     "add_script_property",
     "deserialize",
+    "deserialize_clixml",
     "ps_isinstance",
     "serialize",
+    "serialize_clixml",
 ]
