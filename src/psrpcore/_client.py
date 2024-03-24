@@ -68,11 +68,13 @@ class ClientRunspacePool(RunspacePool["_ClientPipeline"]):
     Represents a Runspace Pool on a remote host which can contain one or more
     running pipelines. This is a non blocking connection object that handles
     the incoming and outgoing PSRP packets without worrying about the IO. This
-    model is inspired by `Sans-IO model`_ where this object deals with only
-    the PSRP protocol and needs to be combined with an IO transport separately.
+    model is inspired by `Sans-IO model <https://sans-io.readthedocs.io/>`_
+    where this object deals with only the PSRP protocol and needs to be
+    combined with an IO transport separately.
 
     This is meant to be a close representation of the
-    `System.Management.Automation.Runspaces.RunspacePool`_ .NET class.
+    `System.Management.Automation.Runspaces.RunspacePool <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.runspacepool>`_
+    .NET class.
 
     Args:
         application_arguments: Arguments that are sent to the server and
@@ -87,12 +89,6 @@ class ClientRunspacePool(RunspacePool["_ClientPipeline"]):
         max_runspaces: The maximum number of Runspaces a pool can hold.
         runspace_pool_id: Manually set the Runspace Pool ID, used when
             reconnecting to an existing Runspace Pool.
-
-    .. _System.Management.Automation.Runspaces.RunspacePool:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.runspacepool
-
-    .. _Sans-IO model:
-        https://sans-io.readthedocs.io/
     """
 
     def __init__(

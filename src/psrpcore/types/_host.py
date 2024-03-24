@@ -23,14 +23,12 @@ class HostMethodIdentifier(PSEnumBase):
 
     This is an enum class for the
     System.Management.Automation.Remoting.RemoteHostMethodId .NET class. It is
-    documented in PSRP under `[MS-PSRP] 2.2.3.17 Host Method Identifier`_.
+    documented in PSRP under
+    `[MS-PSRP] 2.2.3.17 Host Method Identifier <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ddd2a4d1-797d-4d73-8372-7a77a62fb204>`_.
 
     The values are used in :class:`psrpcore.types.RunspacePoolHostCall` and
     :class:`psrpcore.types.PipelineHostCall` to identify what method should be
     invoked.
-
-    .. _[MS-PSRP] 2.2.3.17 Host Method Identifier:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ddd2a4d1-797d-4d73-8372-7a77a62fb204
     """
 
     GetName = 1
@@ -130,17 +128,12 @@ class ControlKeyStates(PSFlagBase):
     """System.Management.Automation.Host.ControlKeyStates enum flags.
 
     Defines the state of the control key. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.27 ControlKeyStates`_.
+    `[MS-PSRP] 2.2.3.27 ControlKeyStates <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/bd7241a2-4ba0-4db1-a2b3-77ea1a8a4cbf>`_.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Host.ControlKeyStates`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.27 ControlKeyStates:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/bd7241a2-4ba0-4db1-a2b3-77ea1a8a4cbf
-
-    .. _System.Management.Automation.Host.ControlKeyStates:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.controlkeystates
+        `System.Management.Automation.Host.ControlKeyStates <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.controlkeystates>`_
+        .NET class.
     """
 
     none = 0  #: No control key state.
@@ -162,17 +155,12 @@ class BufferCellType(PSFlagBase):
     Defines three types of BufferCells to accommodate for hosts that use up to
     two cells to display a character in some languages such as Chinese and
     Japanese. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.29 BufferCellType`_.
+    `[MS-PSRP] 2.2.3.29 BufferCellType <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/99938ede-6d84-422e-b75d-ace93ea85ea2>`_.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Host.BufferCellType`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.29 BufferCellType:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/99938ede-6d84-422e-b75d-ace93ea85ea2
-
-    .. _System.Management.Automation.Host.BufferCellType:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.buffercelltype
+        `System.Management.Automation.Host.BufferCellType <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.buffercelltype>`_
+        .NET class.
     """
 
     Complete = 0  #: Character occupies one BufferCell.
@@ -188,10 +176,8 @@ class ReadKeyOptions(PSFlagBase):
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Host.ReadKeyOptions`_ .NET class.
-
-    .. _System.Management.Automation.Host.ReadKeyOptions:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.readkeyoptions
+        `System.Management.Automation.Host.ReadKeyOptions <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.readkeyoptions>`_
+        .NET class.
     """
 
     AllowCtrlC = 1  #: Allow Ctrl-C to be processed as a keystroke, as opposed to causing a break event.
@@ -216,25 +202,21 @@ class BufferCell(PSObject):
     """BufferCell.
 
     Represents the contents of a cell of a host's screen buffer. It is
-    documented in PSRP under `[MS-PSRP] 2.2.3.28 BufferCell`_. but the PSRP
-    documentation represents how this value is serialized under
+    documented in PSRP under
+    `[MS-PSRP] 2.2.3.28 BufferCell <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/d6270c27-8855-46b6-834c-5a5d188bfe70>`_.
+    but the PSRP documentation represents how this value is serialized under
     host method invocations not the .NET type.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Host.BufferCell`_ .NET class.
+        `System.Management.Automation.Host.BufferCell <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.buffercell>`_
+        .NET class.
 
     Args:
         Character: Character visible in the cell.
         ForegroundColor: Foreground color.
         BackgroundColor: Background color.
         BufferCellType: Type of the buffer cell.
-
-    .. _[MS-PSRP] 2.2.3.28 BufferCell:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/d6270c27-8855-46b6-834c-5a5d188bfe70
-
-    .. _System.Management.Automation.Host.BufferCell:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.buffercell
     """
 
     @classmethod
@@ -288,14 +270,12 @@ class ChoiceDescription(PSObject):
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Host.ChoiceDescription`_ .NET class.
+        `System.Management.Automation.Host.ChoiceDescription <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.choicedescription>`_
+        .NET class.
 
     Args:
         Label: Human friendly message to describe the choice.
         HelpMessage: Help details of the choice.
-
-    .. _System.Management.Automation.Host.ChoiceDescription:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.choicedescription
     """
 
     @classmethod
@@ -341,22 +321,18 @@ class Coordinates(PSObject):
     """Coordinates
 
     Represents an x,y coordinate pair. It is documented under
-    `[MS-PSRP] 2.2.3.1 Coordinates`_ but the PSRP documentation represents how
-    this value is serialized under :class:`HostDefaultData` not the .NET type.
+    `[MS-PSRP] 2.2.3.1 Coordinates <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/05db8994-ec5c-485c-9e91-3a398e461d38>`_
+    but the PSRP documentation represents how this value is serialized under
+    :class:`HostDefaultData` not the .NET type.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Host.Coordinates`_ .NET class.
+        `System.Management.Automation.Host.Coordinates <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.coordinates>`_
+        .NET class.
 
     Args:
         X: X coordinate (0 is the leftmost column).
         Y: Y coordinate (0 is the topmost row).
-
-    .. _[MS-PSRP] 2.2.3.1 Coordinates:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/05db8994-ec5c-485c-9e91-3a398e461d38
-
-    .. _System.Management.Automation.Host.Coordinates:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.coordinates
     """
 
     @classmethod
@@ -410,7 +386,8 @@ class FieldDescription(PSObject):
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Host.FieldDescription`_ .NET class.
+        `System.Management.Automation.Host.FieldDescription <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.fielddescription>`_
+        .NET class.
 
     Args:
         Name: The name of the field.
@@ -422,9 +399,6 @@ class FieldDescription(PSObject):
         IsMandatory: The value must be supplied for this field.
         DefaultValue: The default value, if any, for the field.
         Attributes: List of attributes that apply to the field.
-
-    .. _System.Management.Automation.Host.FieldDescription:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.fielddescription
     """
 
     @classmethod
@@ -486,11 +460,12 @@ class KeyInfo(PSObject):
     """KeyInfo.
 
     Represents information of a keystroke. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.26 KeyInfo`_.
+    `[MS-PSRP] 2.2.3.26 KeyInfo <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/481442e2-5304-4679-b16d-6e53c351339d>`_.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Host.KeyInfo`_ .NET class.
+        `System.Management.Automation.Host.KeyInfo <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.keyinfo>`_
+        .NET class.
 
     Args:
         VirtualKeyCode: A virtual key code that identifies the given key in a
@@ -498,12 +473,6 @@ class KeyInfo(PSObject):
         Character: Character corresponding to the pressed keys.
         ControlKeyState: State of the control keys.
         KeyDown: True if the event was generated when a key was pressed.
-
-    .. _[MS-PSRP] 2.2.3.26 KeyInfo:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/481442e2-5304-4679-b16d-6e53c351339d
-
-    .. _System.Management.Automation.Host.KeyInfo:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.keyinfo
     """
 
     @classmethod
@@ -561,16 +530,14 @@ class Rectangle(PSObject):
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Host.Rectangle`_ .NET class.
+        `System.Management.Automation.Host.Rectangle <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.rectangle>`_
+        .NET class.
 
     Args:
         Left: Gets and sets the left side of the rectangle.
         Top: Gets and sets the top of the rectangle.
         Right: Gets and sets the right side of the rectangle.
         Bottom: Gets and sets the bottom of the rectanngle.
-
-    .. _System.Management.Automation.Host.Rectangle:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.rectangle
     """
 
     @classmethod
@@ -618,23 +585,19 @@ class Size(PSObject):
     """Size
 
     Represents a width and height pair. It is documented under
-    `[MS-PSRP] 2.2.3.2 Size`_ but the PSRP documentation represents how this
-    value is serialized under :class:`HostDefaultData` not the .NET type.
+    `[MS-PSRP] 2.2.3.2 Size <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/98cd950f-cc12-4ab4-955d-c389e3089856>`_
+    but the PSRP documentation represents how this value is serialized under
+    :class:`HostDefaultData` not the .NET type.
 
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Host.Size`_ .NET class.
+        `System.Management.Automation.Host.Size <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.size>`_
+        .NET class.
 
     Args:
         Width: The width of an area.
         Height: The height of an area.
-
-    .. _[MS-PSRP] 2.2.3.2 Size:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/98cd950f-cc12-4ab4-955d-c389e3089856
-
-    .. _System.Management.Automation.Host.Size:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.size
     """
 
     @classmethod
@@ -687,7 +650,8 @@ class HostDefaultData(PSObject):
     This defines the default data for a PSHost when creating a RunspacePool or
     Pipeline. This does not represent an actual .NET type but is an internal
     object representation used by PSRP itself. This type represents the
-    `hostDefaultData` property documented at `[MS-PSRP] 2.2.3.14 HostInfo`_.
+    `hostDefaultData` property documented at
+    `[MS-PSRP] 2.2.3.14 HostInfo <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6>`_.
 
     Args:
         ForegroundColor: Color of the character on the screen buffer.
@@ -704,9 +668,6 @@ class HostDefaultData(PSObject):
         MaxPhysicalWindowSize: Largest window possible ignoring the current
             buffer dimensions.
         WindowTitle: The titlebar text of the current view window.
-
-    .. _[MS-PSRP] 2.2.3.14 HostInfo:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6
     """
 
     @classmethod
@@ -780,7 +741,7 @@ class HostInfo(PSObject):
     """HostInfo.
 
     Defines the PSHost information. Message is defined in
-    `[MS-PSRP] 2.2.3.14 HostInfo`_.
+    `[MS-PSRP] 2.2.3.14 HostInfo <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6>`_.
 
     Args:
         IsHostNull: Whether there is a PSHost ``False`` or not ``True``.
@@ -792,9 +753,6 @@ class HostInfo(PSObject):
             it to use the associated RunspacePool host.
         HostDefaultData: Host default data associated with the PSHost
             implementation. Can be ``None`` if not implemented.
-
-    .. _[MS-PSRP] 2.2.3.14 HostInfo:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/510fd8f3-e3ac-45b4-b622-0ad5508a5ac6
     """
 
     @classmethod

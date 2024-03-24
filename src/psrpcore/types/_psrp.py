@@ -127,21 +127,15 @@ class SessionCapability(PSObject):
     """SESSION_CAPABILITY Message.
 
     Defines the session capability and protocol versions. Message is defined in
-    `MS-PSRP 2.2.2.1 SESSION_CAPABILITY`_. The TimeZone property is a .NET type
-    serialized to bytes as defined by
-    `MS-PSRP 2.2.3.10.1 CurrentSystemTimeZone`_.
+    `MS-PSRP 2.2.2.1 SESSION_CAPABILITY <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2f41abfb-7e30-4fb1-b286-527e9d67ad30>`_.
+    The TimeZone property is a .NET type serialized to bytes as defined by
+    `MS-PSRP 2.2.3.10.1 CurrentSystemTimeZone <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/5e6263c5-358a-459b-a49e-0707e383eb55>`_.
 
     Args:
         PSVersion: The version of the higher-layer application.
         protocolversion: The version of the PowerShell Remoting Protocol.
         SerializationVersion: The version of the serialization system.
         TimeZone: The time zone of the client.
-
-    .. _MS-PSRP 2.2.2.1 SESSION_CAPABILITY:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2f41abfb-7e30-4fb1-b286-527e9d67ad30
-
-    .. _MS-PSRP 2.2.3.10.1 CurrentSystemTimeZone:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/5e6263c5-358a-459b-a49e-0707e383eb55
     """
 
     @classmethod
@@ -176,7 +170,7 @@ class InitRunspacePool(PSObject):
     """INIT_RUNSPACEPOOL Message.
 
     Defines the Runspace Pool initialization data. Message is defined in
-    `MS-PSRP 2.2.2.2 INIT_RUNSPACEPOOL`_.
+    `MS-PSRP 2.2.2.2 INIT_RUNSPACEPOOL <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c867589a-0b43-47bd-9abf-7477699ff6c9>`_.
 
     Args:
         MinRunspaces: The minimum number of runspaces in the Runspace Pool.
@@ -186,10 +180,6 @@ class InitRunspacePool(PSObject):
         HostInfo: Host information.
         ApplicationArguments: Application arguments provided by the higher
             layer.
-
-    .. _MS-PSRP 2.2.2.2 INIT_RUNSPACEPOOL:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c867589a-0b43-47bd-9abf-7477699ff6c9
-
     """
 
 
@@ -203,13 +193,11 @@ class PublicKey(PSObject):
     """PUBLIC_KEY Message.
 
     Defines the public key created by the client used in the session key
-    exchange. Message is defined in `MS-PSRP 2.2.2.3 - PUBLIC_KEY`_.
+    exchange. Message is defined in
+    `MS-PSRP 2.2.2.3 - PUBLIC_KEY <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/3efa4b90-c089-432b-91db-76a3deb175bc>`_.
 
     Args:
         PublicKey: The base64 encoding of the PKCS1 formatted public key.
-
-    .. _MS-PSRP 2.2.2.3 - PUBLIC_KEY:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/3efa4b90-c089-432b-91db-76a3deb175bc
     """
 
 
@@ -225,7 +213,7 @@ class EncryptedSessionKey(PSObject):
     Defines the encrypted session key calculated by the server. The value is
     encrypted using the public key that was sent by the client in the
     :class:`PublicKey` message. Message is defined in
-    `MS-PSRP 2.2.2.4 - ENCRYPTED_SESSION_KEY`_.
+    `MS-PSRP 2.2.2.4 - ENCRYPTED_SESSION_KEY <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/e3e155af-b379-40cf-80c0-14a124145147>`_.
 
     Note:
         The session key is encrypted using the RSAES-PKCS-v1_5 encryption
@@ -234,9 +222,6 @@ class EncryptedSessionKey(PSObject):
     Args:
         EncryptedSessionKey: The base64 encoding of the 256-bit AES encrypted
             session key.
-
-    .. _MS-PSRP 2.2.2.4 - ENCRYPTED_SESSION_KEY:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/e3e155af-b379-40cf-80c0-14a124145147
     """
 
 
@@ -246,10 +231,7 @@ class PublicKeyRequest(PSStringBase):
 
     This is a message that the server sends the client when it wants to start
     the encryption key exchange. Message is defined in
-    `MS-PSRP 2.2.2.5 - PUBLIC_KEY_REQUEST`_.
-
-    .. _MS-PSRP 2.2.2.5 - PUBLIC_KEY_REQUEST:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/9ff2857d-a7cb-4da6-81f1-65d08b3dbe63
+    `MS-PSRP 2.2.2.5 - PUBLIC_KEY_REQUEST <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/9ff2857d-a7cb-4da6-81f1-65d08b3dbe63>`_.
     """
 
 
@@ -264,14 +246,11 @@ class SetMaxRunspaces(PSObject):
     """SET_MAX_RUNSPACES Message.
 
     Set maximum runspaces in a RunspacePool. Message is defined in
-    `MS-PSRP 2.2.2.6 - SET_MAX_RUNSPACES`_.
+    `MS-PSRP 2.2.2.6 - SET_MAX_RUNSPACES <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/92037046-043a-4962-8e7e-2d457249548b>`_.
 
     Args:
         MaxRunspaces: The maximum runspaces in a pool.
         ci: The Call ID the message is related to.
-
-    .. _MS-PSRP 2.2.2.6 - SET_MAX_RUNSPACES:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/92037046-043a-4962-8e7e-2d457249548b
     """
 
 
@@ -286,14 +265,11 @@ class SetMinRunspaces(PSObject):
     """SET_MIN_RUNSPACES Message.
 
     Set minimum runspaces in a RunspacePool. Message is defined in
-    `MS-PSRP 2.2.2.7 - SET_MIN_RUNSPACES`_.
+    `MS-PSRP 2.2.2.7 - SET_MIN_RUNSPACES <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2d425c82-ead1-4888-911a-b11f545ca441>`_.
 
     Args:
         MinRunspaces: The minimum runspaces in a pool.
         ci: The Call ID the message is related to.
-
-    .. _MS-PSRP 2.2.2.7 - SET_MIN_RUNSPACES:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2d425c82-ead1-4888-911a-b11f545ca441
     """
 
 
@@ -309,15 +285,13 @@ class RunspaceAvailability(PSObject):
 
     A response to either set maximum runspaces or set minimum runspaces in a
     RunspacePool or request for available runspaces in a RunspacePool. Message
-    is defined in `MS-PSRP 2.2.2.8 - RUNSPACE_AVAILABILITY`_.
+    is defined in
+    `MS-PSRP 2.2.2.8 - RUNSPACE_AVAILABILITY <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/bcab75d9-31a8-4fdc-a8c4-00f41e5985d2>`_.
 
     Args:
         SetMinMaxRunspacesResponse: A :class:`PSBool` for a set min/max response
             or a :class:`PSInt64` for a get available response.
         ci: The Call ID the message is related to.
-
-    .. _MS-PSRP 2.2.2.8 - RUNSPACE_AVAILABILITY:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/bcab75d9-31a8-4fdc-a8c4-00f41e5985d2
     """
 
 
@@ -332,16 +306,13 @@ class RunspacePoolStateMsg(PSObject):
     """RUNSPACEPOOL_STATE Message.
 
     Defines the state of the RunspacePool. Message is defined in
-    `MS-PSRP 2.2.2.9 RUNSPACEPOOL_STATE`_. The raw RunspaceState values
-    correlate to :class:`RunspacePoolState`.
+    `MS-PSRP 2.2.2.9 RUNSPACEPOOL_STATE <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/0a5d8ef3-3b2c-4e16-9f2c-16efdaf16925>`_.
+    The raw RunspaceState values correlate to :class:`RunspacePoolState`.
 
     Args:
         RunspaceState: The RunspacePool state information as an integer.
         ExceptionAsErrorRecord: The optional error record associated with the
             RunspacePool error.
-
-    .. _MS-PSRP 2.2.2.9 RUNSPACEPOOL_STATE:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/0a5d8ef3-3b2c-4e16-9f2c-16efdaf16925
     """
 
     @classmethod
@@ -374,7 +345,8 @@ class CreatePipeline(PSObject):
     """CREATE_PIPELINE Message.
 
     Creates a command pipeline and invoke it in the specified RunspacePool.
-    Message is defined in `MS-PSRP 2.2.2.10 CREATE_PIPELINE`_.
+    Message is defined in
+    `MS-PSRP 2.2.2.10 CREATE_PIPELINE <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2cf8cccb-63ab-404a-82df-caef0c41717a>`_.
 
     Args:
         NoInput: Whether the pipeline will take input.
@@ -387,9 +359,6 @@ class CreatePipeline(PSObject):
         PowerShell: The pipeline information to create.
         IsNested: Whether the higher layer is to run the pipeline in nested or
             steppable mode.
-
-    .. _MS-PSRP 2.2.2.10 CREATE_PIPELINE:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2cf8cccb-63ab-404a-82df-caef0c41717a
     """
 
 
@@ -403,13 +372,11 @@ class GetAvailableRunspaces(PSObject):
     """GET_AVAILABLE_RUNSPACES Message.
 
     Get the number of available runspaces in a RunspacePool. Message is defined
-    in `MS-PSRP 2.2.2.11 GET_AVAILABLE_RUNSPACES`_.
+    in
+    `MS-PSRP 2.2.2.11 GET_AVAILABLE_RUNSPACES <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/3f4d5a5c-9e7f-4ea2-8fea-253ddd394638>`_.
 
     Args:
         ci: The Call ID associated with this operation.
-
-    .. _MS-PSRP 2.2.2.11 GET_AVAILABLE_RUNSPACES:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/3f4d5a5c-9e7f-4ea2-8fea-253ddd394638
     """
 
 
@@ -430,7 +397,7 @@ class UserEvent(PSObject):
     """USER_EVENT Message.
 
     Report a user-defined event from a remote runspace. Message is defined in
-    `MS-PSRP 2.2.2.12 USER_EVENT`_.
+    `MS-PSRP 2.2.2.12 USER_EVENT <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c5a79f22-715d-4221-ae4d-47c685197b3b>`_.
 
     Args:
         EventIdentifier: The event identifier.
@@ -441,9 +408,6 @@ class UserEvent(PSObject):
         MessageData: Message data associated with the event.
         ComputerName: Name of the computer where the event was fired.
         RunspaceId: The ID of the runspace.
-
-    .. _MS-PSRP 2.2.2.12 USER_EVENT:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c5a79f22-715d-4221-ae4d-47c685197b3b
     """
 
     @classmethod
@@ -495,14 +459,11 @@ class ApplicationPrivateData(PSObject):
     Data private to the application using the PowerShell Remoting Protocol on
     the server and client, which is passed by the protocol without
     interpretation. Message is defined in
-    `MS-PSRP 2.2.2.13 APPLICATION_PRIVATE_DATA`_.
+    `MS-PSRP 2.2.2.13 APPLICATION_PRIVATE_DATA <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/f0e105d4-4242-429f-b63b-a600111fb27e>`_.
 
     Args:
         ApplicationPrivateData: Private data that the higher layer provides to
             the server when a RunspacePool is created.
-
-    .. _MS-PSRP 2.2.2.13 APPLICATION_PRIVATE_DATA:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/f0e105d4-4242-429f-b63b-a600111fb27e
     """
 
 
@@ -519,7 +480,8 @@ class GetCommandMetadata(PSObject):
     """GET_COMMAND_METADATA Message.
 
     Get command metadata for commands available in a RunspacePool. Message is
-    defined in `MS-PSRP 2.2.2.14 GET_COMMAND_METADATA`_.
+    defined in
+    `MS-PSRP 2.2.2.14 GET_COMMAND_METADATA <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/b634ddef-93a0-4d3b-9e63-a630d01f233a>`_.
 
     Args:
         Name: List of wildcard patterns specifying the command names that the
@@ -529,9 +491,6 @@ class GetCommandMetadata(PSObject):
             server SHOULD return.
         ArgumentList: Extra arguments passed to the higher layer above the
             PowerShell Remoting Protocol.
-
-    .. _MS-PSRP 2.2.2.14 GET_COMMAND_METADATA:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/b634ddef-93a0-4d3b-9e63-a630d01f233a
     """
 
 
@@ -547,15 +506,13 @@ class RunspacePoolHostCall(PSObject):
     """RUNSPACEPOOL_HOST_CALL Message.
 
     Method call on the host associated with the RunspacePool on the server.
-    Message is defined in `MS-PSRP 2.2.2.15 RUNSPACEPOOL_HOST_CALL`_.
+    Message is defined in
+    `MS-PSRP 2.2.2.15 RUNSPACEPOOL_HOST_CALL <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/4623540b-4dd3-440e-a54b-e0fb87dd92c8>`_.
 
     Args:
         ci: The Call ID associated with this operation.
         mi: The host method identifier.
         mp: The parameters for the method.
-
-    .. _MS-PSRP 2.2.2.15 RUNSPACEPOOL_HOST_CALL:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/4623540b-4dd3-440e-a54b-e0fb87dd92c8
     """
 
 
@@ -572,16 +529,14 @@ class RunspacePoolHostResponse(PSObject):
     """RUNSPACEPOOL_HOST_RESPONSE Message.
 
     Response from a host call executed on the client RunspacePool's host.
-    Message is defined in `MS-PSRP 2.2.2.16 RUNSPACEPOOL_HOST_RESPONSE`_.
+    Message is defined in
+    `MS-PSRP 2.2.2.16 RUNSPACEPOOL_HOST_RESPONSE <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/9bcdf122-ad6b-45c3-9960-68d22627cdb5>`_.
 
     Args:
         ci: The Call ID associated with this operation.
         mi: The host method identifier.
         mr: The return value of the method.
         me: Exception thrown by a host method invocation.
-
-    .. _MS-PSRP 2.2.2.16 RUNSPACEPOOL_HOST_RESPONSE:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/9bcdf122-ad6b-45c3-9960-68d22627cdb5
     """
 
     @classmethod
@@ -608,11 +563,8 @@ class PipelineInput(PSObject):
     """PIPELINE_INPUT Message.
 
     Input to a command pipeline on the server. Message is defined in
-    `MS-PSRP 2.2.2.17 PIPELINE_INPUT`_. The actual object is the serialized
-    object that is being sent as input.
-
-    .. _MS-PSRP 2.2.2.17 PIPELINE_INPUT:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2c08acdd-3443-48c2-bf87-8fe2808d96ea
+    `MS-PSRP 2.2.2.17 PIPELINE_INPUT <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/2c08acdd-3443-48c2-bf87-8fe2808d96ea>`_.
+    The actual object is the serialized object that is being sent as input.
     """
 
 
@@ -621,10 +573,8 @@ class EndOfPipelineInput(PSObject):
     """END_OF_PIPELINE_INPUT Message.
 
     Close the input collection for the command pipeline on the server. Message
-    is defined in `MS-PSRP 2.2.2.18 END_OF_PIPELINE_INPUT`_.
-
-    .. _MS-PSRP 2.2.2.18 END_OF_PIPELINE_INPUT:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/e616e6fd-0241-4823-b415-7dfc247646f1
+    is defined in
+    `MS-PSRP 2.2.2.18 END_OF_PIPELINE_INPUT <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/e616e6fd-0241-4823-b415-7dfc247646f1>`_.
     """
 
 
@@ -633,11 +583,9 @@ class PipelineOutput(PSObject):
     """PIPELINE_OUTPUT Message.
 
     Output of a command pipeline on the server. Message is defined in
-    `MS-PSRP 2.2.2.19 PIPELINE_OUTPUT`_. The actual object is the serialized
-    object that is being outputted from the server.
-
-    .. _MS-PSRP 2.2.2.19 PIPELINE_OUTPUT:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/3b2c1076-c435-4aef-bdfe-3179bc452723
+    `MS-PSRP 2.2.2.19 PIPELINE_OUTPUT <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/3b2c1076-c435-4aef-bdfe-3179bc452723>`_.
+    The actual object is the serialized object that is being outputted from
+    the server.
     """
 
 
@@ -646,10 +594,7 @@ class ErrorRecordMsg(ErrorRecord):
     """ERROR_RECORD Message.
 
     Error record from a command pipeline on the server.. Message is defined in
-    `MS-PSRP 2.2.2.20 ERROR_RECORD`_.
-
-    .. _MS-PSRP 2.2.2.20 ERROR_RECORD:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c527797a-d017-4755-8a81-9f58280a7135
+    `MS-PSRP 2.2.2.20 ERROR_RECORD <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c527797a-d017-4755-8a81-9f58280a7135>`_.
     """
 
 
@@ -664,16 +609,13 @@ class PipelineState(PSObject):
     """PIPELINE_STATE Message.
 
     State information of a command pipeline on the server. Message is defined
-    in `MS-PSRP 2.2.2.21 PIPELINE_STATE`_. The raw PipelineState values
-    correlate to :class:`PSInvocationState`.
+    in `MS-PSRP 2.2.2.21 PIPELINE_STATE <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/932f0c9d-845a-4883-8efd-b49a593578b8>`_.
+    The raw PipelineState values correlate to :class:`PSInvocationState`.
 
     Args:
         PipelineState: State information of the command pipeline.
         ExceptionAsErrorRecord: The optional error record associated with the
             Pipeline state error.
-
-    .. _MS-PSRP 2.2.2.21 PIPELINE_STATE:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/932f0c9d-845a-4883-8efd-b49a593578b8
     """
 
     @classmethod
@@ -695,10 +637,7 @@ class DebugRecordMsg(DebugRecord):
     """DEBUG_RECORD Message.
 
     Debug record from a command pipeline on the server. Message is defined in
-    `MS-PSRP 2.2.2.22 DEBUG_RECORD`_.
-
-    .. _MS-PSRP 2.2.2.22 DEBUG_RECORD:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/43b4cb30-6b14-498b-9325-c60339838a22
+    `MS-PSRP 2.2.2.22 DEBUG_RECORD <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/43b4cb30-6b14-498b-9325-c60339838a22>`_.
     """
 
 
@@ -707,10 +646,7 @@ class VerboseRecordMsg(VerboseRecord):
     """VERBOSE_RECORD Message.
 
     Verbose record from a command pipeline on the server. Message is defined in
-    `MS-PSRP 2.2.2.23 VERBOSE_RECORD`_.
-
-    .. _MS-PSRP 2.2.2.23 VERBOSE_RECORD:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/f94b18f5-0bd4-4817-8184-eb72767cce94
+    `MS-PSRP 2.2.2.23 VERBOSE_RECORD <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/f94b18f5-0bd4-4817-8184-eb72767cce94>`_.
     """
 
 
@@ -719,10 +655,7 @@ class WarningRecordMsg(WarningRecord):
     """WARNING_RECORD Message.
 
     Warning record from a command pipeline on the server. Message is defined in
-    `MS-PSRP 2.2.2.24 WARNING_RECORD`_.
-
-    .. _MS-PSRP 2.2.2.24 WARNING_RECORD:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/31c10c51-b831-475c-ae62-603426e6a617
+    `MS-PSRP 2.2.2.24 WARNING_RECORD <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/31c10c51-b831-475c-ae62-603426e6a617>`_.
     """
 
 
@@ -745,7 +678,7 @@ class ProgressRecordMsg(PSObject):
     """PROGRESS_RECORD Message.
 
     Progress record from a command pipeline on the server. Message is defined
-    in `MS-PSRP 2.2.2.25 PROGRESS_RECORD`_.
+    in `MS-PSRP 2.2.2.25 PROGRESS_RECORD <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/435ab824-1069-43eb-8146-7c50593a47ac>`_.
 
     Args:
         Activity: Description of the activity.
@@ -761,9 +694,6 @@ class ProgressRecordMsg(PSObject):
         Type: Type of record represented by this instance.
         SecondsRemaining: Estimated time remaining until the activity is
             complete.
-
-    .. _MS-PSRP 2.2.2.25 PROGRESS_RECORD:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/435ab824-1069-43eb-8146-7c50593a47ac
     """
 
 
@@ -786,7 +716,7 @@ class InformationRecordMsg(PSObject):
     """INFORMATION_RECORD Message.
 
     Information record from a command pipeline on the server. Message is
-    defined in `MS-PSRP 2.2.2.26 INFORMATION_RECORD`_.
+    defined in `MS-PSRP 2.2.2.26 INFORMATION_RECORD <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/5a3ec5f0-4654-4d87-830c-d3e07c4717c9>`_.
 
     Note:
         This message is only used in ProtocolVersion>=2.3 (PowerShell v5.1+).
@@ -804,9 +734,6 @@ class InformationRecordMsg(PSObject):
             record.
         ManagedThreadId: The managed thread that generated the informational
             record.
-
-    .. _MS-PSRP 2.2.2.26 INFORMATION_RECORD:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/5a3ec5f0-4654-4d87-830c-d3e07c4717c9
     """
 
 
@@ -815,15 +742,13 @@ class PipelineHostCall(RunspacePoolHostCall):
     """PIPELINE_HOST_CALL Message.
 
     Method call on the host associated with the pipeline invocation settings on
-    the server. Message is defined in `MS-PSRP 2.2.2.27 PIPELINE_HOST_CALL`_.
+    the server. Message is defined in
+    `MS-PSRP 2.2.2.27 PIPELINE_HOST_CALL <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/16947dfb-99b5-461f-b556-dec1beb33da8>`_.
 
     Args:
         ci: The Call ID associated with this operation.
         mi: The host method identifier.
         mp: The parameters for the method.
-
-    .. _MS-PSRP 2.2.2.27 PIPELINE_HOST_CALL:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/16947dfb-99b5-461f-b556-dec1beb33da8
     """
 
 
@@ -832,16 +757,13 @@ class PipelineHostResponse(RunspacePoolHostResponse):
     """PIPELINE_HOST_RESPONSE Message.
 
     Response from a host call executed on the client's host. Message is defined
-    in `MS-PSRP 2.2.2.28 PIPELINE_HOST_RESPONSE`_.
+    in `MS-PSRP 2.2.2.28 PIPELINE_HOST_RESPONSE <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/d4298dce-ee0d-417d-a73a-b4ad26524e3b>`_.
 
     Args:
         ci: The Call ID associated with this operation.
         mi: The host method identifier.
         mr: The return value of the method.
         me: Exception thrown by a host method invocation.
-
-    .. _MS-PSRP 2.2.2.28 PIPELINE_HOST_RESPONSE:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/d4298dce-ee0d-417d-a73a-b4ad26524e3b
     """
 
 
@@ -856,7 +778,7 @@ class ConnectRunspacePool(PSObject):
     """CONNECT_RUNSPACEPOOL Message.
 
     Connect to a RunspacePool. Message is defined in
-    `MS-PSRP 2.2.2.29 CONNECT_RUNSPACEPOOL`_.
+    `MS-PSRP 2.2.2.29 CONNECT_RUNSPACEPOOL <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/9192146c-81b5-4abd-9b20-a56df272b95e>`_.
 
     Note:
         This message is only used in ProtocolVersion>=2.2 (PowerShell v3.0+).
@@ -864,9 +786,6 @@ class ConnectRunspacePool(PSObject):
     Args:
         MinRunspaces: Minimum number of runspaces in the Runspace Pool.
         MaxRunspaces: Maximum number of runspaces in the RUnspace Pool.
-
-    .. _MS-PSRP 2.2.2.29 CONNECT_RUNSPACEPOOL:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/9192146c-81b5-4abd-9b20-a56df272b95e
     """
 
     @classmethod
@@ -901,7 +820,7 @@ class RunspacePoolInitData(PSObject):
     """RUNSPACEPOOL_INIT_DATA Message.
 
     RunspacePool initialization data. Message is defined in
-    `MS-PSRP 2.2.2.30 RUNSPACEPOOL_INIT_DATA`_.
+    `MS-PSRP 2.2.2.30 RUNSPACEPOOL_INIT_DATA <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ee0ce0cb-2523-4d43-b8e8-049bb89112ad>`_.
 
     Note:
         This message is only used in ProtocolVersion>=2.2 (PowerShell v3.0+).
@@ -909,9 +828,6 @@ class RunspacePoolInitData(PSObject):
     Args:
         MinRunspaces: Minimum number of runspaces in the Runspace Pool.
         MaxRunspaces: Maximum number of runspaces in the RUnspace Pool.
-
-    .. _MS-PSRP 2.2.2.30 RUNSPACEPOOL_INIT_DATA:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ee0ce0cb-2523-4d43-b8e8-049bb89112ad
     """
 
 
@@ -925,14 +841,11 @@ class ResetRunspaceState(PSObject):
     """RESET_RUNSPACE_STATE Message.
 
     Reset RunspacePool Runspace state. Message is defined in
-    `MS-PSRP 2.2.2.31 RESET_RUNSPACE_STATE`_.
+    `MS-PSRP 2.2.2.31 RESET_RUNSPACE_STATE <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/dc353f4b-c2e1-4172-a6ea-f72d7ef7c6bd>`_.
 
     Note:
         This message is only used in ProtocolVersion>=2.3 (PowerShell v5.1+).
 
     Args:
         ci: The Call ID associated with this operation.
-
-    .. _MS-PSRP 2.2.2.31 RESET_RUNSPACE_STATE:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/dc353f4b-c2e1-4172-a6ea-f72d7ef7c6bd
     """

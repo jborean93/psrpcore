@@ -11,6 +11,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import re
 import sys
 import typing
 
@@ -18,7 +19,6 @@ from sphinx.application import Sphinx
 
 sys.path.insert(0, os.path.abspath(".."))
 
-import re
 
 from psrpcore.types import PSEnumBase, PSFlagBase, PSObject
 from psrpcore.types._base import _UnsetValue
@@ -41,13 +41,16 @@ extensions = [
     "myst_parser",
     "sphinx_rtd_theme",
     "sphinx.ext.autodoc",
-    "sphinx.ext.coverage",
+    "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
-    "sphinxcontrib.apidoc",
 ]
 
-apidoc_module_dir = "../src/psrpcore"
-apidoc_output_dir = "source"
+# Uses type hints for class/func defs
+autodoc_typehints = "both"
+autodoc_typehints_description_target = "documented"
+
+# Allows linking to Python types
+intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = [
@@ -128,13 +131,9 @@ def autodoc_process_docstring(
             continue
 
         param_type = prop.ps_type if prop.ps_type is not None else PSObject
-        if param_type.__module__ == "builtins":
-            param_type_str = param_type.__name__
-
-        else:
-            param_type_str = f"{param_type.__module__}.{param_type.__name__}"
-
-        type_line = f":type {param_name}: :obj:`{param_type.__name__} " f"<{param_type_str}>`"
+        type_line = f":type {param_name}: {param_type.__name__}"
+        if not prop.mandatory:
+            type_line += " | None"
         lines.insert(idx + insertion_offset, type_line)
         insertion_offset += 1
 
@@ -181,7 +180,7 @@ def autodoc_process_signature(
             if prop._value == _UnsetValue:
                 default_value = None
 
-            entry = f"{prop.name}: Optional[{ps_type_str}] = {default_value!r}"
+            entry = f"{prop.name}: {ps_type_str} | None = {default_value!r}"
 
         kwargs.append(entry)
 
@@ -198,7 +197,6 @@ def autodoc_skip_member_handler(
     skip: bool,
     options: typing.Dict[str, typing.Any],
 ) -> bool:
-    a = ""
     return (
         skip
         # This is a metadata class for all PSObject types, end users don't need

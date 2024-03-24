@@ -25,11 +25,9 @@ class PSDictBase(PSObject, dict):
         While you can implement your own custom dictionary .NET type like
         `System.Collections.Generic.Dictionary<TKey, TValue>`, any dictionary
         based .NET types will be deserialized by the remote PowerShell runspace
-        as `System.Collections.Hashtable`_. This .NET type is represented by
-        :class:`PSDict`.
-
-    .. _System.Collections.Hashtable:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.hashtable?view=net-5.0
+        as
+        `System.Collections.Hashtable <https://docs.microsoft.com/en-us/dotnet/api/system.collections.hashtable?view=net-5.0>`_.
+        This .NET type is represented by :class:`PSDict`.
     """
 
     def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> "PSDictBase":
@@ -104,11 +102,8 @@ class PSListBase(_PSListBase):
         While you can implement your own custom list .NET type like
         `System.Collections.Generic.List<T>`, any list based .NET types will be
         deserialized by the remote PowerShell runspace as
-        `System.Collections.ArrayList`_. This .NET type is represented by
-        :class:`PSList`.
-
-    .. _System.Collections.ArrayList:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=net-5.0
+        `System.Collections.ArrayList <https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=net-5.0>`_.
+        This .NET type is represented by :class:`PSList`.
     """
 
 
@@ -123,11 +118,8 @@ class PSQueueBase(PSObject, queue.Queue):
         While you can implement your own custom queue .NET type like
         `System.Collections.Generic.Queue<T>`, any queue based .NET types will
         be deserialized by the remote PowerShell runspace as
-        `System.Collections.Queue`_. This .NET type is represented by
-        :class:`PSQueue`.
-
-    .. _System.Collections.Queue:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.queue?view=net-5.0
+        `System.Collections.Queue <https://docs.microsoft.com/en-us/dotnet/api/system.collections.queue?view=net-5.0>`_.
+        This .NET type is represented by :class:`PSQueue`.
     """
 
     def __new__(cls, *args: typing.Any, **kwargs: typing.Any) -> "PSQueueBase":
@@ -168,11 +160,8 @@ class PSStackBase(_PSListBase):
         While you can implement your own custom stack .NET type like
         `System.Collections.Generic.Stack<T>`, any stack based .NET types will
         be deserialized by the remote PowerShell runspace as
-        `System.Collections.Stack`_. This .NET type is represented by
-        :class:`PSStack`.
-
-    .. System.Collections.Stack:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.stack?view=net-5.0
+        `System.Collections.Stack <https://docs.microsoft.com/en-us/dotnet/api/system.collections.stack?view=net-5.0>`_.
+        This .NET type is represented by :class:`PSStack`.
     """
 
 
@@ -186,18 +175,12 @@ class PSStack(PSStackBase):
 
         Native Serialization: no
 
-        PSRP: `[MS-PSRP] 2.2.5.2.6.1 Stack`_
+        PSRP: `[MS-PSRP] 2.2.5.2.6.1 Stack <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/e9cf648e-38fe-42ba-9ca3-d89a9e0a856a>`_
 
-        .NET: `System.Collections.Stack`_
+        .NET: `System.Collections.Stack <https://docs.microsoft.com/en-us/dotnet/api/system.collections.stack?view=net-5.0>`_
 
     A stack is a last-in, first-out setup but Python does not have a native
     stack type so this just uses a :class:`list`.
-
-    .. _[MS-PSRP] 2.2.5.2.6.1 Stack:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/e9cf648e-38fe-42ba-9ca3-d89a9e0a856a
-
-    .. _System.Collections.Stack:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.stack?view=net-5.0
     """
 
 
@@ -211,15 +194,9 @@ class PSQueue(PSQueueBase):
 
         Native Serialization: yes
 
-        PSRP: `[MS-PSRP] 2.2.5.2.6.2 Queue`_
+        PSRP: `[MS-PSRP] 2.2.5.2.6.2 Queue <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ade9f023-ac30-4b7e-be17-900c02a6f837>`_
 
-        .NET: `System.Collections.Queue`_
-
-    .. _[MS-PSRP] 2.2.5.2.6.2 Queue:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ade9f023-ac30-4b7e-be17-900c02a6f837
-
-    .. _System.Collections.Queue:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.queue?view=net-5.0
+        .NET: `System.Collections.Queue <https://docs.microsoft.com/en-us/dotnet/api/system.collections.queue?view=net-5.0>`_
     """
 
 
@@ -235,15 +212,9 @@ class PSList(PSListBase):
 
         Native Serialization: yes
 
-        PSRP: `[MS-PSRP] 2.2.5.2.6.3 List`_
+        PSRP: `[MS-PSRP] 2.2.5.2.6.3 List <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/f4bdb166-cefc-4d49-848c-7d08680ae0a7>`_
 
-        .NET: `System.Collections.ArrayList`_
-
-    .. _[MS-PSRP] 2.2.5.2.6.3 List:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/f4bdb166-cefc-4d49-848c-7d08680ae0a7
-
-    .. _System.Collections.ArrayList:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=net-5.0
+        .NET: `System.Collections.ArrayList <https://docs.microsoft.com/en-us/dotnet/api/system.collections.arraylist?view=net-5.0>`_
     """
 
 
@@ -257,15 +228,9 @@ class PSDict(PSDictBase):
 
         Native Serialization: yes
 
-        PSRP: `[MS-PSRP] 2.2.5.2.6.4 Dictionaries`_
+        PSRP: `[MS-PSRP] 2.2.5.2.6.4 Dictionaries <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c4e000a2-21d8-46c0-a71b-0051365d8273>`_
 
-        .NET: `System.Collections.Hashtable`_
-
-    .. _[MS-PSRP] 2.2.5.2.6.4 Dictionaries:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/c4e000a2-21d8-46c0-a71b-0051365d8273
-
-    .. _System.Collections.Hashtable:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.hashtable?view=net-5.0
+        .NET: `System.Collections.Hashtable <https://docs.microsoft.com/en-us/dotnet/api/system.collections.hashtable?view=net-5.0>`_
     """
 
 
@@ -281,8 +246,5 @@ class PSIEnumerable(_PSListBase):
 
         PSRP: N/A - Mentioned in :class:`PSList`
 
-        .NET `System.Collections.IEnumerable`_
-
-    .. _System.Collections.IEnumerable:
-        https://docs.microsoft.com/en-us/dotnet/api/system.collections.ienumerable?view=net-5.0
+        .NET `System.Collections.IEnumerable <https://docs.microsoft.com/en-us/dotnet/api/system.collections.ienumerable?view=net-5.0>`_
     """

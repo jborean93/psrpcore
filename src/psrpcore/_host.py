@@ -653,7 +653,8 @@ class ServerHostRequestor:
         call that requests the human friendly host name identifier.
         human friendly host name identifier.
 
-        This corresponds to the `PSHost.Name Property`_.
+        This corresponds to the
+        `PSHost.Name Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.name>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -661,9 +662,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHost.Name Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.name
         """
         return self._connection.host_call(HostMethodIdentifier.GetName)
 
@@ -675,7 +673,8 @@ class ServerHostRequestor:
         Sends the :class:`psrpcore.types.HostMethodIdentifier.GetVersion` host
         call that requests the version of the hosting application.
 
-        This corresponds to the `PSHost.Version Property`_.
+        This corresponds to the
+        `PSHost.Version Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.version>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -683,9 +682,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHost.Version Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.version
         """
         return self._connection.host_call(HostMethodIdentifier.GetVersion)
 
@@ -697,7 +693,8 @@ class ServerHostRequestor:
         Sends the :class:`psrpcore.types.HostMethodIdentifier.GetInstanceId`
         host call that requests the identifier of the hosting application.
 
-        This corresponds to the `PSHost.InstanceId Property`_.
+        This corresponds to the
+        `PSHost.InstanceId Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.instanceid>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -705,9 +702,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHost.InstanceId Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.instanceid
         """
         return self._connection.host_call(HostMethodIdentifier.GetInstanceId)
 
@@ -720,7 +714,8 @@ class ServerHostRequestor:
         :class:`psrpcore.types.HostMethodIdentifier.GetCurrentCulture` host
         call that requests the current culture of the host.
 
-        This corresponds to the `PSHost.CurrentCulture Property`_.
+        This corresponds to the
+        `PSHost.CurrentCulture Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.currentculture>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -728,9 +723,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHost.CurrentCulture Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.currentculture
         """
         return self._connection.host_call(HostMethodIdentifier.GetCurrentCulture)
 
@@ -743,7 +735,8 @@ class ServerHostRequestor:
         :class:`psrpcore.types.HostMethodIdentifier.GetCurrentUICulture` host
         call that requests the current UI culture of the host.
 
-        This corresponds to the `PSHost.CurrentUICulture Property`_.
+        This corresponds to the
+        `PSHost.CurrentUICulture Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.currentuiculture>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -751,9 +744,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHost.CurrentUICulture Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.currentuiculture
         """
         return self._connection.host_call(HostMethodIdentifier.GetCurrentUICulture)
 
@@ -768,7 +758,8 @@ class ServerHostRequestor:
         call that requests the current engine runspace to shut down and
         terminate the host's root runspace.
 
-        This corresponds to the `PSHost.SetShouldExit Method`_.
+        This corresponds to the
+        `PSHost.SetShouldExit Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.setshouldexit>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -776,9 +767,6 @@ class ServerHostRequestor:
 
         Args:
             exit_code: The exit code accompanying the exit keyword.
-
-        .. _PSHost.SetShouldExit Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.setshouldexit
         """
         self._connection.host_call(HostMethodIdentifier.SetShouldExit, [exit_code])
 
@@ -793,14 +781,12 @@ class ServerHostRequestor:
         pipeline and start a new, "nested" input loop, where an input loop is
         the cycle of prompt, input, execute.
 
-        This corresponds to the `PSHost.EnterNestedPrompt Method`_.
+        This corresponds to the
+        `PSHost.EnterNestedPrompt Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.enternestedprompt>`_.
 
         Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
-
-        .. _PSHost.EnterNestedPrompt Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.enternestedprompt
         """
         self._connection.host_call(HostMethodIdentifier.EnterNestedPrompt)
 
@@ -817,14 +803,12 @@ class ServerHostRequestor:
         top-most loop, then the host will act as though
         :meth:`set_should_exit()` was called.
 
-        This corresponds to the `PSHost.ExitNestedPrompt Method`_.
+        This corresponds to the
+        `PSHost.ExitNestedPrompt Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.exitnestedprompt>`_.
 
         Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
-
-        .. _PSHost.ExitNestedPrompt Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.exitnestedprompt
         """
         self._connection.host_call(HostMethodIdentifier.ExitNestedPrompt)
 
@@ -847,14 +831,12 @@ class ServerHostRequestor:
         The engine will always call this method and
         :meth:`notify_end_application()` in pairs.
 
-        This corresponds to the `PSHost.NotifyBeginApplication Method`_.
+        This corresponds to the
+        `PSHost.NotifyBeginApplication Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.notifybeginapplication>`_.
 
         Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
-
-        .. _PSHost.NotifyBeginApplication Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.notifybeginapplication
         """
         self._connection.host_call(HostMethodIdentifier.NotifyBeginApplication)
 
@@ -871,14 +853,12 @@ class ServerHostRequestor:
         The engine will always call this method and
         :meth:`notify_begin_application()` in pairs.
 
-        This corresponds to the `PSHost.NotifyEndApplication Method`_.
+        This corresponds to the
+        `PSHost.NotifyEndApplication Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.notifyendapplication>`_.
 
         Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
-
-        .. _PSHost.NotifyEndApplication Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshost.notifyendapplication
         """
         self._connection.host_call(HostMethodIdentifier.NotifyEndApplication)
 
@@ -895,14 +875,12 @@ class ServerHostRequestor:
         call that is called by the engine to notify the host that a Runspace
         pop has been requested.
 
-        This corresponds to the `IHostSupportsInteractiveSession.PopRunspace Method`_.
+        This corresponds to the
+        `IHostSupportsInteractiveSession.PopRunspace Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.ihostsupportsinteractivesession.poprunspace>`_.
 
         Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
-
-        .. _IHostSupportsInteractiveSession.PopRunspace Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.ihostsupportsinteractivesession.poprunspace
         """
         self._connection.host_call(HostMethodIdentifier.PopRunspace)
 
@@ -915,7 +893,8 @@ class ServerHostRequestor:
         :class:`psrpcore.types.HostMethodIdentifier.GetIsRunspacePushed` host
         call to check if the runspace is pushed or not.
 
-        This corresponds to the `IHostSupportsInteractiveSession.IsRunspacePushed Property`_.
+        This corresponds to the
+        `IHostSupportsInteractiveSession.IsRunspacePushed Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.ihostsupportsinteractivesession.isrunspacepushed>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -923,9 +902,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _IHostSupportsInteractiveSession.IsRunspacePushed Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.ihostsupportsinteractivesession.isrunspacepushed
         """
         return self._connection.host_call(HostMethodIdentifier.GetIsRunspacePushed)
 
@@ -942,7 +918,8 @@ class ServerHostRequestor:
         call to read characters from the console until a newline is
         encountered.
 
-        This corresponds to the `PSHostUserInterface.ReadLine Method`_.
+        This corresponds to the
+        `PSHostUserInterface.ReadLine Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.readline>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -950,9 +927,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostUserInterface.ReadLine Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.readline
         """
         return self._connection.host_call(HostMethodIdentifier.ReadLine)
 
@@ -965,7 +939,8 @@ class ServerHostRequestor:
         call to read characters from the console until a newline is
         encountered without echoing the input back to the user.
 
-        This corresponds to the `PSHostUserInterface.ReadLineAsSecureString Method`_.
+        This corresponds to the
+        `PSHostUserInterface.ReadLineAsSecureString Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.readlineassecurestring>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -973,9 +948,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostUserInterface.ReadLineAsSecureString Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.readlineassecurestring
         """
         return self._connection.host_call(HostMethodIdentifier.ReadLineAsSecureString)
 
@@ -991,7 +963,8 @@ class ServerHostRequestor:
         :class:`psrpcore.types.HostMethodIdentifier.Write2` host call that
         writes the characters to the screen buffer.
 
-        This corresponds to the `PSHostUserInterface.Write Method`_.
+        This corresponds to the
+        `PSHostUserInterface.Write Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.write>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1001,9 +974,6 @@ class ServerHostRequestor:
             value: The characters to write.
             foreground_color: The color to display the text with.
             background_color: The color to display the background with.
-
-        .. _PSHostUserInterface.Write Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.write
         """
         mi = HostMethodIdentifier.Write1
         mp: typing.List[typing.Union[str, int]] = [value]
@@ -1028,7 +998,8 @@ class ServerHostRequestor:
         :class:`psrpcore.types.HostMethodIdentifier.WriteLine2` host call that
         writes the characters with a newline to the screen buffer.
 
-        This corresponds to the `PSHostUserInterface.WriteLine Method`_.
+        This corresponds to the
+        `PSHostUserInterface.WriteLine Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writeline>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1038,9 +1009,6 @@ class ServerHostRequestor:
             line: The line to write, if not set then just a newline is written.
             foreground_color: The color to display the line with.
             background_color: The color to display the background with.
-
-        .. _PSHostUserInterface.WriteLine Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writeline
         """
         mi = HostMethodIdentifier.WriteLine1
         mp: typing.List[typing.Union[str, int]] = []
@@ -1068,7 +1036,8 @@ class ServerHostRequestor:
         Sends the :class:`psrpcore.types.HostMethodIdentifier.WriteErrorLine`
         host call that writes the line to the error display of the host.
 
-        This corresponds to the `PSHostUserInterface.WriteErrorLine Method`_.
+        This corresponds to the
+        `PSHostUserInterface.WriteErrorLine Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writeerrorline>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1076,9 +1045,6 @@ class ServerHostRequestor:
 
         Args:
             line: The line to write to the error display.
-
-        .. _PSHostUserInterface.WriteErrorLine Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writeerrorline
         """
         self._connection.host_call(HostMethodIdentifier.WriteErrorLine, [line])
 
@@ -1091,7 +1057,8 @@ class ServerHostRequestor:
         Sends the :class:`psrpcore.types.HostMethodIdentifier.WriteDebugLine`
         host call that writes a debugging message to the host.
 
-        This corresponds to the `PSHostUserInterface.WriteDebugLine Method`_.
+        This corresponds to the
+        `PSHostUserInterface.WriteDebugLine Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writedebugline>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1099,9 +1066,6 @@ class ServerHostRequestor:
 
         Args:
             line: The debug line to write to the display.
-
-        .. _PSHostUserInterface.WriteDebugLine Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writedebugline
         """
         self._connection.host_call(HostMethodIdentifier.WriteDebugLine, [line])
 
@@ -1122,7 +1086,8 @@ class ServerHostRequestor:
         Sends the :class:`psrpcore.types.HostMethodIdentifier.WriteProgress`
         host call that writes a progress record to be displayed on the host.
 
-        This corresponds to the `PSHostUserInterface.WriteProgress Method`_.
+        This corresponds to the
+        `PSHostUserInterface.WriteProgress Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writeprogress>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1148,9 +1113,6 @@ class ServerHostRequestor:
             seconds_remaining: The estimate of time remaining until this
                 activity is completed. Set to a negative value to indicate that
                 the seconds remaining should not be displayed.
-
-        .. _PSHostUserInterface.WriteProgress Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writeprogress
         """
         # ProgressRecord serialized here is like a PSRP ProgressRecordMsg object.
         self._connection.host_call(
@@ -1179,7 +1141,8 @@ class ServerHostRequestor:
         Sends the :class:`psrpcore.types.HostMethodIdentifier.WriteVerboseLine`
         host call that writes a verbose message to the host.
 
-        This corresponds to the `PSHostUserInterface.WriteVerboseLine Method`_.
+        This corresponds to the
+        `PSHostUserInterface.WriteVerboseLine Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writeverboseline>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1187,9 +1150,6 @@ class ServerHostRequestor:
 
         Args:
             line: The verbose line to write to the display.
-
-        .. _PSHostUserInterface.WriteVerboseLine Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writeverboseline
         """
         self._connection.host_call(HostMethodIdentifier.WriteVerboseLine, [line])
 
@@ -1202,7 +1162,8 @@ class ServerHostRequestor:
         Sends the :class:`psrpcore.types.HostMethodIdentifier.WriteWarningLine`
         host call that writes a warning message to the host.
 
-        This corresponds to the `PSHostUserInterface.WriteWarningLine Method`_.
+        This corresponds to the
+        `PSHostUserInterface.WriteWarningLine Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writewarningline>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1210,9 +1171,6 @@ class ServerHostRequestor:
 
         Args:
             line: The warning line to write to the display.
-
-        .. _PSHostUserInterface.WriteWarningLine Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.writewarningline
         """
         self._connection.host_call(HostMethodIdentifier.WriteWarningLine, [line])
 
@@ -1228,7 +1186,8 @@ class ServerHostRequestor:
         host call prompts the user with a number of fields for which to supply
         values.
 
-        This corresponds to the `PSHostUserInterface.Prompt Method`_.
+        This corresponds to the
+        `PSHostUserInterface.Prompt Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.prompt>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1241,9 +1200,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostUserInterface.Prompt Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.prompt
         """
         fields = [FieldDescription.ToPSObjectForRemoting(f, for_host=True) for f in descriptions]
 
@@ -1265,7 +1221,8 @@ class ServerHostRequestor:
         :class:`psrpcore.types.HostMethodIdentifier.PromptForCredential2` host
         call prompts the user for a credential.
 
-        This corresponds to the `PSHostUserInterface.PromptForCredential Method`_.
+        This corresponds to the
+        `PSHostUserInterface.PromptForCredential Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.promptforcredential>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1283,9 +1240,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostUserInterface.PromptForCredential Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.promptforcredential
         """
         mi = HostMethodIdentifier.PromptForCredential1
         mp: typing.List[typing.Any] = [caption, message, username, target_name or ""]
@@ -1310,7 +1264,8 @@ class ServerHostRequestor:
         Sends the :class:`psrpcore.types.HostMethodIdentifier.PromptForChoice`
         host call prompts the user to choose an option from a set list.
 
-        This corresponds to the `PSHostUserInterface.PromptForChoice Method`_.
+        This corresponds to the
+        `PSHostUserInterface.PromptForChoice Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.promptforchoice>`_.
         See :meth:`prompt_for_multiple_choice()` for a way to allow the user to
         select multiple choices.
 
@@ -1327,9 +1282,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostUserInterface.PromptForChoice Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostuserinterface.promptforchoice
         """
         converted_choices = [ChoiceDescription.ToPSObjectForRemoting(c, for_host=True) for c in choices]
 
@@ -1351,7 +1303,7 @@ class ServerHostRequestor:
         host call prompts the user to choose multiple options from a set list.
 
         This corresponds to the
-        `IHostUISupportsMultipleChoiceSelection.PromptForChoice Method`_.
+        `IHostUISupportsMultipleChoiceSelection.PromptForChoice Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.ihostuisupportsmultiplechoiceselection.promptforchoice>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1366,9 +1318,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _IHostUISupportsMultipleChoiceSelection.PromptForChoice Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.ihostuisupportsmultiplechoiceselection.promptforchoice
         """
         converted_choices = [ChoiceDescription.ToPSObjectForRemoting(c, for_host=True) for c in choices]
 
@@ -1387,7 +1336,7 @@ class ServerHostRequestor:
         call to request the foreground color of the host.
 
         This corresponds to the
-        `PSHostRawUserInterface.ForegroundColor Property`_.
+        `PSHostRawUserInterface.ForegroundColor Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.foregroundcolor>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1395,9 +1344,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.ForegroundColor Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.foregroundcolor
         """
         return self._connection.host_call(HostMethodIdentifier.GetForegroundColor)
 
@@ -1412,7 +1358,7 @@ class ServerHostRequestor:
         call to change the foreground color of the host.
 
         This corresponds to the
-        `PSHostRawUserInterface.ForegroundColor Property`_.
+        `PSHostRawUserInterface.ForegroundColor Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.foregroundcolor>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1420,9 +1366,6 @@ class ServerHostRequestor:
 
         Args:
             color: The color to set the foreground color to.
-
-        .. _PSHostRawUserInterface.ForegroundColor Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.foregroundcolor
         """
         self._connection.host_call(HostMethodIdentifier.SetForegroundColor, [color.value])
 
@@ -1436,7 +1379,7 @@ class ServerHostRequestor:
         call to request the background color of the host.
 
         This corresponds to the
-        `PSHostRawUserInterface.BackgroundColor Property`_.
+        `PSHostRawUserInterface.BackgroundColor Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.backgroundcolor>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1444,9 +1387,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.BackgroundColor Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.backgroundcolor
         """
         return self._connection.host_call(HostMethodIdentifier.GetBackgroundColor)
 
@@ -1461,7 +1401,7 @@ class ServerHostRequestor:
         call to change the background color of the host.
 
         This corresponds to the
-        `PSHostRawUserInterface.BackgroundColor Property`_.
+        `PSHostRawUserInterface.BackgroundColor Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.backgroundcolor>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1469,9 +1409,6 @@ class ServerHostRequestor:
 
         Args:
             color: The color to set the background color to.
-
-        .. _PSHostRawUserInterface.BackgroundColor Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.backgroundcolor
         """
         self._connection.host_call(HostMethodIdentifier.SetBackgroundColor, [color.value])
 
@@ -1485,7 +1422,7 @@ class ServerHostRequestor:
         call to get the position of the cursor on the screen buffer.
 
         This corresponds to the
-        `PSHostRawUserInterface.CursorPosition Property`_.
+        `PSHostRawUserInterface.CursorPosition Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.cursorposition>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1493,9 +1430,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.CursorPosition Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.cursorposition
         """
         return self._connection.host_call(HostMethodIdentifier.GetCursorPosition)
 
@@ -1511,7 +1445,7 @@ class ServerHostRequestor:
         call to change the position of the cursor on the screen buffer.
 
         This corresponds to the
-        `PSHostRawUserInterface.CursorPosition Property`_.
+        `PSHostRawUserInterface.CursorPosition Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.cursorposition>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1520,9 +1454,6 @@ class ServerHostRequestor:
         Args:
             x: The horizontal location to set the cursor to.
             y: The vertical location to set the cursor to.
-
-        .. _PSHostRawUserInterface.CursorPosition Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.cursorposition
         """
         self._connection.host_call(
             HostMethodIdentifier.SetCursorPosition,
@@ -1540,7 +1471,7 @@ class ServerHostRequestor:
         buffer.
 
         This corresponds to the
-        `PSHostRawUserInterface.WindowPosition Property`_.
+        `PSHostRawUserInterface.WindowPosition Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowposition>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1548,9 +1479,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.WindowPosition Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowposition
         """
         return self._connection.host_call(HostMethodIdentifier.GetWindowPosition)
 
@@ -1567,7 +1495,7 @@ class ServerHostRequestor:
         buffer.
 
         This corresponds to the
-        `PSHostRawUserInterface.WindowPosition Property`_.
+        `PSHostRawUserInterface.WindowPosition Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowposition>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1576,9 +1504,6 @@ class ServerHostRequestor:
         Args:
             x: The horizontal location to set the window to.
             y: The vertical location to set the window to.
-
-        .. _PSHostRawUserInterface.WindowPosition Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowposition
         """
         self._connection.host_call(
             HostMethodIdentifier.SetWindowPosition,
@@ -1595,7 +1520,7 @@ class ServerHostRequestor:
         call to get the size of the cursor as a percentage.
 
         This corresponds to the
-        `PSHostRawUserInterface.CursorSize Property`_.
+        `PSHostRawUserInterface.CursorSize Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.cursorsize>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1603,9 +1528,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.CursorSize Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.cursorsize
         """
         return self._connection.host_call(HostMethodIdentifier.GetCursorSize)
 
@@ -1620,7 +1542,7 @@ class ServerHostRequestor:
         call to set the size of the cursor as a percentage.
 
         This corresponds to the
-        `PSHostRawUserInterface.CursorSize Property`_.
+        `PSHostRawUserInterface.CursorSize Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.cursorsize>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1628,9 +1550,6 @@ class ServerHostRequestor:
 
         Args:
             size: The cursor size as a percentage.
-
-        .. _PSHostRawUserInterface.CursorSize Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.cursorsize
         """
         self._connection.host_call(HostMethodIdentifier.SetCursorSize, [size])
 
@@ -1644,7 +1563,7 @@ class ServerHostRequestor:
         call to get the size of the screen buffer as measured by cells.
 
         This corresponds to the
-        `PSHostRawUserInterface.BufferSize Property`_.
+        `PSHostRawUserInterface.BufferSize Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.buffersize>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1652,9 +1571,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.BufferSize Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.buffersize
         """
         return self._connection.host_call(HostMethodIdentifier.GetBufferSize)
 
@@ -1670,7 +1586,7 @@ class ServerHostRequestor:
         call to change the size of the screen buffer as measured by cells.
 
         This corresponds to the
-        `PSHostRawUserInterface.BufferSize Property`_.
+        `PSHostRawUserInterface.BufferSize Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.buffersize>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1679,9 +1595,6 @@ class ServerHostRequestor:
         Args:
             width: The number of cells in the buffer width.
             height: The number of cells in the buffer height.
-
-        .. _PSHostRawUserInterface.BufferSize Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.buffersize
         """
         self._connection.host_call(
             HostMethodIdentifier.SetBufferSize, [Size.ToPSObjectForRemoting(Size(width, height), for_host=True)]
@@ -1697,7 +1610,7 @@ class ServerHostRequestor:
         call to get the size of the view window as measured by cells.
 
         This corresponds to the
-        `PSHostRawUserInterface.WindowSize Property`_.
+        `PSHostRawUserInterface.WindowSize Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowsize>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1705,9 +1618,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.WindowSize Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowsize
         """
         return self._connection.host_call(HostMethodIdentifier.GetWindowSize)
 
@@ -1723,7 +1633,7 @@ class ServerHostRequestor:
         call to change the size of the view window size as measured by cells.
 
         This corresponds to the
-        `PSHostRawUserInterface.WindowSize Property`_.
+        `PSHostRawUserInterface.WindowSize Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowsize>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1732,9 +1642,6 @@ class ServerHostRequestor:
         Args:
             width: The number of cells in the view window width.
             height: The number of cells in the view window height.
-
-        .. _PSHostRawUserInterface.WindowSize Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowsize
         """
         self._connection.host_call(
             HostMethodIdentifier.SetWindowSize, [Size.ToPSObjectForRemoting(Size(width, height), for_host=True)]
@@ -1750,7 +1657,7 @@ class ServerHostRequestor:
         call to get the window title.
 
         This corresponds to the
-        `PSHostRawUserInterface.WindowTitle Property`_.
+        `PSHostRawUserInterface.WindowTitle Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowtitle>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1758,9 +1665,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.WindowTitle Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowtitle
         """
         return self._connection.host_call(HostMethodIdentifier.GetWindowTitle)
 
@@ -1775,7 +1679,7 @@ class ServerHostRequestor:
         call to change the title of the host window
 
         This corresponds to the
-        `PSHostRawUserInterface.WindowTitle Property`_.
+        `PSHostRawUserInterface.WindowTitle Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowtitle>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1783,9 +1687,6 @@ class ServerHostRequestor:
 
         Args:
             title: The title to set the host window to.
-
-        .. _PSHostRawUserInterface.WindowTitle Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.windowtitle
         """
         self._connection.host_call(HostMethodIdentifier.SetWindowTitle, [title])
 
@@ -1800,7 +1701,7 @@ class ServerHostRequestor:
         buffer.
 
         This corresponds to the
-        `PSHostRawUserInterface.MaxWindowSize Property`_.
+        `PSHostRawUserInterface.MaxWindowSize Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.maxwindowsize>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1808,9 +1709,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.MaxWindowSize Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.maxwindowsize
         """
         return self._connection.host_call(HostMethodIdentifier.GetMaxWindowSize)
 
@@ -1824,7 +1722,7 @@ class ServerHostRequestor:
         host call to get largest possible window size that can be set.
 
         This corresponds to the
-        `PSHostRawUserInterface.MaxPhysicalWindowSize Property`_.
+        `PSHostRawUserInterface.MaxPhysicalWindowSize Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.maxphysicalwindowsize>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1832,9 +1730,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.MaxPhysicalWindowSize Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.maxphysicalwindowsize
         """
         return self._connection.host_call(HostMethodIdentifier.GetMaxPhysicalWindowSize)
 
@@ -1848,7 +1743,7 @@ class ServerHostRequestor:
         call to examine if a keystroke is waiting in the input buffer.
 
         This corresponds to the
-        `PSHostRawUserInterface.KeyAvailable Property`_.
+        `PSHostRawUserInterface.KeyAvailable Property <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.keyavailable>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1856,9 +1751,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.KeyAvailable Property:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.keyavailable
         """
         return self._connection.host_call(HostMethodIdentifier.GetKeyAvailable)
 
@@ -1872,7 +1764,7 @@ class ServerHostRequestor:
         call to request read a key stroke.
 
         This corresponds to the
-        `PSHostRawUserInterface.ReadKey Method`_.
+        `PSHostRawUserInterface.ReadKey Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.readkey>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -1883,9 +1775,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.ReadKey Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.readkey
         """
         return self._connection.host_call(HostMethodIdentifier.ReadKey, [options.value])
 
@@ -1899,14 +1788,11 @@ class ServerHostRequestor:
         call to reset the keyboard input buffer.
 
         This corresponds to the
-        `PSHostRawUserInterface.FlushInputBuffer Method`_.
+        `PSHostRawUserInterface.FlushInputBuffer Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.flushinputbuffer>`_.
 
         Note:
             This is a void method and the server should continue pipeline
             execution and expect no response from the client.
-
-        .. _PSHostRawUserInterface.FlushInputBuffer Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.flushinputbuffer
         """
         self._connection.host_call(HostMethodIdentifier.FlushInputBuffer)
 
@@ -1927,9 +1813,9 @@ class ServerHostRequestor:
         call to set the contents of the host buffer.
 
         This corresponds to the
-        `PSHostRawUserInterface.SetBufferContents Method`_. See
-        :meth:`set_buffer_contents()` to set the buffer contents by individual
-        cells.
+        `PSHostRawUserInterface.SetBufferContents Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.setbuffercontents>`_.
+        See :meth:`set_buffer_contents()` to set the buffer contents by
+        individual cells.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1946,9 +1832,6 @@ class ServerHostRequestor:
                 region specified.
             background: The background color to fill the cells in the region
                 specified.
-
-        .. _PSHostRawUserInterface.SetBufferContents Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.setbuffercontents
         """
         rectangle = Rectangle.ToPSObjectForRemoting(Rectangle(left, top, right, bottom), for_host=True)
         cell = BufferCell.ToPSObjectForRemoting(
@@ -1973,8 +1856,9 @@ class ServerHostRequestor:
         represents each row and the 2nd dimension is each column of that row.
 
         This corresponds to the
-        `PSHostRawUserInterface.SetBufferContents Method`_. See
-        :meth:`set_buffer_cells()` to set an individual cell across a region.
+        `PSHostRawUserInterface.SetBufferContents Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.setbuffercontents>`_.
+        See :meth:`set_buffer_cells()` to set an individual cell across a
+        region.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -1986,9 +1870,6 @@ class ServerHostRequestor:
             y: The vertical location of the upper left corner of the region to
                 write the cells from.
             contents: A list of a list of cells that should be written.
-
-        .. _PSHostRawUserInterface.SetBufferContents Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.setbuffercontents
         """
         coordinates = Coordinates.ToPSObjectForRemoting(Coordinates(x, y), for_host=True)
         wrap_cell = functools.partial(BufferCell.ToPSObjectForRemoting, for_host=True)
@@ -2009,7 +1890,7 @@ class ServerHostRequestor:
         call to request the contents of the screen region specified.
 
         This corresponds to the
-        `PSHostRawUserInterface.GetBufferContents Method`_.
+        `PSHostRawUserInterface.GetBufferContents Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.getbuffercontents>`_.
 
         Note:
             The server should wait for the host response before continuing the
@@ -2028,9 +1909,6 @@ class ServerHostRequestor:
 
         Returns:
             int: The call id for the request.
-
-        .. _PSHostRawUserInterface.GetBufferContents Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.getbuffercontents
         """
         return self._connection.host_call(
             HostMethodIdentifier.GetBufferContents,
@@ -2062,7 +1940,7 @@ class ServerHostRequestor:
         call to scoll a region of the screen buffer.
 
         This corresponds to the
-        `PSHostRawUserInterface.ScrollBufferContents Method`_.
+        `PSHostRawUserInterface.ScrollBufferContents Method <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.scrollbuffercontents>`_.
 
         Note:
             This is a void method and the server should continue pipeline
@@ -2087,9 +1965,6 @@ class ServerHostRequestor:
                 intersecting the source and clip region.
             background: The background color to fill the cells intersecting
                 the source and clip region.
-
-        .. _PSHostRawUserInterface.ScrollBufferContents Method:
-            https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.host.pshostrawuserinterface.scrollbuffercontents
         """
         source = Rectangle.ToPSObjectForRemoting(
             Rectangle(source_left, source_top, source_right, source_bottom), for_host=True
