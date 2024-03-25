@@ -2,6 +2,7 @@
 # Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+import base64
 import struct
 import typing
 
@@ -112,29 +113,33 @@ class PSRemotingCrypto(PSCryptoProvider):
         self._cipher: typing.Optional[Cipher] = None
         self._padding = PKCS7(algorithms.AES.block_size)
 
-    def decrypt(self, value: bytes) -> bytes:
+    def decrypt(self, value: str) -> str:
         if not self._cipher:
             raise MissingCipherError()
+
+        b_enc = base64.b64decode(value)
 
         decryptor = self._cipher.decryptor()
-        b_dec = decryptor.update(value) + decryptor.finalize()
+        b_padded = decryptor.update(b_enc) + decryptor.finalize()
 
         unpadder = self._padding.unpadder()
-        plaintext = unpadder.update(b_dec) + unpadder.finalize()
+        b_dec = unpadder.update(b_padded) + unpadder.finalize()
 
-        return plaintext
+        return b_dec.decode("utf-16-le", errors="surrogatepass")
 
-    def encrypt(self, value: bytes) -> bytes:
+    def encrypt(self, value: str) -> str:
         if not self._cipher:
             raise MissingCipherError()
 
+        b_value = value.encode("utf-16-le", errors="surrogatepass")
+
         padder = self._padding.padder()
-        b_padded = padder.update(value) + padder.finalize()
+        b_padded = padder.update(b_value) + padder.finalize()
 
         encryptor = self._cipher.encryptor()
         b_enc = encryptor.update(b_padded) + encryptor.finalize()
 
-        return b_enc
+        return base64.b64encode(b_enc).decode()
 
     def register_key(
         self,

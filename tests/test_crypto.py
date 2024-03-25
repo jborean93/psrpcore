@@ -20,7 +20,7 @@ def test_key_exchange():
     actual_session_key = crypto.decrypt_session_key(private, enc_session_key)
     assert actual_session_key == session_key
 
-    data = b"abc"
+    data = "abc"
     encryptor = crypto.PSRemotingCrypto()
     encryptor.register_key(actual_session_key)
     enc_data = encryptor.encrypt(data)

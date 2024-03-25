@@ -7,6 +7,13 @@
 * Added `psrpcore.types.deserialize_clixml` and `psrpcore.types.serialize_clixml`
   * These methods can deserialize and serialize CLIXML strings directly
 * Removed invalid `__init__.py` entries `ps_data_packet` and `ps_guid_packet` as they were never defined
+* Add  `psrpcore.types.InformationRecord.create` class method to more easily create information records
+* **BREAKING CHANGE** - Changed signature of `psrpcore.types.PSCryptoProvider`
+  * No longer an abstract base class, methods default to raising `NotImplementedError`
+  * Removed the `register_key` function as it has no relation to serialization work
+  * Changed the `encrypt` and `decrypt` methods to work with the raw XML element text instead of bytes
+  * These changes are needed to support different serialization mechanisms used by PowerShell
+  * Unless you were using `psrpcore.types.serialize` and `psrpcore.types.deserialize` directly this should not affect you
 
 ## 0.2.2 - 2023-03-01
 

@@ -14,6 +14,7 @@ brief and will be expanded upon in the future.
    :caption: Contents:
 
    protocol
+   minishell
    scenarios
    transport
    types

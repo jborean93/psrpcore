@@ -14,6 +14,7 @@ import pytest
 
 import psrpcore.types._serializer as serializer
 from psrpcore.types import (
+    ClixmlStream,
     PSBool,
     PSByte,
     PSByteArray,
@@ -31,6 +32,7 @@ from psrpcore.types import (
     PSQueue,
     PSSByte,
     PSScriptBlock,
+    PSSecureString,
     PSSingle,
     PSString,
     PSUInt,
@@ -374,9 +376,33 @@ def test_serialize_circular_reference():
     assert obj.CircularRef == obj
 
 
+def test_serialize_secure_string_failure() -> None:
+    with pytest.raises(NotImplementedError):
+        serializer.serialize(PSSecureString("secret"), serializer.PSCryptoProvider())
+
+
+def test_deserialize_secure_string_failure() -> None:
+    value = "<SS>encvalue</SS>"
+    element = ElementTree.fromstring(value)
+    ss = serializer.deserialize(element, serializer.PSCryptoProvider())
+    assert isinstance(ss, PSSecureString)
+
+    with pytest.raises(NotImplementedError):
+        assert ss.decrypt()
+
+
 def test_serialize_clixml_single() -> None:
     expected = '<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S>foo</S></Objs>'
     actual = serializer.serialize_clixml("foo", FakeCryptoProvider())
+
+    assert actual == expected
+
+
+def test_serialize_clixml_single_with_stream() -> None:
+    expected = (
+        '<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S S="verbose">foo</S></Objs>'
+    )
+    actual = serializer.serialize_clixml(("foo", ClixmlStream.VERBOSE), FakeCryptoProvider())
 
     assert actual == expected
 
@@ -386,6 +412,19 @@ def test_serialize_clixml_list() -> None:
         '<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S>foo</S><S>bar</S></Objs>'
     )
     actual = serializer.serialize_clixml(["foo", "bar"], FakeCryptoProvider())
+
+    assert actual == expected
+
+
+def test_serialize_clixml_list_with_streams() -> None:
+    expected = '<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S S="output">foo</S><S S="warning">bar</S></Objs>'
+    actual = serializer.serialize_clixml(
+        [
+            ("foo", ClixmlStream.OUTPUT),
+            ("bar", ClixmlStream.WARNING),
+        ],
+        FakeCryptoProvider(),
+    )
 
     assert actual == expected
 
@@ -420,6 +459,46 @@ def test_deserialize_clixml_without_header() -> None:
     assert len(actual) == 1
     assert isinstance(actual[0], PSString)
     assert actual[0] == "foo"
+
+
+def test_deserialize_clixml_preserve_streams_no_attrib() -> None:
+    value = f'<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S>foo</S></Objs>'
+
+    actual = serializer.deserialize_clixml(value, FakeCryptoProvider(), preserve_streams=True)
+    assert isinstance(actual, list)
+    assert len(actual) == 1
+    assert len(actual[0]) == 2
+    assert isinstance(actual[0][0], PSString)
+    assert actual[0][0] == "foo"
+    assert actual[0][1] == ClixmlStream.OUTPUT
+
+
+def test_deserialize_clixml_preserve_streams_with_attrib() -> None:
+    value = (
+        f'<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S S="verbose">foo</S></Objs>'
+    )
+
+    actual = serializer.deserialize_clixml(value, FakeCryptoProvider(), preserve_streams=True)
+    assert isinstance(actual, list)
+    assert len(actual) == 1
+    assert len(actual[0]) == 2
+    assert isinstance(actual[0][0], PSString)
+    assert actual[0][0] == "foo"
+    assert actual[0][1] == ClixmlStream.VERBOSE
+
+
+def test_deserialize_clixml_preserve_streams_with_unknown_attrib() -> None:
+    value = (
+        f'<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><S S="unknown">foo</S></Objs>'
+    )
+
+    actual = serializer.deserialize_clixml(value, FakeCryptoProvider(), preserve_streams=True)
+    assert isinstance(actual, list)
+    assert len(actual) == 1
+    assert len(actual[0]) == 2
+    assert isinstance(actual[0][0], PSString)
+    assert actual[0][0] == "foo"
+    assert actual[0][1] == ClixmlStream.OUTPUT
 
 
 def test_deserialize_clixml_multiple_values() -> None:
