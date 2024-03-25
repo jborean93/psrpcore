@@ -424,10 +424,11 @@ class PSAliasProperty(PSPropertyInfo):
 
     This is a property that gets a value based on another property or attribute
     of the PSObject. It is designed to replicate the functionality of
-    `PSAliasProperty`_. During serialization the alias property will just copy
-    the value of the target it is pointing to. You cannot set a value to an
-    alias property, see :class:`PSScriptProperty` which allows the caller
-    to define a way to get and set properties on an object dynamically.
+    `PSAliasProperty <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.psaliasproperty>`_.
+    During serialization the alias property will just copy the value of the
+    target it is pointing to. You cannot set a value to an alias property, see
+    :class:`PSScriptProperty` which allows the caller to define a way to get
+    and set properties on an object dynamically.
 
     Note:
         When an object that has an alias property is deserialized, the property
@@ -442,9 +443,6 @@ class PSAliasProperty(PSPropertyInfo):
 
     Attributes:
         alias (str): The target of the alias.
-
-    .. _PSAliasProperty:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.psaliasproperty
     """
 
     def __init__(
@@ -464,8 +462,9 @@ class PSNoteProperty(PSPropertyInfo):
     """Note Property
 
     This is a property that stores a value as a name-value pair. Is is designed
-    to replicate the functionality of `PSNoteProperty`_ and is typically the
-    type of property to use when creating a PSObject.
+    to replicate the functionality of
+    `PSNoteProperty <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.psnoteproperty>`_
+    and is typically the type of property to use when creating a PSObject.
 
     Note:
         See :class:`PSPropertyInfo` for more information on the `mandatory`
@@ -476,9 +475,6 @@ class PSNoteProperty(PSPropertyInfo):
         value: The property value to set, if omitted the default is `None`.
         mandatory: The property must be defined when creating a PSObject.
         ps_type: If set, the property value will be casted to this PSObject type.
-
-    .. _PSNoteProperty:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.psnoteproperty
     """
 
     def __init__(
@@ -499,7 +495,8 @@ class PSScriptProperty(PSPropertyInfo):
 
     This is a property that can get and optionally set another property or
     attribute of a PSObject at runtime. It is designed to replicate the
-    functionality of `PSScriptProperty`_.
+    functionality of
+    `PSScriptProperty <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.psscriptproperty>`_.
 
     The getter callable must be a callable that has only 1 argument that is the
     PSObject the property is a member of. This allows the caller to retrieve a
@@ -517,9 +514,6 @@ class PSScriptProperty(PSPropertyInfo):
         mandatory: The property must be defined when creating a PSObject.
         ps_type: If set, the property value will be casted to this PSObjec
              type.
-
-    .. _PSScriptProperty:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.psscriptproperty
     """
 
     def __init__(
@@ -863,10 +857,12 @@ def add_member(
 
     This can add an extended property to a PSObject class or a specific
     instance of a class. This replicates some of the functionality in
-    `Update-TypeData`_ and `Add-Member`_ in PowerShell. If a property under the
-    same name already exists under that PSObject then `force=True` is required
-    to replace it. The same applies if there is an existing adapted property on
-    the object.
+    `Update-TypeData <https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/update-typedata>`_
+    and
+    `Add-Member <https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/add-member>`_
+    in PowerShell. If a property under the same name already exists under that
+    PSObject then `force=True` is required to replace it. The same applies if
+    there is an existing adapted property on the object.
 
     See :meth:`add_alias_property`, :meth:`add_note_property`, and
     :meth:`add_script_property` for simplified versions of this function.
@@ -876,11 +872,6 @@ def add_member(
             extended property to.
         prop: The property to add to the object or class.
         force: Overwrite the existing property ``True`` or fail ``False``.
-
-    .. _Update-TypeData:
-        https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/update-typedata
-    .. _Add-Member:
-        https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/add-member
     """
     ps_object = getattr(obj, "PSObject", None)
     if not ps_object:

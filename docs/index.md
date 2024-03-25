@@ -1,5 +1,4 @@
-PSRP Core: Python Implementation of the PowerShell Remoting Protocol
-====================================================================
+# PSRP Core: Python Implementation of the PowerShell Remoting Protocol
 
 PowerShell Remoting Protocol is a protocol used by PowerShell to invoke commands
 across the network just different processes. This library is designed around
@@ -9,6 +8,7 @@ the user of this module to provide the IO using their desired mechanism.
 This module is brand new and is still in development so the docs are very
 brief and will be expanded upon in the future.
 
+```{eval-rst}
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -17,11 +17,11 @@ brief and will be expanded upon in the future.
    scenarios
    transport
    types
-   source/modules
 
-Indices and tables
-==================
+.. toctree::
+   :maxdepth: 1
+   :caption: API:
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   psrpcore
+   psrpcore.types
+```

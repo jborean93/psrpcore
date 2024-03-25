@@ -6,14 +6,12 @@
 
 The PSRP/.NET Complex Type class definitions. A complex type is pretty much
 anything that isn't a primitive type as known to the protocol. Most of the
-types defined here are defined in `MS-PSRP 2.2.3 Other Object Types`_ but some
-are also just other .NET objects that are used in the PSRP protocol. Some types
-are a PSRP specific representation of an actual .NET type but with a few minor
-differences. These types are prefixed with `PSRP` to differentiate between the
-PSRP specific ones and the actual .NET types.
-
-.. _MS-PSRP 2.2.3 Other Object Types:
-    https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/e41c4a38-a821-424b-bc1c-89f8478c39ae
+types defined here are defined in
+`MS-PSRP 2.2.3 Other Object Types <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/e41c4a38-a821-424b-bc1c-89f8478c39ae>`_
+but some are also just other .NET objects that are used in the PSRP protocol.
+Some types are a PSRP specific representation of an actual .NET type but with
+a few minor differences. These types are prefixed with `PSRP` to differentiate
+between the PSRP specific ones and the actual .NET types.
 """
 
 import collections
@@ -86,18 +84,14 @@ class ConsoleColor(PSEnumBase):
     """System.ConsoleColor enum.
 
     Specifies constants that define foreground and background colors for the
-    console. This is also documented under `[MS-PSRP] 2.2.3.3 Color`_ but in
-    the :class:`HostInfo` default data format.
+    console. This is also documented under
+    `[MS-PSRP] 2.2.3.3 Color <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/d7edefec-41b1-465d-bc07-2a8ec9d727a1>`_
+    but in the :class:`HostInfo` default data format.
 
     Note:
-        This is an auto-generated Python class for the `System.ConsoleColor`_
+        This is an auto-generated Python class for the
+        `System.ConsoleColor <https://docs.microsoft.com/en-us/dotnet/api/system.consolecolor?view=net-5.0>`_
         .NET class.
-
-    .. _System.ConsoleColor:
-        https://docs.microsoft.com/en-us/dotnet/api/system.consolecolor?view=net-5.0
-
-    .. _[MS-PSRP] 2.2.3.3 Color:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/d7edefec-41b1-465d-bc07-2a8ec9d727a1
     """
 
     Black = 0
@@ -127,10 +121,8 @@ class ProgressRecordType(PSEnumBase):
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.ProgressRecordType`_ .NET class.
-
-    .. _System.Management.Automation.ProgressRecordType:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.progressrecordtype
+        `System.Management.Automation.ProgressRecordType <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.progressrecordtype>`_
+        .NET class.
     """
 
     Processing = 0  #: Operation just started or is not yet complete.
@@ -146,10 +138,8 @@ class PSCredentialTypes(PSFlagBase):
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.PSCredentialTypes`_ .NET class.
-
-    .. _System.Management.Automation.PSCredentialTypes:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscredentialtypes
+        `System.Management.Automation.PSCredentialTypes <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscredentialtypes>`_
+        .NET class.
     """
 
     Generic = 1  #: Generic credentials.
@@ -166,10 +156,8 @@ class PSCredentialUIOptions(PSFlagBase):
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.PSCredentialUIOptions`_ .NET class.
-
-    .. _System.Management.Automation.PSCredentialUIOptions:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscredentialuioptions
+        `System.Management.Automation.PSCredentialUIOptions <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscredentialuioptions>`_
+        .NET class.
     """
 
     none = 0  #: Performs no validation.
@@ -187,10 +175,8 @@ class SessionStateEntryVisibility(PSEnumBase):
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.SessionStateEntryVisibility`_ .NET class.
-
-    .. _System.Management.Automation.SessionStateEntryVisibility:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.sessionstateentryvisibility
+        `System.Management.Automation.SessionStateEntryVisibility <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.sessionstateentryvisibility>`_
+        .NET class.
     """
 
     Public = 0  #: Entries are visible to requests from outside the runspace.
@@ -202,17 +188,12 @@ class RunspacePoolState(PSEnumBase):
     """RunspacePoolState enum.
 
     Defines the current state of the Runspace Pool. It is documented in PSRP
-    under `[MS-PSRP] 2.2.3.4 RunspacePoolState`_ and while it shares the same
-    name as the .NET type
-    `System.Management.Automation.Runspaces.RunspacePoolState`_ it has a few
-    extra names and some values that do not match. The .NET enum is used here
-    as that's what PowerShell uses internally.
-
-    .. _[MS-PSRP] 2.2.3.4 RunspacePoolState:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/b05495bc-a9b2-4794-9f43-4bf1f3633900
-
-    .. _System.Management.Automation.Runspaces.RunspacePoolState:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.runspacepoolstate
+    under
+    `[MS-PSRP] 2.2.3.4 RunspacePoolState <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/b05495bc-a9b2-4794-9f43-4bf1f3633900>`_
+    and while it shares the same name as the .NET type
+    `System.Management.Automation.Runspaces.RunspacePoolState <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.runspacepoolstate>`_
+    it has a few extra names and some values that do not match. The .NET enum
+    is used here as that's what PowerShell uses internally.
     """
 
     BeforeOpen = 0  #: Beginning state upon creation.
@@ -231,17 +212,12 @@ class PSInvocationState(PSEnumBase):
     """PSInvocationState enum.
 
     Defines the current state of the Pipeline. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.5 PSInvocationState`_.
+    `[MS-PSRP] 2.2.3.5 PSInvocationState <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/acaa253a-29be-45fd-911c-6715515a28b9>`_.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.PSInvocationState`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.5 PSInvocationState:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/acaa253a-29be-45fd-911c-6715515a28b9
-
-    .. _System.Management.Automation.PSInvocationState:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.psinvocationstate
+        `System.Management.Automation.PSInvocationState <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.psinvocationstate>`_
+        .NET class.
     """
 
     NotStarted = 0  #: Pipeline has not been started
@@ -259,17 +235,12 @@ class PSThreadOptions(PSEnumBase):
 
     Control whether a new thread is created when a command is executed within a
     Runspace. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.6 PSThreadOptions`_.
+    `[MS-PSRP] 2.2.3.6 PSThreadOptions <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/bfc63adb-d6f1-4ccc-9bd8-73de6cc78dda>`_.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Runspaces.PSThreadOptions`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.6 PSThreadOptions:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/bfc63adb-d6f1-4ccc-9bd8-73de6cc78dda
-
-    .. _System.Management.Automation.Runspaces.PSThreadOptions:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.psthreadoptions
+        `System.Management.Automation.Runspaces.PSThreadOptions <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.psthreadoptions>`_
+        .NET class.
     """
 
     Default = 0  #: Use the server thread option settings.
@@ -284,17 +255,12 @@ class ApartmentState(PSEnumBase):
     """System.Management.Automation.Runspaces.ApartmentState enum.
 
     Specifies the apartment state of a Thread. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.7 ApartmentState`_.
+    `[MS-PSRP] 2.2.3.7 ApartmentState <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/6845133d-7503-450d-a74e-388cdd3b2386>`_.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Threading.ApartmentState`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.7 ApartmentState:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/6845133d-7503-450d-a74e-388cdd3b2386
-
-    .. _System.Threading.ApartmentState:
-        https://docs.microsoft.com/en-us/dotnet/api/system.threading.apartmentstate?view=net-5.0
+        `System.Threading.ApartmentState <https://docs.microsoft.com/en-us/dotnet/api/system.threading.apartmentstate?view=net-5.0>`_
+        .NET class.
     """
 
     STA = 0  #: The thread will create and enter a multi-threaded apartment.
@@ -308,17 +274,13 @@ class RemoteStreamOptions(PSFlagBase):
 
     Control whether InvocationInfo is added to items in the Error, Warning,
     Verbose and Debug streams during remote calls. It is documented in PSRP
-    under `[MS-PSRP] 2.2.3.8 RemoteStreamOptions`_.
+    under
+    `[MS-PSRP] 2.2.3.8 RemoteStreamOptions <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/4941e59c-ce01-4549-8eb5-372b8eb6dd12>`_.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.RemoteStreamOptions`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.8 RemoteStreamOptions:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/4941e59c-ce01-4549-8eb5-372b8eb6dd12
-
-    .. _System.Management.Automation.RemoteStreamOptions:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.remotestreamoptions
+        `System.Management.Automation.RemoteStreamOptions <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.remotestreamoptions>`_
+        .NET class.
     """
 
     none = 0  #: InvocationInfo is not added to any stream record.
@@ -334,17 +296,13 @@ class ErrorCategory(PSEnumBase):
     """System.Management.Automation.ErrorCategory enum.
 
     Errors reported by PowerShell will be in one of these categories. It is
-    documented in PSRP under `[MS-PSRP] 2.2.3.9 ErrorCategory`_.
+    documented in PSRP under
+    `[MS-PSRP] 2.2.3.9 ErrorCategory <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ae7d6061-15c8-4184-a05e-1033dbb7228b>`_.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.ErrorCategory`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.9 ErrorCategory:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/ae7d6061-15c8-4184-a05e-1033dbb7228b
-
-    .. _System.Management.Automation.ErrorCategory:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errorcategory
+        `System.Management.Automation.ErrorCategory <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errorcategory>`_
+        .NET class.
     """
 
     NotSpecified = 0  #: No error category is specified, or the error category is invalid.
@@ -386,17 +344,13 @@ class CommandTypes(PSFlagBase):
     """System.Management.Automation.CommandTypes enum flags.
 
     Defines the types of commands that PowerShell can execute. It is documented
-    in PSRP under `[MS-PSRP] 2.2.3.19 CommandType`_.
+    in PSRP under
+    `[MS-PSRP] 2.2.3.19 CommandType <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/a038c5c9-a220-4064-aa78-ed9cf5a2893c>`_.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.CommandTypes`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.19 CommandType:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/a038c5c9-a220-4064-aa78-ed9cf5a2893c
-
-    .. _System.Management.Automation.CommandTypes:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.commandtypes
+        `System.Management.Automation.CommandTypes <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.commandtypes>`_
+        .NET class.
     """
 
     Alias = 1  #: Aliases create a name that refers to other command types.
@@ -415,17 +369,12 @@ class CommandOrigin(PSEnumBase):
     """System.Management.Automation.CommandOrigin enum.
 
     Defines the dispatch origin of a command. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.30 CommandOrigin`_.
+    `[MS-PSRP] 2.2.3.30 CommandOrigin <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/6c35a5de-d063-4097-ace5-002a0c5e452d>`_.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.CommandOrigin`_ .NET class.
-
-    .. _[MS-PSRP] 2.2.3.30 CommandOrigin:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/6c35a5de-d063-4097-ace5-002a0c5e452d
-
-    .. _System.Management.Automation.CommandOrigin:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.commandorigin
+        `System.Management.Automation.CommandOrigin <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.commandorigin>`_
+        .NET class.
     """
 
     Runspace = 0  #: The command was submited via a runspace.
@@ -437,21 +386,17 @@ class PipelineResultTypes(PSFlagBase):
     """System.Management.Automation.Runspaces.PipelineResultTypes enum flags.
 
     Defines the types of streams coming out of a pipeline. It is documented in
-    PSRP under `[MS-PSRP] 2.2.3.31 PipelineResultTypes`_. .NET and MS-PSRP have
-    separate values but .NET is used as it is the correct source.
-    Technically the values are not designed as flags but there are some older
-    APIs that combine Output | Error together.
+    PSRP under
+    `[MS-PSRP] 2.2.3.31 PipelineResultTypes <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/efdce0ba-531e-4904-9cab-b65c476c649a>`_.
+    .NET and MS-PSRP have
+    separate values but .NET is used as it is the correct source. Technically
+    the values are not designed as flags but there are some older APIs that
+    combine Output | Error together.
 
     Note:
         This is an auto-generated Python class for the
-        `System.Management.Automation.Runspaces.PipelineResultTypes`_ .NET
-        class.
-
-    .. _[MS-PSRP] 2.2.3.31 PipelineResultTypes:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/efdce0ba-531e-4904-9cab-b65c476c649a
-
-    .. _System.Management.Automation.Runspaces.PipelineResultTypes:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.pipelineresulttypes
+        `System.Management.Automation.Runspaces.PipelineResultTypes <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.runspaces.pipelineresulttypes>`_
+        .NET class.
     """
 
     none = 0  #: Default streaming behaviour.
@@ -482,7 +427,7 @@ class ScriptPosition(PSObject):
 
     Represents a single point in a script. This script may come from a file or
     interactive input. This is the actual .NET type
-    `System.Management.Automation.Language.ScriptPosition`_.
+    `System.Management.Automation.Language.ScriptPosition <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.language.scriptposition>`_.
 
     Args:
         File: The name of the file, or if the script did not come from a file,
@@ -495,9 +440,6 @@ class ScriptPosition(PSObject):
 
     Attributes:
         Offset (:class:`PSInt`): Not used in pwsh.
-
-    .. _System.Management.Automation.Language.ScriptPosition:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.language.scriptposition
     """
 
 
@@ -523,14 +465,11 @@ class ScriptExtent(PSObject):
 
     A script extend used to customize the display of error location
     information. This is the actual .NET type
-    `System.Management.Automation.Language.ScriptExtent`_.
+    `System.Management.Automation.Language.ScriptExtent <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.language.scriptextent>`_.
 
     Args:
         StartPosition: The position beginning the extent.
         EndPosition: The position ending the extent.
-
-    .. _System.Management.Automation.Language.ScriptExtent:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.language.scriptextent
     """
 
     def __init__(
@@ -614,7 +553,8 @@ class InvocationInfo(PSObject):
     """InvocationInfo.
 
     Describes how and where this command was invoked. This is the actual .NET
-    type `System.Management.Automation.InvocationInfo`_.
+    type
+    `System.Management.Automation.InvocationInfo <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.invocationinfo>`_.
 
     Args:
         BoundParameters: Dictionary of parameters that were bound for this
@@ -644,9 +584,6 @@ class InvocationInfo(PSObject):
         ScriptName: The name of the script containing the cmdlet.
         UnboundArguments: The list of arguments that were not bound to any
             parameter.
-
-    .. _System.Management.Automation.InvocationInfo:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.invocationinfo
     """
 
 
@@ -766,7 +703,8 @@ class ErrorCategoryInfo(PSObject):
     """ErrorCategoryInfo.
 
     Contains auxiliary information about an ErrorRecord. This is the actual
-    .NET type `System.Management.Automation.ErrorCategoryInfo`_.
+    .NET type
+    `System.Management.Automation.ErrorCategoryInfo <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errorcategoryinfo>`_.
 
     Args:
         Category: The error category.
@@ -774,9 +712,6 @@ class ErrorCategoryInfo(PSObject):
         Reason: Description of the error.
         TargetName: Description of the target object.
         TargetType: Description of the type of the target object.
-
-    .. _System.Management.Automation.ErrorCategoryInfo:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errorcategoryinfo
     """
 
     def __str__(self) -> str:
@@ -803,15 +738,13 @@ class ErrorDetails(PSObject):
     want to display a more specific message than the one contained in a
     particular Exception, without having to create a new Exception or define a
     new Exception class. This is the actual
-    .NET type `System.Management.Automation.ErrorDetails`_.
+    .NET type
+    `System.Management.Automation.ErrorDetails <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errordetails>`_.
 
     Args:
         Message: Message with replaces Message in Exception.
         RecommendedAction: Describes the recommended action in the event this
             error occurs. This can be empty if not applicable.
-
-    .. _System.Management.Automation.ErrorDetails:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errordetails
     """
 
 
@@ -834,9 +767,12 @@ class ErrorRecord(PSObject):
     """ErrorRecord.
 
     The data type that represents information about an error. It is documented
-    in PSRP under `[MS-PSRP] 2.2.3.15 ErrorRecord`_. The invocation specific
-    properties are documented under `[MS-PSRP] 2.2.3.15.1 InvocationInfo`_.
-    This is the actual .NET type `System.Management.Automation.ErrorRecord`_
+    in PSRP under
+    `[MS-PSRP] 2.2.3.15 ErrorRecord <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/0fe855a7-d13c-44e2-aa88-291e2054ae3a>`_.
+    The invocation specific properties are documented under
+    `[MS-PSRP] 2.2.3.15.1 InvocationInfo <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/000363b7-e2f9-4a34-94f5-d540a15aee7b>`_.
+    This is the actual .NET type
+    `System.Management.Automation.ErrorRecord <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errorrecord>`_
 
     Args:
         Exception: An exception describing the error.
@@ -852,15 +788,6 @@ class ErrorRecord(PSObject):
             created. Each entry represents the number of inputs the command[i]
             in the statement has processed when the record was created.
         ScriptStackTrace: The object against which the error occurred.
-
-    .. _[MS-PSRP] 2.2.3.15 ErrorRecord:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/0fe855a7-d13c-44e2-aa88-291e2054ae3a
-
-    .. _[MS-PSRP] 2.2.3.15.1 InvocationInfo:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/000363b7-e2f9-4a34-94f5-d540a15aee7b
-
-    .. _System.Management.Automation.ErrorRecord:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.errorrecord
     """
 
     def __init__(
@@ -978,10 +905,12 @@ class InformationalRecord(PSObject):
     InformationalRecord (that is Debug, Warning, or Verbose) is a structure
     that contains additional information that a pipeline can output in addition
     to the regular data output. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.16 InformationalRecord`_. The invocation specific
-    properties are documented under `[MS-PSRP] 2.2.3.15.1 InvocationInfo`_.
+    `[MS-PSRP] 2.2.3.16 InformationalRecord <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/97cad2dc-c34a-4db6-bfa1-cbf196853937>`_.
+    The invocation specific properties are documented under
+    `[MS-PSRP] 2.2.3.15.1 InvocationInfo <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/000363b7-e2f9-4a34-94f5-d540a15aee7b>`_.
     This also represents the
-    `System.Management.Automation.InformationalRecord`_ .NET type.
+    `System.Management.Automation.InformationalRecord <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.informationalrecord>`_
+    .NET type.
 
     Args:
         Message: The message writen by the command that created this record.
@@ -989,15 +918,6 @@ class InformationalRecord(PSObject):
             record.
         PipelineIterationInfo: The status of the pipeline when this record was
             created.
-
-    .. _[MS-PSRP] 2.2.3.16 InformationalRecord:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/97cad2dc-c34a-4db6-bfa1-cbf196853937
-
-    .. _[MS-PSRP] 2.2.3.15.1 InvocationInfo:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/000363b7-e2f9-4a34-94f5-d540a15aee7b
-
-    .. _System.Management.Automation.InformationalRecord:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.informationalrecord
     """
 
     def __init__(
@@ -1054,10 +974,8 @@ class DebugRecord(InformationalRecord):
     """DebugRecord.
 
     A debug record in the PSInformationalBuffers. This represents the
-    `System.Management.Automation.DebugRecord`_ .NET type.
-
-    .. _System.Management.Automation.DebugRecord:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.debugrecord?view=powershellsdk-7.0.0
+    `System.Management.Automation.DebugRecord <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.debugrecord?view=powershellsdk-7.0.0>`_
+    .NET type.
     """
 
 
@@ -1066,10 +984,8 @@ class VerboseRecord(InformationalRecord):
     """VerboseRecord.
 
     A verbose record in the PSInformationalBuffers. This represents the
-    `System.Management.Automation.VerboseRecord`_ .NET type.
-
-    .. _System.Management.Automation.VerboseRecord:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.verboserecord?view=powershellsdk-7.0.0
+    `System.Management.Automation.VerboseRecord <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.verboserecord?view=powershellsdk-7.0.0>`_
+    .NET type.
     """
 
 
@@ -1078,10 +994,8 @@ class WarningRecord(InformationalRecord):
     """WarningRecord.
 
     A warning record in the PSInformationalBuffers. This represents the
-    `System.Management.Automation.WarningRecord`_ .NET type.
-
-    .. _System.Management.Automation.WarningRecord:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.warningrecord?view=powershellsdk-7.0.0
+    `System.Management.Automation.WarningRecord <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.warningrecord?view=powershellsdk-7.0.0>`_
+    .NET type.
     """
 
 
@@ -1104,7 +1018,8 @@ class ProgressRecord(PSObject):
 
     Defines a data structure used to represent the status of an ongoing
     operation at a point in time. This represents the
-    `System.Management.Automation.ProgressRecord`_ .NET type.
+    `System.Management.Automation.ProgressRecord <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.progressrecord?view=powershellsdk-7.0.0>`_
+    .NET type.
 
     Args:
         Activity: Description of the activity.
@@ -1121,9 +1036,6 @@ class ProgressRecord(PSObject):
             complete.
         StatusDescription: Current status of the operation, e.g. "35 of 50
             items copied".
-
-    .. _System.Management.Automation.ProgressRecord:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.progressrecord?view=powershellsdk-7.0.0
     """
 
 
@@ -1146,7 +1058,8 @@ class InformationRecord(PSObject):
 
     Defines a data structure used to represent informational context destined
     for the host or user. This represents the
-    `System.Management.Automation.InformationRecord`_ .NET type.
+    `System.Management.Automation.InformationRecord <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.informationrecord?view=powershellsdk-7.0.0>`_
+    .NET type.
 
     Args:
         MessageData: The message data for the informational record.
@@ -1161,9 +1074,6 @@ class InformationRecord(PSObject):
             record.
         ManagedThreadId: The managed thread that generated the informational
             record.
-
-    .. _System.Management.Automation.InformationRecord:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.informationrecord?view=powershellsdk-7.0.0
     """
 
 
@@ -1175,10 +1085,8 @@ class PSPrimitiveDictionary(PSDict):
     that are primitive types. While Python does not place any limitations on
     the types this object can contain, trying to serialize a
     PSPrimitiveDictionary with complex types to PowerShell will fail. The types
-    that are allowed can be found at `[MS-PSRP] 2.2.3.18 Primitive Dictionary`_.
-
-    .. _[MS-PSRP] 2.2.3.18 Primitive Dictionary:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/7779aa42-6927-4225-b31c-2771fd869546
+    that are allowed can be found at
+    `[MS-PSRP] 2.2.3.18 Primitive Dictionary <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/7779aa42-6927-4225-b31c-2771fd869546>`_.
     """
 
 
@@ -1192,13 +1100,11 @@ class CommandMetadataCount(PSCustomObject):
     """CommandMetadataCount.
 
     Special data type used by the command metadata messages. It is documented
-    in PSRP under `[MS-PSRP] 2.2.3.21 CommandMetadataCount`_.
+    in PSRP under
+    `[MS-PSRP] 2.2.3.21 CommandMetadataCount <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/4647da0c-18e6-496c-9d9e-c669d40dc1db>`_.
 
     Args:
         Count: The count.
-
-    .. _[MS-PSRP] 2.2.3.21 CommandMetadataCount:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/4647da0c-18e6-496c-9d9e-c669d40dc1db
     """
 
 
@@ -1213,8 +1119,10 @@ class PSCredential(PSObject):
     """PSCredential.
 
     Represents a username and a password. It is documented in PSRP under
-    `[MS-PSRP] 2.2.3.25 PSCredential`_. It also represents the
-    `System.Management.Automation.PSCredential`_ .NET type.
+    `[MS-PSRP] 2.2.3.25 PSCredential <https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/a7c91a93-ee59-4af0-8a67-a9361af9870e>`_.
+    It also represents the
+    `System.Management.Automation.PSCredential <https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscredential>`_
+    .NET type.
 
     Note:
         To be able to serialize this object, a session key is exchanged between
@@ -1224,12 +1132,6 @@ class PSCredential(PSObject):
     Args:
         UserName: The username for the credential.
         Password: The password for the credential.
-
-    .. _[MS-PSRP] 2.2.3.25 PSCredential:
-        https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-psrp/a7c91a93-ee59-4af0-8a67-a9361af9870e
-
-    .. _System.Management.Automation.PSCredential:
-        https://docs.microsoft.com/en-us/dotnet/api/system.management.automation.pscredential
     """
 
 
@@ -1251,9 +1153,10 @@ class PSCredential(PSObject):
 class NETException(PSObject):
     """.NET Exception.
 
-    Represents a .NET `System.Exception`_ type. It isn't documented in
-    MS-PSRP but is used when creating an ErrorRecord or just as a base of
-    another exception type.
+    Represents a .NET
+    `System.Exception <https://docs.microsoft.com/en-us/dotnet/api/system.exception?view=net-5.0>`_
+    type. It isn't documented in MS-PSRP but is used when creating an
+    ErrorRecord or just as a base of another exception type.
 
     Args:
         Message: Message that describes the current exception.
@@ -1264,7 +1167,4 @@ class NETException(PSObject):
         Source: Name of the application or the object that causes the error.
         StackTrace: String representation of the immediate frames on the call stack.
         TargetSite: Method that throws the current exception.
-
-    .. _System.Exception:
-        https://docs.microsoft.com/en-us/dotnet/api/system.exception?view=net-5.0
     """
