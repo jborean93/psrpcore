@@ -14,6 +14,7 @@ from psrpcore._client import (
     ClientPowerShell,
     ClientRunspacePool,
 )
+from psrpcore._clixml_shell import ClixmlOutput, ClixmlShell
 from psrpcore._command import Command
 from psrpcore._crypto import PSRemotingCrypto
 from psrpcore._events import (
@@ -69,6 +70,8 @@ __all__ = [
     "ClientHostResponder",
     "ClientPowerShell",
     "ClientRunspacePool",
+    "ClixmlOutput",
+    "ClixmlShell",
     "Command",
     "ConnectRunspacePoolEvent",
     "CreatePipelineEvent",

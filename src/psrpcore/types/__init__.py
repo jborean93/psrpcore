@@ -145,6 +145,7 @@ from psrpcore.types._psrp import (
     WarningRecordMsg,
 )
 from psrpcore.types._serializer import (
+    ClixmlStream,
     deserialize,
     deserialize_clixml,
     serialize,
@@ -159,6 +160,7 @@ __all__ = [
     "BufferCell",
     "BufferCellType",
     "ChoiceDescription",
+    "ClixmlStream",
     "CommandMetadataCount",
     "CommandOrigin",
     "CommandTypes",

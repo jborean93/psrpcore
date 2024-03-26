@@ -4,10 +4,8 @@
 
 import base64
 import datetime
-import getpass
 import os
 import platform
-import threading
 import typing
 import uuid
 
@@ -45,6 +43,7 @@ from psrpcore.types import (
     ErrorDetails,
     ErrorRecord,
     HostMethodIdentifier,
+    InformationRecord,
     InformationRecordMsg,
     InvocationInfo,
     NETException,
@@ -738,34 +737,27 @@ class ServerPipeline(Pipeline["ServerRunspacePool"]):
         if self.state != PSInvocationState.Running:
             raise InvalidPipelineState("write pipeline information", self.state, [PSInvocationState.Running])
 
-        time_generated = PSDateTime.now() if time_generated is None else time_generated
-        if not tags:
-            tags = []
-
-        if user is None:
-            try:
-                # getuser on Windows relies on env vars that may not may not be set. Just fallback gracefully.
-                user = getpass.getuser()
-
-            except ModuleNotFoundError:  # pragma: no cover
-                user = "Unknown"
-
-        computer = platform.node() if computer is None else computer
-        process_id = os.getpid() if process_id is None else process_id
-
-        # get_native_id isn't available until 3.8, default to 0.
-        native_thread_id = getattr(threading, "get_native_id", lambda: 0)()
-
+        record = InformationRecord.create(
+            message_data=message_data,
+            source=source,
+            time_generated=time_generated,
+            tags=tags,
+            user=user,
+            computer=computer,
+            process_id=process_id,
+            native_thread_id=native_thread_id,
+            managed_thread_id=managed_thread_id,
+        )
         value = InformationRecordMsg(
-            MessageData=message_data,
-            Source=source,
-            TimeGenerated=time_generated,
-            Tags=tags,
-            User=user,
-            Computer=computer,
-            ProcessId=process_id or 0,
-            NativeThreadId=native_thread_id or 0,
-            ManagedThreadId=managed_thread_id or 0,
+            MessageData=record.MessageData,
+            Source=record.Source,
+            TimeGenerated=record.TimeGenerated,
+            Tags=record.Tags,
+            User=record.User,
+            Computer=record.Computer,
+            ProcessId=record.ProcessId,
+            NativeThreadId=record.NativeThreadId,
+            ManagedThreadId=record.ManagedThreadId,
         )
         self.prepare_message(value, message_type=PSRPMessageType.InformationRecord)
 

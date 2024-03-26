@@ -50,14 +50,11 @@ PWSH_PATH = which("pwsh.exe" if os.name == "nt" else "pwsh")
 
 
 class FakeCryptoProvider(psrpcore.types.PSCryptoProvider):
-    def decrypt(self, value: bytes) -> bytes:
-        return value
+    def decrypt(self, value: str) -> str:
+        return base64.b64decode(value).decode("utf-16-le", errors="surrogatepass")
 
-    def encrypt(self, value: bytes) -> bytes:
-        return value
-
-    def register_key(self, key: bytes) -> None:
-        pass
+    def encrypt(self, value: str) -> str:
+        return base64.b64encode(value.encode("utf-16-le", errors="surrogatepass")).decode()
 
 
 class OutOfProcTransport(typing.Generic[T]):

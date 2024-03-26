@@ -796,56 +796,41 @@ class PSType:
         return cls
 
 
-class PSCryptoProvider(metaclass=abc.ABCMeta):
-    """PSRemoting crypto provider
+class PSCryptoProvider:
+    """Serizliation crypto provider
 
-    The CryptoProvider used by PSRemoting that can encrypt and decrypt secure
-    exchanged in that PSSession. The key must be registered once it has been
-    generated using :meth:`PSCryptoProvider.register_key`.
+    The CryptoProvider used by the serializer to encrypt and decrypt
+    :class:`psrpcore.types.PSSecureString` values. The method used to encrypt
+    and decrypt these values differs across implementations.
     """
 
-    @abc.abstractmethod
-    def decrypt(self, value: bytes) -> bytes:
-        """Decrypts the encrypted bytes.
+    def decrypt(self, value: str) -> str:
+        """Decrypts the encrypted value.
 
-        Decrypts the encrypted bytes passed in.
+        Decrypts the encrypted value passed in. The value provided is the raw
+        XML element text of the ``<SS>`` element to decrypt.
 
         Args:
-            value: The encrypted bytes to decrypt.
+            value: The encrypted XML text element to decrypt.
 
         Returns:
-            bytes: The decrypted bytes.
+            str: The decrypted value.
         """
-        pass  # pragma: no cover
+        raise NotImplementedError()
 
-    @abc.abstractmethod
-    def encrypt(self, value: bytes) -> bytes:
+    def encrypt(self, value: str) -> str:
         """Encrypted the bytes.
 
-        Encrypts the bytes passed in.
+        Encrypts the value passed in and returns the raw XML ``<SS>`` element
+        for serialization.
 
         Args:
-            value: The bytes to encrypt.
+            value: The string to encrypt.
 
         Returns:
-            bytes: The encrypted bytes.
+            str: The encrypted and encoded XML text element.
         """
-        pass  # pragma: no cover
-
-    @abc.abstractmethod
-    def register_key(
-        self,
-        key: bytes,
-    ) -> None:
-        """Registers the session key.
-
-        Registers the session key that is used to encrypt and decrypt secure
-        strings for PSRP.
-
-        Args:
-            key: The session key negotiated between the client and server.
-        """
-        pass  # pragma: no cover
+        raise NotImplementedError()
 
 
 def add_member(

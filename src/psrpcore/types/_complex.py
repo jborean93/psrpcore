@@ -15,8 +15,13 @@ between the PSRP specific ones and the actual .NET types.
 """
 
 import collections
+import datetime
+import getpass
 import ntpath
+import os
+import platform
 import posixpath
+import threading
 import typing
 
 from psrpcore.types._base import (
@@ -952,7 +957,7 @@ class InformationalRecord(PSObject):
     @classmethod
     def ToPSObjectForRemoting(
         cls,
-        instance: "ErrorRecord",
+        instance: "InformationalRecord",
         **kwargs: typing.Any,
     ) -> PSObject:
         obj = PSObject()
@@ -1067,7 +1072,7 @@ class InformationRecord(PSObject):
             name, etc.).
         TimeGenerated: The time the informational record was generated.
         Tags: The tags associated with this informational record.
-        User: THe user that generated the informational record.
+        User: The user that generated the informational record.
         Computer: THe computer that generated the informational record.
         ProcessId: The process that generated the informational record.
         NativeThreadId: The native thread that generated the informational
@@ -1075,6 +1080,52 @@ class InformationRecord(PSObject):
         ManagedThreadId: The managed thread that generated the informational
             record.
     """
+
+    @classmethod
+    def create(
+        cls,
+        message_data: typing.Any,
+        source: str,
+        *,
+        time_generated: typing.Optional[datetime.datetime] = None,
+        tags: typing.Optional[typing.List[str]] = None,
+        user: typing.Optional[str] = None,
+        computer: typing.Optional[str] = None,
+        process_id: typing.Optional[int] = None,
+        native_thread_id: typing.Optional[int] = None,
+        managed_thread_id: typing.Optional[int] = None,
+    ) -> "InformationRecord":
+        """Helper class for creating InformationRecords with defaults."""
+
+        time_generated = PSDateTime.now() if time_generated is None else time_generated
+        if not tags:
+            tags = PSList([])
+
+        if user is None:
+            try:
+                # getuser on Windows relies on env vars that may not may not be set. Just fallback gracefully.
+                user = getpass.getuser()
+
+            except ModuleNotFoundError:  # pragma: no cover
+                user = "Unknown"
+
+        computer = PSString(platform.node()) if computer is None else computer
+        process_id = os.getpid() if process_id is None else process_id
+
+        # get_native_id isn't available until 3.8, default to 0.
+        native_thread_id = threading.get_native_id() if native_thread_id is None else native_thread_id
+
+        return InformationRecord(
+            MessageData=message_data,
+            Source=source,
+            TimeGenerated=time_generated,
+            Tags=tags,
+            User=user,
+            Computer=computer,
+            ProcessId=process_id,
+            NativeThreadId=native_thread_id,
+            ManagedThreadId=managed_thread_id or 0,
+        )
 
 
 @PSType(type_names=["System.Management.Automation.PSPrimitiveDictionary"])

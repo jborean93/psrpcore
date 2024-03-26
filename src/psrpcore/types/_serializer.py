@@ -125,10 +125,27 @@ def deserialize(
     return _Serializer(cipher, **kwargs).deserialize(value)
 
 
+@typing.overload
 def deserialize_clixml(
     clixml: str,
     cipher: PSCryptoProvider,
-) -> list[typing.Any]:
+    preserve_streams: typing.Literal[False] = False,
+) -> list[typing.Any]: ...  # pragma: nocover
+
+
+@typing.overload
+def deserialize_clixml(
+    clixml: str,
+    cipher: PSCryptoProvider,
+    preserve_streams: typing.Literal[True] = True,
+) -> list[tuple[typing.Any, ClixmlStream]]: ...  # pragma: nocover
+
+
+def deserialize_clixml(
+    clixml: str,
+    cipher: PSCryptoProvider,
+    preserve_streams: bool = False,
+) -> list[typing.Union[typing.Any, tuple[typing.Any, ClixmlStream]]]:
     """Deserialize a CLIXML string to Python objects.
 
     Deserializes a CLIXML CML string produced by pwsh -OutputFormat xml into
@@ -142,13 +159,20 @@ def deserialize_clixml(
 
         [System.Management.Automation.PSSerialize]::Serialize($value)
 
+    When ``preserve_streams=True``, the stream name is denoted by the ``S``
+    XML attribute. If the attribute does not exist or is set to an unknown
+    value it will be automatically converted to ``OUTPUT``.
+
     Args:
         clixml: The CLIXML string from PowerShell.
-        cipher: The RUnspace Pool cipher to use for SecureStrings.
+        cipher: The Runspace Pool cipher to use for SecureStrings.
+        preserve_stream: Output each object as a tuple with the first value
+            being the deserialized object and the second value being the
+            :class:`ClixmlStream` as annotated by the ``S`` XML attribute.
 
     Returns:
         list[typing.Any]: The list of Python objects that were created from the
-        CLIXML string.
+        CLIXML string. Each entry will be a tuple if ``preserve_streams=True``.
     """
     serializer = _Serializer(cipher)
 
@@ -166,6 +190,17 @@ def deserialize_clixml(
     values = []
     for raw in raw_clixml:
         v = serializer.deserialize(raw)
+
+        if preserve_streams:
+            stream_type = ClixmlStream.OUTPUT
+            if stream_attr := raw.attrib.get("S", None):
+                try:
+                    stream_type = ClixmlStream(stream_attr.lower())
+                except ValueError:
+                    pass
+
+            v = (v, stream_type)
+
         values.append(v)
 
     return values
@@ -193,7 +228,7 @@ def serialize(
 
 
 def serialize_clixml(
-    value: typing.Optional[typing.Any],
+    value: typing.Any | tuple[typing.Any | None, ClixmlStream] | None,
     cipher: PSCryptoProvider,
 ) -> str:
     """Serializes the Python object(s) to a CLIXML string.
@@ -214,6 +249,26 @@ def serialize_clixml(
         value = [1, 2, 3]
         serialize_clixml([value], cipher)
 
+    Each value provided can also be a tuple of 2 elements where the first
+    elements is the value to serialize and the second element is the stream
+    to associate it with based on the :class:`psrpcore.types.ClixmlStream`
+    value. PowerShell accepts the following types with each stream:
+
+        OUTPUT - Any
+
+        ERROR - :class:`psrpcore.types.ErrorRecord` or :class:`str`
+
+        DEBUG, VERBOSE, WARNING - :class:`str`
+
+        INFORMATION - :class:`psrpcore.types.InformationRecord` or :class:`str`
+
+        PROGRESS - :class:`psrpcore.types.ProgressRecord`
+
+    Using a string with he ``ERROR``, ``DEBUG``, ``VERBOSE``, ``WARNING``,
+    and ``INFORMATION`` CLIXML stream will result in a record with that string
+    message. Using other types will result in the object being casted to a
+    string or undefined behaviour.
+
     Args:
         value: The value(s) to serialize.
         cipher: The Runspace Pool cipher to use for SecureStrings.
@@ -230,10 +285,17 @@ def serialize_clixml(
     )
 
     serializer = _Serializer(cipher)
-    if isinstance(value, list):
-        objs.extend([serializer.serialize(o) for o in value])
-    else:
-        objs.append(serializer.serialize(value))
+    if not isinstance(value, list):
+        value = [value]
+
+    for v in value:
+        if isinstance(v, tuple) and len(v) == 2 and isinstance(v[1], ClixmlStream):
+            serialized_value = serializer.serialize(v[0])
+            serialized_value.attrib["S"] = v[1].value
+        else:
+            serialized_value = serializer.serialize(v)
+
+        objs.append(serialized_value)
 
     clixml = ElementTree.tostring(objs, encoding="unicode")
 
@@ -554,6 +616,18 @@ def _serialize_string(
     value = re.sub(_STRING_SERIAL_ESCAPE, rplcr, value)
 
     return value
+
+
+class ClixmlStream(str, enum.Enum):
+    """Signifies what stream the object is associated with in :meth:`serialize_clixml`."""
+
+    OUTPUT = "output"  #: Output stream
+    ERROR = "error"  #: Error stream
+    DEBUG = "debug"  #: Debug stream
+    VERBOSE = "verbose"  #: Verbose stream
+    WARNING = "warning"  #: Warning stream
+    PROGRESS = "progress"  #: Progress stream
+    INFORMATION = "information"  #: Information stream
 
 
 class _Serializer:
