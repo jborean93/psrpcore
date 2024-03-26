@@ -76,7 +76,6 @@ def test_clixml_shell(client_pwsh: ClientTransport) -> None:
     assert res[12].state == psrpcore.types.PSInvocationState.Completed
 
 
-@pytest.mark.skipif(os.name == "nt", reason="We don't support SecureString decryption on Windows")
 def test_clixml_shell_securestring(client_pwsh: ClientTransport) -> None:
     client_pwsh.runspace.open()
 
@@ -109,15 +108,6 @@ sys.stdout.write(shell.data_to_send())
 
     assert isinstance(res[1], psrpcore.PipelineStateEvent)
     assert res[1].state == psrpcore.types.PSInvocationState.Completed
-
-
-@pytest.mark.skipif(os.name != "nt", reason="We are testing that Windows fails sanely on a SecureString")
-def test_clixml_shell_securestring_failure() -> None:
-    shell = psrpcore.ClixmlShell()
-    shell.write_output(psrpcore.types.PSSecureString("secret"))
-
-    with pytest.raises(NotImplementedError, match="CLIXML SecureString encryption is not supported on Windows"):
-        shell.data_to_send()
 
 
 def test_clixml_shell_with_no_buffer() -> None:
@@ -245,7 +235,6 @@ Write-Information 'information as record'
     assert actual.information[1].Tags == []
 
 
-@pytest.mark.skipif(os.name == "nt", reason="We don't support SecureString decryption on Windows")
 def test_clixml_output_securestring() -> None:
     res = subprocess.run(
         [PWSH_PATH or "pwsh", "-OutputFormat", "xml", "-Command", "ConvertTo-SecureString -Force -AsPlainText secret"],
@@ -258,19 +247,6 @@ def test_clixml_output_securestring() -> None:
     assert len(actual.output) == 1
     assert isinstance(actual.output[0], psrpcore.types.PSSecureString)
     assert actual.output[0].decrypt() == "secret"
-
-
-@pytest.mark.skipif(os.name != "nt", reason="We are testing that Windows fails sanely on a SecureString")
-def test_clixml_output_securestring_fail() -> None:
-    actual = psrpcore.ClixmlOutput.from_clixml(
-        '<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><SS>foo</SS></Objs>',
-    )
-
-    assert len(actual.output) == 1
-    assert isinstance(actual.output[0], psrpcore.types.PSSecureString)
-
-    with pytest.raises(NotImplementedError, match="CLIXML SecureString decryption is not supported on Windows"):
-        actual.output[0].decrypt()
 
 
 def test_clixml_output_progress() -> None:
@@ -323,3 +299,15 @@ def test_climxl_output_empty_list_of_strings() -> None:
     assert actual.warning == []
     assert actual.progress == []
     assert actual.information == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Uses Windows specific code")
+def test_clixml_decrypt_failure() -> None:
+    clixml = '<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04"><SS>0001</SS></Objs>'
+
+    actual = psrpcore.ClixmlOutput.from_clixml(clixml)
+    assert len(actual.output) == 1
+    assert isinstance(actual.output[0], psrpcore.types.PSSecureString)
+
+    with pytest.raises(OSError):
+        actual.output[0].decrypt()
