@@ -51,11 +51,6 @@ $out[1].other  # other
 ```
 
 It is important that PowerShell is set to either capture or redirect/pipe the Python process output so it processes the CLIXML.
-
-```{note}
-It is possible to exchange `SecureStrings` but only on non-Windows platforms.
-```
-
 Specific types or direct `PSObject` manipulation can all be exposed through `psrpcore.types` see [Python to .NET Type Information](./types.md) for more information.
 
 ## Output to Python

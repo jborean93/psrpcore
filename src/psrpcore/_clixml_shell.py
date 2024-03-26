@@ -1,11 +1,12 @@
-# Copyright: (c) 2021, Jordan Borean (@jborean93) <jborean93@gmail.com>
+# Copyright: (c) 2024, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
 from __future__ import annotations
 
 import base64
+import ctypes
 import dataclasses
-import os
+import sys
 import typing as t
 
 from psrpcore.types import (
@@ -27,6 +28,95 @@ from psrpcore.types import (
     serialize_clixml,
 )
 
+crypt_protect_data: t.Callable[[bytes], bytes] | None = None
+crypt_unprotect_data: t.Callable[[bytes], bytes] | None = None
+if sys.platform == "win32":
+    CRYPTPROTECT_UI_FORBIDDEN = 0x01
+
+    class DATA_BLOB(ctypes.Structure):
+        _fields_ = [
+            ("cbData", ctypes.c_int32),
+            ("pbData", ctypes.POINTER(ctypes.c_char)),
+        ]
+
+    def errcheck(result, func, args):  # type: ignore[no-untyped-def] # Uses internal sig types
+        if result == 0:
+            raise ctypes.WinError()
+        return result
+
+    CryptProtectData = ctypes.windll.crypt32.CryptProtectData
+    CryptProtectData.argtypes = [
+        ctypes.POINTER(DATA_BLOB),
+        ctypes.c_wchar_p,
+        ctypes.POINTER(DATA_BLOB),
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_int32,
+        ctypes.POINTER(DATA_BLOB),
+    ]
+    CryptProtectData.restype = ctypes.c_int32
+    CryptProtectData.errcheck = errcheck
+
+    CryptUnprotectData = ctypes.windll.crypt32.CryptUnprotectData
+    CryptUnprotectData.argtypes = [
+        ctypes.POINTER(DATA_BLOB),
+        ctypes.c_wchar_p,
+        ctypes.POINTER(DATA_BLOB),
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_int32,
+        ctypes.POINTER(DATA_BLOB),
+    ]
+    CryptUnprotectData.restype = ctypes.c_int32
+    CryptUnprotectData.errcheck = errcheck
+
+    def crypt_protect_data(
+        value: bytes,
+    ) -> bytes:
+        value_buffer = ctypes.create_string_buffer(value)
+        blob_in = DATA_BLOB(len(value), value_buffer)
+        blob_out = DATA_BLOB()
+
+        CryptProtectData(
+            ctypes.byref(blob_in),
+            None,
+            None,
+            None,
+            None,
+            CRYPTPROTECT_UI_FORBIDDEN,
+            ctypes.byref(blob_out),
+        )
+
+        enc_data = ctypes.string_at(blob_out.pbData, blob_out.cbData)
+        ctypes.windll.kernel32.LocalFree(blob_out.pbData)
+
+        return enc_data
+
+    def crypt_unprotect_data(
+        value: bytes,
+    ) -> bytes:
+        # Windows the value is encrypted in memory. Non-Windows doesn't
+        # have any encryption.
+        value_buffer = ctypes.create_string_buffer(value)
+        blob_in = DATA_BLOB(len(value), value_buffer)
+        blob_out = DATA_BLOB()
+
+        CryptUnprotectData(
+            ctypes.byref(blob_in),
+            None,
+            None,
+            None,
+            None,
+            CRYPTPROTECT_UI_FORBIDDEN,
+            ctypes.byref(blob_out),
+        )
+
+        dec_data = ctypes.string_at(blob_out.pbData, blob_out.cbData)
+        ctypes.memset(blob_out.pbData, 0, blob_out.cbData)
+        ctypes.windll.kernel32.LocalFree(blob_out.pbData)
+
+        return dec_data
+
 
 class LocalCryptoProvider(PSCryptoProvider):
     """Crypto provider for local crypto exchanges."""
@@ -35,22 +125,22 @@ class LocalCryptoProvider(PSCryptoProvider):
         self,
         value: str,
     ) -> str:
-        if os.name == "nt":
-            # Would need to implement DPAPI integration to decrypt the values.
-            raise NotImplementedError("CLIXML SecureString decryption is not supported on Windows")
+        b_value = base64.b16decode(value.upper())
 
-        b_value = base64.b16decode(value)
+        if crypt_unprotect_data is not None:
+            b_value = crypt_unprotect_data(b_value)
+
         return b_value.decode("utf-16-le", errors="surrogatepass")
 
     def encrypt(
         self,
         value: str,
     ) -> str:
-        if os.name == "nt":
-            # Would need to implement DPAPI integration to encrypt the values.
-            raise NotImplementedError("CLIXML SecureString encryption is not supported on Windows")
-
         b_value = value.encode("utf-16-le", errors="surrogatepass")
+
+        if crypt_protect_data is not None:
+            b_value = crypt_protect_data(b_value)
+
         return base64.b16encode(b_value).decode()
 
 
