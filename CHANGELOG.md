@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 - TBD
+## 0.3.0 - 2024-04-23
 
 * Dropped support for Python 3.7
 * Tested with Python 3.12
