@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 - TBD
+
+* Allow enums to contain unknown types, the unknown values are automatially appended with a common name.
+
 ## 0.3.0 - 2024-04-23
 
 * Dropped support for Python 3.7

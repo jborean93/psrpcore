@@ -94,6 +94,73 @@ def test_ps_enum(rehydrate):
 
 
 @pytest.mark.parametrize("rehydrate", [True, False])
+def test_ps_enum_unknown_value(rehydrate):
+    type_name = "MyEnumMissingRehydrated" if rehydrate else "MyEnumMissing"
+
+    @PSType(type_names=[f"System.{type_name}"], rehydrate=rehydrate)
+    class EnumTest(ps_enum.PSEnumBase):
+        none = 0
+        Value1 = 1
+        Value2 = 2
+        Value3 = 3
+
+    val = EnumTest(4)
+    assert val.name == "Unknown EnumTest 0x00000004"
+    assert val.value == 4
+    assert str(val) == "EnumTest.Unknown EnumTest 0x00000004"
+    assert repr(val) == "<EnumTest.Unknown EnumTest 0x00000004: 4>"
+    assert isinstance(val, PSObject)
+    assert isinstance(val, enum.Enum)
+    assert isinstance(val, ps_enum.PSEnumBase)
+    assert not isinstance(val, PSInt)
+    assert isinstance(val.value, PSInt)
+    assert isinstance(val, int)
+
+    element = serialize(val)
+
+    actual = ElementTree.tostring(element, encoding="utf-8").decode()
+    assert (
+        actual == f'<Obj RefId="0">'
+        f"<I32>4</I32>"
+        f'<TN RefId="0">'
+        f"<T>System.{type_name}</T>"
+        f"<T>System.Enum</T>"
+        f"<T>System.ValueType</T>"
+        f"<T>System.Object</T>"
+        f"</TN>"
+        f"<ToString>Unknown EnumTest 0x00000004</ToString>"
+        f"</Obj>"
+    )
+
+    actual = deserialize(element)
+    base_types = [f"System.{type_name}", "System.Enum", "System.ValueType", "System.Object"]
+
+    if rehydrate:
+        assert actual == val
+        assert str(actual) == "EnumTest.Unknown EnumTest 0x00000004"
+        assert isinstance(actual, int)
+        assert isinstance(actual, PSObject)
+        assert not isinstance(actual, PSInt)
+        assert isinstance(actual, ps_enum.PSEnumBase)
+        assert isinstance(actual, EnumTest)
+        assert isinstance(actual, enum.Enum)
+        assert actual.PSTypeNames == base_types
+
+    else:
+        # Without hydration we just get the primitive value back
+        base_types = [f"Deserialized.{t}" for t in base_types]
+        assert actual == val.value
+        assert str(actual) == "Unknown EnumTest 0x00000004"
+        assert isinstance(actual, int)
+        assert isinstance(actual, PSObject)
+        assert isinstance(actual, PSInt)
+        assert not isinstance(actual, ps_enum.PSEnumBase)
+        assert not isinstance(actual, EnumTest)
+        assert not isinstance(actual, enum.Enum)
+        assert actual.PSTypeNames == base_types
+
+
+@pytest.mark.parametrize("rehydrate", [True, False])
 def test_ps_enum_unsigned_type(rehydrate):
     type_name = "EnumUIntRehydrated" if rehydrate else "EnumUInt"
 
@@ -154,6 +221,73 @@ def test_ps_enum_unsigned_type(rehydrate):
         base_types = [f"Deserialized.{t}" for t in base_types]
         assert actual == val.value
         assert str(actual) == "Value1"
+        assert isinstance(actual, int)
+        assert isinstance(actual, PSObject)
+        assert isinstance(actual, PSUInt)
+        assert not isinstance(actual, ps_enum.PSEnumBase)
+        assert not isinstance(actual, EnumTest)
+        assert not isinstance(actual, enum.Enum)
+        assert actual.PSTypeNames == base_types
+
+
+@pytest.mark.parametrize("rehydrate", [True, False])
+def test_ps_enum_unsigned_unknown_value(rehydrate):
+    type_name = "MyEnumUIntMissingRehydrated" if rehydrate else "MyEnumUIntMissing"
+
+    @PSType(type_names=[f"System.{type_name}"], rehydrate=rehydrate)
+    class EnumTest(ps_enum.PSEnumBase, base_type=PSUInt):
+        none = 0
+        Value1 = 1
+        Value2 = 2
+        Value3 = 3
+
+    val = EnumTest(4)
+    assert val.name == "Unknown EnumTest 0x00000004"
+    assert val.value == 4
+    assert str(val) == "EnumTest.Unknown EnumTest 0x00000004"
+    assert repr(val) == "<EnumTest.Unknown EnumTest 0x00000004: 4>"
+    assert isinstance(val, PSObject)
+    assert isinstance(val, enum.Enum)
+    assert isinstance(val, ps_enum.PSEnumBase)
+    assert not isinstance(val, PSUInt)
+    assert isinstance(val.value, PSUInt)
+    assert isinstance(val, int)
+
+    element = serialize(val)
+
+    actual = ElementTree.tostring(element, encoding="utf-8").decode()
+    assert (
+        actual == f'<Obj RefId="0">'
+        f"<U32>4</U32>"
+        f'<TN RefId="0">'
+        f"<T>System.{type_name}</T>"
+        f"<T>System.Enum</T>"
+        f"<T>System.ValueType</T>"
+        f"<T>System.Object</T>"
+        f"</TN>"
+        f"<ToString>Unknown EnumTest 0x00000004</ToString>"
+        f"</Obj>"
+    )
+
+    actual = deserialize(element)
+    base_types = [f"System.{type_name}", "System.Enum", "System.ValueType", "System.Object"]
+
+    if rehydrate:
+        assert actual == val
+        assert str(actual) == "EnumTest.Unknown EnumTest 0x00000004"
+        assert isinstance(actual, int)
+        assert isinstance(actual, PSObject)
+        assert not isinstance(actual, PSUInt)
+        assert isinstance(actual, ps_enum.PSEnumBase)
+        assert isinstance(actual, EnumTest)
+        assert isinstance(actual, enum.Enum)
+        assert actual.PSTypeNames == base_types
+
+    else:
+        # Without hydration we just get the primitive value back
+        base_types = [f"Deserialized.{t}" for t in base_types]
+        assert actual == val.value
+        assert str(actual) == "Unknown EnumTest 0x00000004"
         assert isinstance(actual, int)
         assert isinstance(actual, PSObject)
         assert isinstance(actual, PSUInt)

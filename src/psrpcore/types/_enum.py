@@ -7,8 +7,9 @@
 The base classes for any .NET enum type.
 """
 
+from __future__ import annotations
+
 import enum
-import sys
 import typing
 
 from psrpcore.types._base import PSType
@@ -57,6 +58,7 @@ class PSEnumMeta(enum.EnumMeta):
 
             return obj
 
+        namespace["__base_enum_type__"] = base_type
         namespace["__new__"] = new
 
         cls = super().__new__(
@@ -98,6 +100,20 @@ class PSEnumBase(PSIntegerBase, enum.Enum, metaclass=PSEnumMeta):
     if you require a flag like enum, use :class:`PSFlagBase` as the base type.
     """
 
+    @classmethod
+    def _missing_(
+        cls,
+        value: object,
+    ) -> enum.Enum | None:
+        if not isinstance(value, int):
+            return None
+
+        new_value = cls.__base_enum_type__(value)  # type: ignore[attr-defined]  # Added in metaclass
+        new_member = int.__new__(cls, new_value)
+        new_member._name_ = "Unknown {0} 0x{1:08X}".format(cls.__name__, value)
+        new_member._value_ = new_value
+        return cls._value2member_map_.setdefault(value, new_member)
+
     def __repr__(self) -> str:
         return enum.Enum.__repr__(self)
 
@@ -135,17 +151,6 @@ class PSFlagBase(PSIntegerBase, enum.Flag, metaclass=PSEnumMeta):
     """
 
     # We ignore most of these mypy errors due to the weird __mro__ setup
-
-    if sys.version_info[:2] < (3, 11):
-
-        @classmethod
-        def _missing_(cls, value):  # type: ignore[no-untyped-def]
-            # Calls the unbound func so it runs the operations against our class.
-            return enum.IntFlag._missing_.__func__(cls, value)  # type: ignore[attr-defined]
-
-        @classmethod
-        def _create_pseudo_member_(cls, value):  # type: ignore[no-untyped-def]
-            return enum.IntFlag._create_pseudo_member_.__func__(cls, value)  # type: ignore[attr-defined]
 
     def __or__(self, other):  # type: ignore[no-untyped-def]
         return enum.IntFlag.__or__(self, other)  # type: ignore[type-var]
