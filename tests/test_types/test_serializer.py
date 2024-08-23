@@ -101,6 +101,30 @@ def test_serialize_primitive_object(input_value, expected):
 @pytest.mark.parametrize(
     "input_value, expected",
     [
+        ("", ""),
+        ("just newline _x000A_", "just newline \n"),
+        ("surrogate pair _xD83C__xDFB5_", "surrogate pair 🎵"),
+        ("null char _x0000_", "null char \0"),
+        ("normal char _x0061_", "normal char a"),
+        ("escaped literal _x005F_x005F_", "escaped literal _x005F_"),
+        ("underscope before escape _x005F__x000A_", "underscope before escape _\n"),
+        ("surrogate high _xD83C_", "surrogate high \uD83C"),
+        ("surrogate low _xDFB5_", "surrogate low \uDFB5"),
+        ("lower case hex _x005f_", "lower case hex _"),
+        ("invalid hex _x005G_", "invalid hex _x005G_"),
+        # Tests regex actually matches UTF-16-BE hex chars (\x00 then char).
+        ("_x\u6100\u6200\u6300\u6400_", "_x\u6100\u6200\u6300\u6400_"),
+    ],
+)
+def test_deserialize_string(input_value: str, expected: str) -> None:
+    clixml = ElementTree.fromstring(f"<S>{input_value}</S>")
+    actual = serializer.deserialize(clixml, FakeCryptoProvider())
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "input_value, expected",
+    [
         ("<B>true</B>", PSBool(True)),
         ("<B>false</B>", PSBool(False)),
         ("<By>1</By>", PSByte(1)),

@@ -1436,14 +1436,14 @@ def test_ps_secure_string():
     actual = ElementTree.tostring(element, encoding="utf-8", method="xml").decode()
     assert (
         actual
-        == "<SS>dAByAGUAYgBsAGUAIABjAGwAZQBmAAoAIABfAHgAMAAwADAAMABfACAAXwBYADAAMAAwADAAXwAgADTYHt0gAGMAYQBmAOkAIAA82A==</SS>"
+        == "<SS>dAByAGUAYgBsAGUAIABjAGwAZQBmAAoAIABfAHgAMAAwADAAMABfACAAXwBYADAAMAAwADAAXwAgADTYHt0gAGMAYQBmAOkAIAA82CAAXwB4ADAAMAAxAEcAXwA=</SS>"
     )
 
     actual = deserialize(element)
     assert isinstance(actual, primitive.PSSecureString)
     assert not isinstance(actual, str)
     assert str(actual) == (
-        "dAByAGUAYgBsAGUAIABjAGwAZQBmAAoAIABfAHgAMAAwADAAMABfACAAXwBYADAAMAAwADAAXwAgADTYHt0gAGMAYQBmAOkAIAA82A=="
+        "dAByAGUAYgBsAGUAIABjAGwAZQBmAAoAIABfAHgAMAAwADAAMABfACAAXwBYADAAMAAwADAAXwAgADTYHt0gAGMAYQBmAOkAIAA82CAAXwB4ADAAMAAxAEcAXwA="
     )
     assert actual.PSTypeNames == ["System.Security.SecureString", "System.Object"]
 
