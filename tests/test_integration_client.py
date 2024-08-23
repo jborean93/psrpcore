@@ -75,7 +75,7 @@ $DebugPreference = 'Continue'
 $WarningPreference = 'Continue'
 
 $musicalNote = [Char]::ConvertFromUtf32(0x0001F3B5)
-$complexString = "treble clef\n _x0000_ _X0000_ $([Char]::ConvertFromUtf32(0x0001D11E)) café $($musicalNote[0])"
+$complexString = "treble clef\n _x0000_ _X0000_ $([Char]::ConvertFromUtf32(0x0001D11E)) café $($musicalNote[0]) _x001G_"
 
 # Test out the streams
 "output"

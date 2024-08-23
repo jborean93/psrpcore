@@ -75,7 +75,7 @@ _STRING_SERIAL_ESCAPE = re.compile("[\u0000-\u001F\u007F-\u009F\uD800-\uD8FF\uDC
 
 # To support surrogate UTF-16 pairs we need to use a UTF-16 regex so we can replace the UTF-16 string representation
 # with the actual UTF-16 byte value and then decode that.
-_STRING_DESERIAL_FIND = re.compile(b"\\x00_\\x00x([\\0\\w]{8})\\x00_")
+_STRING_DESERIAL_FIND = re.compile(rb"\x00_\x00x((?:\x00[a-fA-F0-9]){4})\x00_")
 
 # Python datetime only supports up to microsecond precision but .NET can go to 100 nanoseconds. To support this level
 # of precision we need to extract the fractional seconds part of a datetime ourselves and compute the value.
