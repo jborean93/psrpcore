@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.1 - TBD
+## 0.3.1 - 2024-11-11
 
 * Fixed CLIXML string pattern matching to only match valid hex sequences and not just any alphanumeric character
 * Added official support for Python 3.13
